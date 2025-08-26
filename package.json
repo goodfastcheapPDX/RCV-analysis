@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "build:data": "bun scripts/build-data.ts",
+    "build:data": "npx tsx scripts/build-data.ts",
+    "build:data:firstchoice": "npx tsx scripts/build-first-choice.ts",
+    "validate:firstchoice": "npx tsx scripts/validateFirstChoice.ts",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
@@ -32,6 +34,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5",
     "vitest": "^3.2.4"
   },

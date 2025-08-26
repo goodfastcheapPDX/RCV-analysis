@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 
