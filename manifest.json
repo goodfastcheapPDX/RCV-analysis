@@ -1,0 +1,14 @@
+{
+  "ingest_cvr@1.0.0": {
+    "files": [
+      "data/ingest/candidates.parquet",
+      "data/ingest/ballots_long.parquet"
+    ],
+    "hashes": {},
+    "rows": 344920,
+    "min_rank": 1,
+    "max_rank": 6,
+    "duplicate_ballots": 0,
+    "datasetVersion": "1.0.0"
+  }
+}
