@@ -1,22 +1,54 @@
 import { z } from "zod";
 
-export const IngestCvrOutputSchema = z.object({
-  candidates: z.object({
-    rows: z.number().int().min(0),
-  }),
-  ballots_long: z.object({
-    rows: z.number().int().min(0),
-    ballots: z.number().int().min(0),
-    candidates: z.number().int().min(0),
-    min_rank: z.number().int().min(1),
-    max_rank: z.number().int().min(1),
-    duplicate_ballots: z.number().int().min(0),
-  }),
+// Candidates output schema - defines structure of candidates.parquet
+export const CandidatesOutput = z.object({
+  candidate_id: z.number().int().positive(),
+  candidate_name: z.string().min(1),
 });
 
-export type IngestCvrOutput = z.infer<typeof IngestCvrOutputSchema>;
+// Ballots long output schema - defines structure of ballots_long.parquet
+export const BallotsLongOutput = z.object({
+  BallotID: z.string().min(1),
+  PrecinctID: z.string().min(1),
+  BallotStyleID: z.string().min(1),
+  candidate_id: z.number().int().positive(),
+  candidate_name: z.string().min(1),
+  rank_position: z.number().int().min(1).max(10), // Portland allows up to 6 ranks, but be flexible
+  has_vote: z.boolean(),
+});
 
-export const CONTRACT_VERSION = "1.0.0";
+// Stats schemas for manifest
+export const CandidatesStats = z.object({
+  rows: z.number().int().nonnegative(),
+});
+
+export const BallotsLongStats = z.object({
+  rows: z.number().int().nonnegative(),
+  ballots: z.number().int().nonnegative(),
+  candidates: z.number().int().nonnegative(),
+  min_rank: z.number().int().min(1),
+  max_rank: z.number().int().min(1),
+  duplicate_ballots: z.number().int().nonnegative(),
+});
+
+// Full output schema for compute function return
+export const IngestCvrOutput = z.object({
+  candidates: CandidatesStats,
+  ballots_long: BallotsLongStats,
+});
+
+// Type exports following new naming convention
+export type CandidatesOutput = z.infer<typeof CandidatesOutput>;
+export type BallotsLongOutput = z.infer<typeof BallotsLongOutput>;
+export type CandidatesStats = z.infer<typeof CandidatesStats>;
+export type BallotsLongStats = z.infer<typeof BallotsLongStats>;
+export type IngestCvrOutput = z.infer<typeof IngestCvrOutput>;
+
+// Legacy exports for backward compatibility
+export const IngestCvrOutputSchema = IngestCvrOutput;
+
+export const version = "1.0.0";
+export const CONTRACT_VERSION = version;
 
 export const SQL_QUERIES = {
   createRawTable: (csvPath: string) => `

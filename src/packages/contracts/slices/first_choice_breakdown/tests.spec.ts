@@ -1,8 +1,18 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { existsSync, unlinkSync, readFileSync, writeFileSync } from "fs";
 import { computeFirstChoiceBreakdown } from "./compute.js";
-import { FirstChoiceBreakdownOutput } from "./index.contract.js";
+import {
+  FirstChoiceBreakdownOutput,
+  Output,
+  Stats,
+  version,
+} from "./index.contract.js";
 import { ingestCvr } from "../ingest_cvr/compute.js";
+import {
+  parseAllRows,
+  assertTableColumns,
+  assertManifestSection,
+} from "../../lib/contract-enforcer.js";
 
 describe("first_choice_breakdown", () => {
   const originalEnv = process.env.SRC_CSV;
@@ -66,7 +76,8 @@ describe("first_choice_breakdown", () => {
     expect(existsSync("manifest.json")).toBe(true);
 
     const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
-    const entry = manifest["first_choice_breakdown@1.0.0"];
+    const manifestKey = `first_choice_breakdown@${version}`;
+    const entry = manifest[manifestKey];
 
     expect(entry).toBeDefined();
     expect(entry.files).toContain("data/summary/first_choice.parquet");
@@ -77,7 +88,10 @@ describe("first_choice_breakdown", () => {
     expect(entry.stats.candidate_count).toBe(5);
     expect(entry.stats.sum_first_choice).toBe(12);
     expect(entry.data.rows).toBe(5);
-    expect(entry.datasetVersion).toBe("1.0.0");
+    expect(entry.datasetVersion).toBe(version);
+
+    // ENFORCE CONTRACT: Validate manifest section
+    assertManifestSection("manifest.json", manifestKey, Stats);
   });
 
   it("should maintain consistent file hashing", async () => {
@@ -118,7 +132,7 @@ describe("first_choice_breakdown", () => {
   it("should validate percentage calculations", async () => {
     await computeFirstChoiceBreakdown();
 
-    // Manually verify percentages by reading the parquet file
+    // ENFORCE CONTRACT: Validate using contract enforcer
     const { DuckDBInstance } = await import("@duckdb/node-api");
     const instance = await DuckDBInstance.create();
     const conn = await instance.connect();
@@ -128,24 +142,22 @@ describe("first_choice_breakdown", () => {
         "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
       );
 
-      // Check percentage bounds
-      const boundsResult = await conn.run(
-        "SELECT MIN(pct) as min_pct, MAX(pct) as max_pct, SUM(pct) as total_pct FROM first_choice;",
-      );
-      const bounds = await boundsResult.getRowObjects();
+      // ENFORCE CONTRACT: Validate table schema and all rows
+      await assertTableColumns(conn, "first_choice", Output);
+      const validatedRows = await parseAllRows(conn, "first_choice", Output);
 
-      expect(bounds[0].min_pct).toBeGreaterThanOrEqual(0);
-      expect(bounds[0].max_pct).toBeLessThanOrEqual(100);
-      expect(Math.abs(Number(bounds[0].total_pct) - 100)).toBeLessThanOrEqual(
-        0.01,
-      );
+      // All validation is now done through contract enforcement
+      expect(validatedRows.length).toBeGreaterThan(0);
 
-      // Check vote counts sum to expected total
-      const votesResult = await conn.run(
-        "SELECT SUM(first_choice_votes) as total_votes FROM first_choice;",
+      // Verify percentage constraints through validated data
+      const totalPct = validatedRows.reduce((sum, row) => sum + row.pct, 0);
+      expect(Math.abs(totalPct - 100)).toBeLessThanOrEqual(0.01);
+
+      const totalVotes = validatedRows.reduce(
+        (sum, row) => sum + row.first_choice_votes,
+        0,
       );
-      const votes = await votesResult.getRowObjects();
-      expect(Number(votes[0].total_votes)).toBe(12);
+      expect(totalVotes).toBe(12);
     } finally {
       await conn.closeSync();
     }

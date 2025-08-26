@@ -21,10 +21,30 @@ fix issues as they arise, commit often to surface the issues quickly.
 
 **User Experience**: This platform serves researchers, campaigns, and citizens. Maintain the educational approach with clear explanations and interactive guidance.
 
+### Contract-First Architecture
+
+**CRITICAL**: This project uses a contract-first approach where Zod schemas are the single source of truth for all data structures. Every slice must enforce runtime validation.
+
+**Mandatory Contract Enforcement**: Every slice compute function MUST:
+1. Call `assertTableColumns(conn, 'table_name', OutputSchema)` before exporting artifacts
+2. Use `parseAllRows(conn, 'table_name', OutputSchema)` to validate ALL data through Zod
+3. Derive manifest stats from validated parsed data (not separate SQL queries)
+4. Call `assertManifestSection(manifestPath, key, StatsSchema)` after manifest update
+5. Use `sha256(filePath)` from contract-enforcer for deterministic hashing
+
+**If contract enforcement is skipped, the build MUST fail.** This prevents schema drift and ensures data integrity.
+
+**Guardrails for Contract Enforcement**:
+- Import contract enforcer utilities: `import { assertTableColumns, parseAllRows, assertManifestSection, sha256 } from "../../lib/contract-enforcer.js"`
+- Define `Output`, `Stats`, and `Data` schemas in index.contract.ts following naming convention
+- Use `.nonnegative()` instead of `.min(0)` and `.positive()` instead of `.min(1)` for clarity
+- Always validate before export: if validation fails, STOP and print diagnostic
+- Stats must be derived from validated parsed rows, not separate SQL
+
 * Every task: one **vertical slice** = contract + SQL + compute + view + story + manifest + tests.
 * Guardrails prevent scope creep and thrash.
 
-Universal “kickoff” wrapper (prepend to any prompt): **You are implementing ONE feature slice end-to-end. Do not change any unrelated files. Follow “Scope” and “Done When” exactly. If you hit blockers, stop and print a short diagnostic + proposed next step.**
+Universal "kickoff" wrapper (prepend to any prompt): **You are implementing ONE feature slice end-to-end. Do not change any unrelated files. Follow "Scope" and "Done When" exactly. If you hit blockers, stop and print a short diagnostic + proposed next step.**
 
 ## Project Overview
 

@@ -2,33 +2,29 @@ import { DuckDBInstance } from "@duckdb/node-api";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { dirname } from "path";
 import { mkdirSync } from "fs";
-import { createHash } from "crypto";
 import {
   FirstChoiceBreakdownOutput,
   FirstChoiceBreakdownOutputSchema,
-  CONTRACT_VERSION,
+  Output,
+  Stats,
+  Data,
+  version,
   SQL_QUERIES,
 } from "./index.contract.js";
+import {
+  parseAllRows,
+  assertTableColumns,
+  assertManifestSection,
+  sha256,
+  preprocessDuckDBRow,
+} from "../../lib/contract-enforcer.js";
 
 interface ManifestEntry {
   files: string[];
   hashes: Record<string, string>;
-  stats: {
-    total_valid_ballots: number;
-    candidate_count: number;
-    sum_first_choice: number;
-  };
-  data: {
-    rows: number;
-  };
+  stats: Stats;
+  data: Data;
   datasetVersion: string;
-}
-
-function calculateFileHash(filePath: string): string {
-  const fileBuffer = readFileSync(filePath);
-  const hashSum = createHash("sha256");
-  hashSum.update(fileBuffer);
-  return hashSum.digest("hex");
 }
 
 export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdownOutput> {
@@ -54,33 +50,63 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
     // Step 2: Ensure output directory exists
     mkdirSync("data/summary", { recursive: true });
 
-    // Step 3: Export first choice breakdown to parquet
-    console.log("Computing and exporting first choice breakdown...");
+    // Step 3: Create temporary table for validation
+    console.log("Computing first choice breakdown...");
     await conn.run(SQL_QUERIES.exportFirstChoice);
-    await conn.run(SQL_QUERIES.copyToParquet);
 
-    // Step 4: Get statistics
-    console.log("Computing statistics...");
-    const statsResult = await conn.run(SQL_QUERIES.getFirstChoiceStats);
-    const statsArray = await statsResult.getRowObjects();
-    const rawResult = statsArray[0];
+    // Step 4: ENFORCE CONTRACT - Validate schema before exporting
+    console.log("Enforcing contract: validating table schema...");
+    await assertTableColumns(conn, "first_choice_breakdown", Output);
 
-    // Parse the JSON result from DuckDB
-    const resultValue = rawResult.result as unknown;
-    if (resultValue == null) {
-      throw new Error("getFirstChoiceStats returned null result");
+    // Step 5: ENFORCE CONTRACT - Validate all data through Zod
+    console.log("Enforcing contract: validating all rows...");
+    const validatedRows = await parseAllRows(
+      conn,
+      "first_choice_breakdown",
+      Output,
+    );
+
+    if (validatedRows.length === 0) {
+      throw new Error("No valid rows found in first_choice_breakdown table");
     }
-    const resultObject =
-      typeof resultValue === "string" ? JSON.parse(resultValue) : resultValue;
-    const parsedResult = FirstChoiceBreakdownOutputSchema.parse(resultObject);
+
+    // Step 6: Derive stats from validated data (not from separate SQL)
+    const stats: Stats = {
+      total_valid_ballots: validatedRows.reduce(
+        (sum, row) => sum + row.first_choice_votes,
+        0,
+      ),
+      candidate_count: validatedRows.length,
+      sum_first_choice: validatedRows.reduce(
+        (sum, row) => sum + row.first_choice_votes,
+        0,
+      ),
+    };
+
+    const data: Data = {
+      rows: validatedRows.length,
+    };
+
+    // Validate stats through Zod schema
+    const validatedStats = Stats.parse(stats);
+    const validatedData = Data.parse(data);
+
+    // Step 7: Export to parquet after contract validation
+    console.log("Exporting validated data to parquet...");
+    await conn.run(SQL_QUERIES.copyToParquet);
 
     await conn.run("COMMIT");
 
-    // Step 5: Calculate file hash
+    // Step 8: Calculate file hash using contract enforcer
     const outputPath = "data/summary/first_choice.parquet";
-    const fileHash = calculateFileHash(outputPath);
+    const fileHash = sha256(outputPath);
 
-    // Step 6: Update manifest.json
+    const parsedResult: FirstChoiceBreakdownOutput = {
+      stats: validatedStats,
+      data: validatedData,
+    };
+
+    // Step 9: Update manifest.json
     const manifestPath = "manifest.json";
     let manifest: Record<string, ManifestEntry> = {};
 
@@ -94,17 +120,22 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
       }
     }
 
-    manifest[`first_choice_breakdown@${CONTRACT_VERSION}`] = {
+    const manifestKey = `first_choice_breakdown@${version}`;
+    manifest[manifestKey] = {
       files: ["data/summary/first_choice.parquet"],
       hashes: {
         "data/summary/first_choice.parquet": fileHash,
       },
       stats: parsedResult.stats,
       data: parsedResult.data,
-      datasetVersion: CONTRACT_VERSION,
+      datasetVersion: version,
     };
 
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+    // Step 10: ENFORCE CONTRACT - Validate manifest section
+    console.log("Enforcing contract: validating manifest section...");
+    assertManifestSection(manifestPath, manifestKey, Stats);
 
     console.log(`First choice breakdown completed:`);
     console.log(

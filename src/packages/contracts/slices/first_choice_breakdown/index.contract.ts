@@ -1,30 +1,47 @@
 import { z } from "zod";
 
-export const FirstChoiceBreakdownRowSchema = z.object({
+// Output schema - defines the structure of each row in the first_choice.parquet file
+export const Output = z.object({
   candidate_name: z.string().min(1),
-  first_choice_votes: z.number().int().min(0),
+  first_choice_votes: z.number().int().nonnegative(),
   pct: z.number().min(0).max(100),
 });
 
-export const FirstChoiceBreakdownOutputSchema = z.object({
-  stats: z.object({
-    total_valid_ballots: z.number().int().min(0),
-    candidate_count: z.number().int().min(0),
-    sum_first_choice: z.number().int().min(0),
-  }),
-  data: z.object({
-    rows: z.number().int().min(0),
-  }),
+// Stats schema - defines the structure of manifest stats section
+export const Stats = z.object({
+  total_valid_ballots: z.number().int().nonnegative(),
+  candidate_count: z.number().int().positive(),
+  sum_first_choice: z.number().int().nonnegative(),
 });
 
-export type FirstChoiceBreakdownRow = z.infer<
-  typeof FirstChoiceBreakdownRowSchema
->;
+// Data schema - defines the structure of manifest data section
+export const Data = z.object({
+  rows: z.number().int().nonnegative(),
+});
+
+// Full output schema for compute function return
+export const FirstChoiceBreakdownOutput = z.object({
+  stats: Stats,
+  data: Data,
+});
+
+// Type exports following new naming convention
+export type Output = z.infer<typeof Output>;
+export type Stats = z.infer<typeof Stats>;
+export type Data = z.infer<typeof Data>;
 export type FirstChoiceBreakdownOutput = z.infer<
-  typeof FirstChoiceBreakdownOutputSchema
+  typeof FirstChoiceBreakdownOutput
 >;
 
-export const CONTRACT_VERSION = "1.0.0";
+// Legacy type exports for backward compatibility (to be removed later)
+export const FirstChoiceBreakdownRowSchema = Output;
+export const FirstChoiceBreakdownOutputSchema = FirstChoiceBreakdownOutput;
+export type FirstChoiceBreakdownRow = Output;
+
+export const version = "1.0.0";
+
+// Legacy export for backward compatibility
+export const CONTRACT_VERSION = version;
 
 export const SQL_QUERIES = {
   createFirstChoiceView: `
