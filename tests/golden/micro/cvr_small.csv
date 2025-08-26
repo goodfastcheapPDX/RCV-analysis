@@ -1,0 +1,13 @@
+"BallotID","PrecinctID","BallotStyleID","Status","Choice_36_1:City of Portland, Councilor, District 2:1:Number of Winners 3:Alice:NON","Choice_36_1:City of Portland, Councilor, District 2:2:Number of Winners 3:Alice:NON","Choice_36_1:City of Portland, Councilor, District 2:3:Number of Winners 3:Alice:NON","Choice_37_1:City of Portland, Councilor, District 2:1:Number of Winners 3:Bob:NON","Choice_37_1:City of Portland, Councilor, District 2:2:Number of Winners 3:Bob:NON","Choice_37_1:City of Portland, Councilor, District 2:3:Number of Winners 3:Bob:NON","Choice_38_1:City of Portland, Councilor, District 2:1:Number of Winners 3:Charlie:NON","Choice_38_1:City of Portland, Councilor, District 2:2:Number of Winners 3:Charlie:NON","Choice_38_1:City of Portland, Councilor, District 2:3:Number of Winners 3:Charlie:NON","Choice_39_1:City of Portland, Councilor, District 2:1:Number of Winners 3:Diana:NON","Choice_39_1:City of Portland, Councilor, District 2:2:Number of Winners 3:Diana:NON","Choice_39_1:City of Portland, Councilor, District 2:3:Number of Winners 3:Diana:NON","Choice_40_1:City of Portland, Councilor, District 2:1:Number of Winners 3:Eve:NON","Choice_40_1:City of Portland, Councilor, District 2:2:Number of Winners 3:Eve:NON","Choice_40_1:City of Portland, Councilor, District 2:3:Number of Winners 3:Eve:NON"
+"B001","P01","S01",0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0
+"B002","P01","S01",0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,0
+"B003","P02","S01",0,0,0,1,1,0,0,0,1,0,0,0,0,0,0,0
+"B004","P02","S01",0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,1
+"B005","P01","S02",0,0,0,0,0,0,1,1,0,0,0,0,1,0,0,0
+"B006","P01","S02",0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0
+"B007","P02","S02",0,0,1,0,0,0,0,0,0,1,1,0,0,0,0,0
+"B008","P02","S02",0,0,0,0,1,0,0,0,0,0,0,1,0,0,1,0
+"B009","P01","S01",0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,0
+"B010","P01","S01",0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0
+"B011","P02","S01",0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0
+"B012","P02","S01",1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0
