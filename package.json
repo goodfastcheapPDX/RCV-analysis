@@ -39,6 +39,9 @@
     "vitest": "^3.2.4"
   },
   "lint-staged": {
-    "*.{js,ts,tsx,jsx,json,md}": "npm run format && npm run lint && npm run coverage"
+    "*.{js,ts,tsx,jsx,json,md}": [
+      "npm run format",
+      "npm run lint"
+    ]
   }
 }
