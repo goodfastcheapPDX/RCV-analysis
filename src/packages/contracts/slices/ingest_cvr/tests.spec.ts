@@ -202,4 +202,27 @@ describe("ingest_cvr", () => {
       unlinkSync(district1CsvPath);
     }
   });
+
+  it("should ingest canonical District 2 subset with real candidate data", async () => {
+    const originalEnv = process.env.SRC_CSV;
+    process.env.SRC_CSV = "tests/golden/micro/canonical_subset.csv";
+
+    try {
+      const result = await ingestCvr();
+
+      // Verify it processes the canonical format successfully
+      expect(result.candidates.rows).toBeGreaterThan(0); // Should find real candidates
+      expect(result.ballots_long.ballots).toBe(14); // 14 valid ballots (Status=0, excluding Status=-1)
+      expect(result.ballots_long.rows).toBeGreaterThan(14); // Should have vote records
+      expect(result.ballots_long.min_rank).toBe(1);
+      expect(result.ballots_long.max_rank).toBeLessThanOrEqual(6); // Portland allows up to 6 ranks
+      expect(result.ballots_long.candidates).toBeGreaterThan(1); // Multiple candidates receiving votes
+
+      // Verify Parquet files are created
+      expect(existsSync("data/ingest/candidates.parquet")).toBe(true);
+      expect(existsSync("data/ingest/ballots_long.parquet")).toBe(true);
+    } finally {
+      process.env.SRC_CSV = originalEnv;
+    }
+  });
 });
