@@ -21,6 +21,10 @@ fix issues as they arise, commit often to surface the issues quickly.
 
 **User Experience**: This platform serves researchers, campaigns, and citizens. Maintain the educational approach with clear explanations and interactive guidance.
 
+* Every task: one **vertical slice** = contract + SQL + compute + view + story + manifest + tests.
+* Guardrails prevent scope creep and thrash.
+
+Universal “kickoff” wrapper (prepend to any prompt): **You are implementing ONE feature slice end-to-end. Do not change any unrelated files. Follow “Scope” and “Done When” exactly. If you hit blockers, stop and print a short diagnostic + proposed next step.**
 
 ## Project Overview
 
