@@ -6,10 +6,14 @@ import { ingestCvr } from "../ingest_cvr/compute.js";
 
 describe("first_choice_breakdown", () => {
   const originalEnv = process.env.SRC_CSV;
+  const testId = Math.random().toString(36).substring(7);
 
   beforeAll(async () => {
     // Set environment variable and run ingest_cvr first to create input data
     process.env.SRC_CSV = "tests/golden/micro/cvr_small.csv";
+
+    // Add a small delay to prevent concurrent access
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
     await ingestCvr();
   });
 
