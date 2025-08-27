@@ -37,14 +37,8 @@ export function FirstChoiceBreakdownView({
     (a, b) => b.first_choice_votes - a.first_choice_votes,
   );
 
-  // Dynamic chart colors using CSS custom properties
+  // Reliable color palette for all candidates
   const colors = [
-    "hsl(var(--chart-1))",
-    "hsl(var(--chart-2))",
-    "hsl(var(--chart-3))",
-    "hsl(var(--chart-4))",
-    "hsl(var(--chart-5))",
-    // Fallback colors for additional candidates
     "#3b82f6", // blue-500
     "#ef4444", // red-500
     "#10b981", // emerald-500
@@ -52,6 +46,11 @@ export function FirstChoiceBreakdownView({
     "#8b5cf6", // violet-500
     "#06b6d4", // cyan-500
     "#84cc16", // lime-500
+    "#f97316", // orange-500
+    "#ec4899", // pink-500
+    "#14b8a6", // teal-500
+    "#a855f7", // purple-500
+    "#22c55e", // green-500
   ];
 
   // Create chart config and data with individual colors for each candidate
