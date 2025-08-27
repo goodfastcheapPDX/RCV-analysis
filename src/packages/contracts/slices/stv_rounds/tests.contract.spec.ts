@@ -8,12 +8,14 @@ import {
 } from "./index.contract.js";
 
 // Mock the contract enforcer functions
-vi.mock("../../lib/contract-enforcer.js", () => {
+vi.mock("../../lib/contract-enforcer.js", async (importOriginal) => {
+  const actual: any = await importOriginal();
   let validateCalls: any[] = [];
   let parseCallsCounter = 0;
   let assertManifestCalls: any[] = [];
 
   return {
+    ...actual,
     assertTableColumns: vi.fn(
       async (conn: DuckDBConnection, table: string, schema: any) => {
         validateCalls.push({
@@ -76,6 +78,10 @@ vi.mock("../../lib/contract-enforcer.js", () => {
     sha256: vi.fn(
       (filePath: string) => `mock-hash-${filePath.split("/").pop()}`,
     ),
+    validateDependencies: vi.fn(() => {
+      // Mock successful dependency validation by default
+      return;
+    }),
     __getValidateCalls: () => validateCalls,
     __getParseCallsCounter: () => parseCallsCounter,
     __getAssertManifestCalls: () => assertManifestCalls,
@@ -224,7 +230,7 @@ describe("STV Rounds Contract Tests", () => {
     );
 
     expect(contractEnforcer.assertManifestSection).toHaveBeenCalledWith(
-      expect.stringContaining("manifest.json"),
+      expect.stringContaining("manifest.test.json"),
       expect.stringMatching(/^stv_rounds@\d+\.\d+\.\d+$/),
       StvRoundsStats,
     );

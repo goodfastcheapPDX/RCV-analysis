@@ -5,24 +5,37 @@
       "data/dev/ingest/ballots_long.parquet"
     ],
     "hashes": {},
-    "rows": 344920,
+    "rows": 31,
     "min_rank": 1,
-    "max_rank": 6,
+    "max_rank": 3,
     "duplicate_ballots": 0,
     "datasetVersion": "1.0.0"
+  },
+  "stv_rounds@1.0.0": {
+    "stats": {
+      "number_of_rounds": 4,
+      "winners": ["Bob", "Charlie", "Diana"],
+      "seats": 3,
+      "first_round_quota": 3,
+      "precision": 0.000001
+    },
+    "stv_rounds_hash": "d862be5204afa35da675334e93a67d4c8e4146d8a712314755fac6fb72ceb8f7",
+    "stv_meta_hash": "a84b5a53f7169b6668fcec2d34fdbcb094f87ed1ab8fb494d3bf781b075f3807",
+    "version": "1.0.0",
+    "created_at": "2025-08-27T16:37:29.659Z"
   },
   "first_choice_breakdown@1.0.0": {
     "files": ["data/dev/summary/first_choice.parquet"],
     "hashes": {
-      "data/dev/summary/first_choice.parquet": "604bfb60966fa8e4561b8850e03ced1c5522a49f4a7efdd9f7bdf78513478509"
+      "data/dev/summary/first_choice.parquet": "d16a2c9dcc26e7c34ac0bb842fd552dd8b415dacabf7dbed12dd7ee3ce470e60"
     },
     "stats": {
-      "total_valid_ballots": 75335,
-      "candidate_count": 26,
-      "sum_first_choice": 75335
+      "total_valid_ballots": 12,
+      "candidate_count": 5,
+      "sum_first_choice": 12
     },
     "data": {
-      "rows": 26
+      "rows": 5
     },
     "datasetVersion": "1.0.0"
   }

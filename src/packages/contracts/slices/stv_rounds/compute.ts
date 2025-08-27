@@ -1,12 +1,15 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import yaml from "js-yaml";
+import { getArtifactPaths } from "../../lib/artifact-paths.js";
 import {
   assertManifestSection,
   assertTableColumns,
+  type DependencySpec,
   parseAllRows,
   sha256,
+  validateDependencies,
 } from "../../lib/contract-enforcer.js";
 import { type BallotData, runSTV } from "./engine.js";
 import {
@@ -28,17 +31,41 @@ interface EnvironmentConfig {
  */
 export async function computeStvRounds(): Promise<StvRoundsStats> {
   const config = getEnvironmentConfig();
+  const paths = getArtifactPaths();
+
+  // Validate dependencies before proceeding
+  const dependencies: DependencySpec[] = [
+    {
+      key: `ingest_cvr@1.0.0`,
+      minVersion: "1.0.0",
+      buildCommand: "npm run build:data",
+      artifacts: [
+        {
+          path: paths.ingest.ballotsLong,
+          hashKey: "ballots_long_hash",
+        },
+        {
+          path: paths.ingest.candidates,
+          hashKey: "candidates_hash",
+        },
+      ],
+    },
+  ];
+
+  console.log("Validating dependencies...");
+  validateDependencies(paths.manifest, dependencies);
+  console.log("✅ All dependencies validated");
+
   const db = await DuckDBInstance.create();
   const conn = await db.connect();
 
   try {
     // Load ballot data from parquet
-    const ballotsPath = `data/${config.env}/ingest/ballots_long.parquet`;
-    console.log(`Loading ballots from: ${ballotsPath}`);
+    console.log(`Loading ballots from: ${paths.ingest.ballotsLong}`);
 
     await conn.run(`
       CREATE VIEW ballots_long AS 
-      SELECT * FROM '${ballotsPath}'
+      SELECT * FROM '${paths.ingest.ballotsLong}'
     `);
 
     // Load ballot data for STV engine
@@ -157,13 +184,12 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
     const validatedStats = StvRoundsStats.parse(stats);
 
     // Update manifest
-    const manifestPath = `data/${config.env}/manifest.json`;
-    const manifestData = existsSync(manifestPath)
-      ? JSON.parse(readFileSync(manifestPath, "utf-8"))
+    const manifestData = existsSync(paths.manifest)
+      ? JSON.parse(readFileSync(paths.manifest, "utf-8"))
       : {};
 
     const manifestSection = {
-      ...validatedStats,
+      stats: validatedStats,
       stv_rounds_hash: sha256(roundsPath),
       stv_meta_hash: sha256(metaPath),
       version,
@@ -173,21 +199,17 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
     manifestData[`stv_rounds@${version}`] = manifestSection;
 
     // Write updated manifest
-    mkdirSync(dirname(manifestPath), { recursive: true });
-    await conn.run(`
-      COPY (
-        SELECT '${JSON.stringify(manifestData, null, 2).replace(/'/g, "''")}'::JSON
-      ) TO '${manifestPath}' (FORMAT 'json')
-    `);
+    mkdirSync(dirname(paths.manifest), { recursive: true });
+    writeFileSync(paths.manifest, JSON.stringify(manifestData, null, 2));
 
     // Assert manifest section
     await assertManifestSection(
-      manifestPath,
+      paths.manifest,
       `stv_rounds@${version}`,
       StvRoundsStats,
     );
 
-    console.log(`Updated manifest: ${manifestPath}`);
+    console.log(`Updated manifest: ${paths.manifest}`);
     return validatedStats;
   } finally {
     await conn.closeSync();

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import type { DuckDBConnection } from "@duckdb/node-api";
 import type { z } from "zod";
 
@@ -213,10 +213,135 @@ export function preprocessDuckDBRow(
     // Convert bigint to number for count/sum fields
     if (typeof value === "bigint") {
       processed[key] = Number(value);
+    }
+    // Convert DuckDB LIST/ARRAY values to plain JavaScript arrays
+    else if (value && typeof value === "object" && "items" in value) {
+      processed[key] = (value as { items: unknown[] }).items;
     } else {
       processed[key] = value;
     }
   }
 
   return processed;
+}
+
+/**
+ * Validate dependencies from manifest before running a slice compute function.
+ * This ensures required artifacts exist, have correct versions, and pass integrity checks.
+ *
+ * @param manifestPath - Path to manifest.json file
+ * @param dependencies - Array of dependency specifications
+ */
+export function validateDependencies(
+  manifestPath: string,
+  dependencies: DependencySpec[],
+): void {
+  if (!existsSync(manifestPath)) {
+    throw new Error(
+      `Manifest not found: ${manifestPath}. Run prerequisite data ingestion first.`,
+    );
+  }
+
+  let manifest: Record<string, any>;
+  try {
+    const manifestContent = readFileSync(manifestPath, "utf8");
+    manifest = JSON.parse(manifestContent);
+  } catch (error) {
+    throw new Error(
+      `Failed to parse manifest ${manifestPath}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+
+  for (const dep of dependencies) {
+    // Check manifest entry exists
+    if (!manifest[dep.key]) {
+      throw new Error(
+        `Missing dependency '${dep.key}' in manifest. Run: ${dep.buildCommand}`,
+      );
+    }
+
+    const entry = manifest[dep.key];
+
+    // Check version compatibility if specified
+    if (dep.minVersion && entry.version) {
+      if (!isVersionCompatible(entry.version, dep.minVersion)) {
+        throw new Error(
+          `Dependency '${dep.key}' version ${entry.version} is incompatible with required ${dep.minVersion}. Run: ${dep.buildCommand}`,
+        );
+      }
+    }
+
+    // Check file existence and integrity
+    for (const artifact of dep.artifacts) {
+      if (!existsSync(artifact.path)) {
+        throw new Error(
+          `Missing artifact file: ${artifact.path}. Run: ${dep.buildCommand}`,
+        );
+      }
+
+      // Verify file integrity using SHA256 hash
+      const expectedHash = entry[artifact.hashKey];
+      if (expectedHash) {
+        let actualHash: string;
+        try {
+          actualHash = sha256(artifact.path);
+        } catch (error) {
+          throw new Error(
+            `Failed to verify integrity of ${artifact.path}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
+
+        if (actualHash !== expectedHash) {
+          throw new Error(
+            `Artifact integrity check failed for ${artifact.path}. ` +
+              `Expected hash: ${expectedHash}, actual: ${actualHash}. ` +
+              `Run: ${dep.buildCommand}`,
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Specification for a dependency that should be validated
+ */
+export interface DependencySpec {
+  /** Manifest key to check (e.g., "ingest_cvr@1.0.0") */
+  key: string;
+  /** Minimum compatible version (optional) */
+  minVersion?: string;
+  /** Command to run if dependency is missing/invalid */
+  buildCommand: string;
+  /** Artifacts to check for existence and integrity */
+  artifacts: {
+    /** Path to the artifact file */
+    path: string;
+    /** Key in manifest entry containing the expected SHA256 hash */
+    hashKey: string;
+  }[];
+}
+
+/**
+ * Simple semantic version compatibility check.
+ * Returns true if actual version is >= required version.
+ */
+function isVersionCompatible(actual: string, required: string): boolean {
+  const parseVersion = (v: string) => v.split(".").map(Number);
+  const actualParts = parseVersion(actual);
+  const requiredParts = parseVersion(required);
+
+  for (let i = 0; i < Math.max(actualParts.length, requiredParts.length); i++) {
+    const actualPart = actualParts[i] || 0;
+    const requiredPart = requiredParts[i] || 0;
+
+    if (actualPart > requiredPart) return true;
+    if (actualPart < requiredPart) return false;
+  }
+
+  return true; // Equal versions are compatible
 }
