@@ -43,7 +43,9 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
     await conn.run("BEGIN TRANSACTION");
 
     // Step 1: Create view from existing ballots_long parquet
-    console.log("Creating ballots_long view...");
+    console.log(
+      `Creating ballots_long view from ${paths.ingest.ballotsLong}...`,
+    );
     await conn.run(
       `CREATE OR REPLACE VIEW ballots_long AS SELECT * FROM '${paths.ingest.ballotsLong}';`,
     );
@@ -93,7 +95,7 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
     const validatedData = Data.parse(data);
 
     // Step 7: Export to parquet after contract validation
-    console.log("Exporting validated data to parquet...");
+    console.log(`Exporting validated data to ${paths.summary.firstChoice}...`);
     await conn.run(
       `COPY first_choice_breakdown TO '${paths.summary.firstChoice}' (FORMAT 'parquet');`,
     );

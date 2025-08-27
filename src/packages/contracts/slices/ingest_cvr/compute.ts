@@ -77,13 +77,13 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
     await conn.run(finalBallotsLongQuery);
 
     // Step 6: Export to Arrow format
-    console.log("Exporting candidates to Arrow format...");
+    console.log(`Exporting candidates to ${paths.ingest.candidates}...`);
     mkdirSync(dirname(paths.ingest.candidates), { recursive: true });
     await conn.run(
       `COPY candidates TO '${paths.ingest.candidates}' (FORMAT PARQUET)`,
     );
 
-    console.log("Exporting ballots_long to Arrow format...");
+    console.log(`Exporting ballots_long to ${paths.ingest.ballotsLong}...`);
     mkdirSync(dirname(paths.ingest.ballotsLong), { recursive: true });
     await conn.run(
       `COPY ballots_long TO '${paths.ingest.ballotsLong}' (FORMAT PARQUET)`,
