@@ -8,8 +8,8 @@ A comprehensive analysis platform for ranked-choice voting elections, featuring 
 - never work beyond the scope of CURRENT_TASK.md
 - never update CURRENT_TASK.md without explicit instruction to do so
 `git commit --no-verify` is never allowed. do not use the `--no-verify` option with any git command, ever, for any reason. there will be profound consequences if you do. if an attempted commit results in significant errors outside the scope of the current work, that's fine. just incorporate those fixes into the current work. treat them as a top priority.
-
-stop and commit frequently as you make progress. a git commit should accompany at least every individual task or todo you complete. it is better to have too many commits than too few. the more often you commit, the less likely you are to run into unrelated failures and issues
+- use absolute import paths throughout the project. `import Module from '@/src/lib/Module'` as opposed to `import Module from '../../lib/Module'` for example
+- stop and commit frequently as you make progress. a git commit should accompany at least every individual task or todo you complete. it is better to have too many commits than too few. the more often you commit, the less likely you are to run into unrelated failures and issues
 
 fix issues as they arise, commit often to surface the issues quickly.
 

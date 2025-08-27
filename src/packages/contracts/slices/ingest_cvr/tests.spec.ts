@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { existsSync, unlinkSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ingestCvr } from "./compute.js";
-import { IngestCvrOutput } from "./index.contract.js";
+import type { IngestCvrOutput } from "./index.contract.js";
 
 describe("ingest_cvr", () => {
   const originalEnv = process.env.SRC_CSV;
@@ -125,7 +125,7 @@ describe("ingest_cvr", () => {
   it("should warn when max rank exceeds 10", async () => {
     // Create a CSV with high rank values
     const highRankCsvPath = "tests/golden/micro/high_rank_cvr.csv";
-    const fs = require("fs");
+    const fs = require("node:fs");
     const header =
       '"BallotID","PrecinctID","BallotStyleID","Status","Choice_36_1:City of Portland, Councilor, District 2:15:Number of Winners 3:TestCandidate:NON"';
     const data = '"B001","P01","S01",0,1';
@@ -151,7 +151,7 @@ describe("ingest_cvr", () => {
 
   it("should handle corrupted manifest.json", async () => {
     // Create a corrupted manifest.json
-    const fs = require("fs");
+    const fs = require("node:fs");
     fs.writeFileSync("manifest.json", "invalid json content");
 
     // Spy on console.warn

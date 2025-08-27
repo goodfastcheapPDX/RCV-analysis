@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { readFileSync } from "fs";
-import { createHash } from "crypto";
-import { DuckDBConnection } from "@duckdb/node-api";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import type { DuckDBConnection } from "@duckdb/node-api";
+import type { z } from "zod";
 
 /**
  * Contract enforcement utilities for ensuring runtime validation of slice outputs.
@@ -37,7 +37,7 @@ export async function parseAllRows<T extends z.ZodTypeAny>(
         // Convert row to JSON safely, handling BigInt
         const safeRowJson = JSON.stringify(
           row,
-          (key, value) => (typeof value === "bigint" ? Number(value) : value),
+          (_key, value) => (typeof value === "bigint" ? Number(value) : value),
           2,
         );
 
@@ -73,7 +73,7 @@ export async function assertTableColumns<T extends z.ZodRawShape>(
   try {
     const result = await conn.run(`PRAGMA table_info('${table}')`);
     const tableInfo = await result.getRowObjects();
-    const actualColumns = tableInfo.map((col: any) => col.name as string);
+    const actualColumns = tableInfo.map((col) => col.name as string);
 
     const expectedColumns = Object.keys(Output.shape);
     const actualSet = new Set(actualColumns);
@@ -205,9 +205,9 @@ export function toBigIntSafe(value: unknown): number {
  * @returns Row with converted types
  */
 export function preprocessDuckDBRow(
-  row: Record<string, any>,
-): Record<string, any> {
-  const processed: Record<string, any> = {};
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  const processed: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(row)) {
     // Convert bigint to number for count/sum fields

@@ -1,22 +1,27 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { existsSync, unlinkSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  assertManifestSection,
+  assertTableColumns,
+  parseAllRows,
+} from "../../lib/contract-enforcer.js";
+import { ingestCvr } from "../ingest_cvr/compute.js";
 import { computeFirstChoiceBreakdown } from "./compute.js";
 import {
-  FirstChoiceBreakdownOutput,
+  type FirstChoiceBreakdownOutput,
   Output,
   Stats,
   version,
 } from "./index.contract.js";
-import { ingestCvr } from "../ingest_cvr/compute.js";
-import {
-  parseAllRows,
-  assertTableColumns,
-  assertManifestSection,
-} from "../../lib/contract-enforcer.js";
+
+interface DirectQueryResult {
+  candidate_name: string;
+  direct_count: number;
+}
 
 describe("first_choice_breakdown", () => {
   const originalEnv = process.env.SRC_CSV;
-  const testId = Math.random().toString(36).substring(7);
+  const _testId = Math.random().toString(36).substring(7);
 
   beforeAll(async () => {
     // Set environment variable and run ingest_cvr first to create input data
@@ -182,8 +187,8 @@ describe("first_choice_breakdown", () => {
 
       // Verify ordering is by votes DESC, then name ASC
       for (let i = 1; i < rows.length; i++) {
-        const prev = rows[i - 1] as any;
-        const curr = rows[i] as any;
+        const prev = rows[i - 1] as unknown as Output;
+        const curr = rows[i] as unknown as Output;
 
         if (prev.first_choice_votes === curr.first_choice_votes) {
           expect(prev.candidate_name <= curr.candidate_name).toBe(true);
@@ -250,8 +255,8 @@ describe("first_choice_breakdown", () => {
       expect(directRows.length).toBe(computedRows.length);
 
       for (let i = 0; i < directRows.length; i++) {
-        const direct = directRows[i] as any;
-        const computed = computedRows[i] as any;
+        const direct = directRows[i] as unknown as DirectQueryResult;
+        const computed = computedRows[i] as unknown as Output;
         expect(direct.candidate_name).toBe(computed.candidate_name);
         expect(direct.direct_count).toBe(computed.first_choice_votes);
       }

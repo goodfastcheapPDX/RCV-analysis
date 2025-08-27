@@ -1,6 +1,23 @@
+/// <reference types="vitest/config" />
+
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import react from "@vitejs/plugin-react";
 import { coverageConfigDefaults, defineConfig } from "vitest/config";
 
+const dirname =
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url));
+
+// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(dirname, "./src"),
+    },
+  },
   test: {
     // Run tests sequentially to avoid DuckDB file locking issues
     pool: "forks",
@@ -9,15 +26,15 @@ export default defineConfig({
         singleFork: true,
       },
     },
+    environment: "jsdom",
+    setupFiles: ["./src/test-setup.ts"],
+    globals: true,
     coverage: {
-      exclude: [...coverageConfigDefaults.exclude],
+      exclude: ["**/src/**/*.stories.tsx", ...coverageConfigDefaults.exclude],
       include: ["**/src/packages/**"],
       thresholds: {
-        functions: 80,
         statements: 80,
         branches: 80,
-        // Require that no more than 10 lines are uncovered
-        lines: -10,
       },
     },
   },

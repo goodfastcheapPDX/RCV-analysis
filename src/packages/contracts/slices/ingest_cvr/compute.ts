@@ -1,11 +1,10 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { dirname } from "path";
-import { mkdirSync } from "fs";
 import {
-  IngestCvrOutput,
-  IngestCvrOutputSchema,
   CONTRACT_VERSION,
+  type IngestCvrOutput,
+  IngestCvrOutputSchema,
   SQL_QUERIES,
 } from "./index.contract.js";
 
@@ -60,8 +59,8 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
       throw new Error("No candidate columns found. Check CSV header format.");
     }
 
-    const unionQueries = candidateColumns.map((row: any) => {
-      const columnName = row.column_name;
+    const unionQueries = candidateColumns.map((row) => {
+      const columnName = row.column_name as string;
       return `SELECT BallotID, PrecinctID, BallotStyleID, '${columnName}' AS column_name, CAST("${columnName}" AS INTEGER) AS has_vote FROM rcv_raw WHERE Status=0 AND "${columnName}"=1`;
     });
 
@@ -114,7 +113,7 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
     if (existsSync(manifestPath)) {
       try {
         manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-      } catch (error) {
+      } catch (_error) {
         console.warn(
           "Could not parse existing manifest.json, creating new one",
         );

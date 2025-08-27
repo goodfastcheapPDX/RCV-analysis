@@ -1,9 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { readFileSync, existsSync } from "fs";
-import {
-  FirstChoiceBreakdownRowSchema,
-  CONTRACT_VERSION,
-} from "../src/packages/contracts/slices/first_choice_breakdown/index.contract.js";
+import { CONTRACT_VERSION } from "../src/packages/contracts/slices/first_choice_breakdown/index.contract.js";
 
 interface OfficialResult {
   candidate: string;
@@ -205,9 +202,9 @@ async function validateOfficialResults(caseName: string): Promise<void> {
     });
 
     const computedMap = new Map<string, number>();
-    computedRows.forEach((row: any) => {
-      const normalizedName = normalizeCandidate(row.candidate_name);
-      computedMap.set(normalizedName, row.first_choice_votes);
+    computedRows.forEach((row) => {
+      const normalizedName = normalizeCandidate(row.candidate_name as string);
+      computedMap.set(normalizedName, row.first_choice_votes as number);
     });
 
     // Check for missing candidates in either direction
@@ -256,7 +253,7 @@ async function validateOfficialResults(caseName: string): Promise<void> {
 
 async function main() {
   const args = process.argv.slice(2);
-  const caseFlag = args.findIndex((arg) => arg === "--case");
+  const caseFlag = args.indexOf("--case");
   const allFlag = args.includes("--all");
 
   try {
@@ -266,7 +263,7 @@ async function main() {
 
     if (allFlag) {
       // Validate against all available golden cases
-      const { readdirSync } = await import("fs");
+      const { readdirSync } = await import("node:fs");
       if (existsSync("tests/golden")) {
         const cases = readdirSync("tests/golden", { withFileTypes: true })
           .filter((dirent) => dirent.isDirectory())

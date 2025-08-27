@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { existsSync, unlinkSync, writeFileSync } from "fs";
+import { existsSync, unlinkSync, writeFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { Output, Stats, version } from "./index.contract.js";
-import { ingestCvr } from "../ingest_cvr/compute.js";
-import { computeFirstChoiceBreakdown } from "./compute.js";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  assertManifestSection,
   assertTableColumns,
   parseAllRows,
-  assertManifestSection,
 } from "../../lib/contract-enforcer.js";
+import { ingestCvr } from "../ingest_cvr/compute.js";
+import { computeFirstChoiceBreakdown } from "./compute.js";
+import { Output, Stats, version } from "./index.contract.js";
 
 describe("first_choice_breakdown contract enforcement", () => {
   const originalEnv = process.env.SRC_CSV;
@@ -78,7 +78,7 @@ describe("first_choice_breakdown contract enforcement", () => {
         expect(rows.length).toBeGreaterThan(0);
 
         // All rows should conform to Output type
-        rows.forEach((row, index) => {
+        rows.forEach((row, _index) => {
           expect(typeof row.candidate_name).toBe("string");
           expect(row.candidate_name.length).toBeGreaterThan(0);
           expect(typeof row.first_choice_votes).toBe("number");

@@ -1,23 +1,19 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { dirname } from "path";
-import { mkdirSync } from "fs";
 import {
-  FirstChoiceBreakdownOutput,
-  FirstChoiceBreakdownOutputSchema,
-  Output,
-  Stats,
-  Data,
-  version,
-  SQL_QUERIES,
-} from "./index.contract.js";
-import {
-  parseAllRows,
-  assertTableColumns,
   assertManifestSection,
+  assertTableColumns,
+  parseAllRows,
   sha256,
-  preprocessDuckDBRow,
 } from "../../lib/contract-enforcer.js";
+import {
+  Data,
+  type FirstChoiceBreakdownOutput,
+  Output,
+  SQL_QUERIES,
+  Stats,
+  version,
+} from "./index.contract.js";
 
 interface ManifestEntry {
   files: string[];
@@ -113,7 +109,7 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
     if (existsSync(manifestPath)) {
       try {
         manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-      } catch (error) {
+      } catch (_error) {
         console.warn(
           "Could not parse existing manifest.json, creating new one",
         );
