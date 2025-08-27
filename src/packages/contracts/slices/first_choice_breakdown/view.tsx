@@ -37,13 +37,20 @@ export function FirstChoiceBreakdownView({
     (a, b) => b.first_choice_votes - a.first_choice_votes,
   );
 
-  // Dynamic chart colors based on number of candidates
+  // Dynamic chart colors - expanded for many candidates
   const colors = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-    "var(--chart-5)",
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))",
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))",
+    "hsl(220, 70%, 50%)",
+    "hsl(300, 70%, 50%)",
+    "hsl(180, 70%, 50%)",
+    "hsl(30, 70%, 50%)",
+    "hsl(270, 70%, 50%)",
+    "hsl(150, 70%, 50%)",
+    "hsl(60, 70%, 50%)",
   ];
 
   // Create chart config and data with individual colors for each candidate
@@ -110,7 +117,7 @@ export function FirstChoiceBreakdownView({
         </div>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+        <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               accessibilityLayer
