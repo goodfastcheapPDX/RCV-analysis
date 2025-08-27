@@ -37,20 +37,21 @@ export function FirstChoiceBreakdownView({
     (a, b) => b.first_choice_votes - a.first_choice_votes,
   );
 
-  // Dynamic chart colors - expanded for many candidates
+  // Dynamic chart colors using CSS custom properties
   const colors = [
     "hsl(var(--chart-1))",
     "hsl(var(--chart-2))",
     "hsl(var(--chart-3))",
     "hsl(var(--chart-4))",
     "hsl(var(--chart-5))",
-    "hsl(220, 70%, 50%)",
-    "hsl(300, 70%, 50%)",
-    "hsl(180, 70%, 50%)",
-    "hsl(30, 70%, 50%)",
-    "hsl(270, 70%, 50%)",
-    "hsl(150, 70%, 50%)",
-    "hsl(60, 70%, 50%)",
+    // Fallback colors for additional candidates
+    "#3b82f6", // blue-500
+    "#ef4444", // red-500
+    "#10b981", // emerald-500
+    "#f59e0b", // amber-500
+    "#8b5cf6", // violet-500
+    "#06b6d4", // cyan-500
+    "#84cc16", // lime-500
   ];
 
   // Create chart config and data with individual colors for each candidate
