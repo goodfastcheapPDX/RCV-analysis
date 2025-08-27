@@ -1,0 +1,843 @@
+{
+  "config": {
+    "contest": "City_of_Portland__Councilor__District_2_2024_11_29_17_26_12",
+    "date": "2024-11-05",
+    "jurisdiction": "City of Portland",
+    "office": "City of Portland, Councilor, District 2",
+    "threshold": "19290"
+  },
+  "results": [
+    {
+      "round": 1,
+      "tally": {
+        "Antonio Jamal PettyJohnBlue": "217",
+        "Bob Simril": "2520",
+        "Chris Olson": "1233",
+        "Dan Ryan": "12047",
+        "Debbie Kitchin": "1228",
+        "Elana Pirtle-Guiney": "12447",
+        "James Armstrong": "1476",
+        "Jennifer Park": "1114",
+        "Jonathan Tasini": "3404",
+        "Laura Streib": "707",
+        "Liz Taylor": "628",
+        "Mariah Hudson": "2287",
+        "Marnie Glickman": "3997",
+        "Michael (Mike) Marshall": "1646",
+        "Michelle DePass": "6838",
+        "Nabil Zaghloul": "834",
+        "Nat West": "5462",
+        "Reuben Berlin": "656",
+        "Sam Sachs": "304",
+        "Sameer Kanal": "9924",
+        "Tiffani Penson": "7218",
+        "Uncertified Write In": "211",
+        "Will Mespelt": "759"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Uncertified Write In",
+          "transfers": {
+            "Antonio Jamal PettyJohnBlue": "2",
+            "Bob Simril": "3",
+            "Chris Olson": "1",
+            "Dan Ryan": "14",
+            "Debbie Kitchin": "5",
+            "Elana Pirtle-Guiney": "5",
+            "James Armstrong": "4",
+            "Jennifer Park": "3",
+            "Jonathan Tasini": "4",
+            "Laura Streib": "1",
+            "Liz Taylor": "2",
+            "Marnie Glickman": "1",
+            "Michael (Mike) Marshall": "1",
+            "Michelle DePass": "9",
+            "Nabil Zaghloul": "1",
+            "Nat West": "4",
+            "Reuben Berlin": "3",
+            "Sam Sachs": "1",
+            "Sameer Kanal": "5",
+            "Tiffani Penson": "6",
+            "Will Mespelt": "3",
+            "exhausted": "133"
+          }
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "tally": {
+        "Antonio Jamal PettyJohnBlue": "219",
+        "Bob Simril": "2523",
+        "Chris Olson": "1234",
+        "Dan Ryan": "12061",
+        "Debbie Kitchin": "1233",
+        "Elana Pirtle-Guiney": "12452",
+        "James Armstrong": "1480",
+        "Jennifer Park": "1117",
+        "Jonathan Tasini": "3408",
+        "Laura Streib": "708",
+        "Liz Taylor": "630",
+        "Mariah Hudson": "2287",
+        "Marnie Glickman": "3998",
+        "Michael (Mike) Marshall": "1647",
+        "Michelle DePass": "6847",
+        "Nabil Zaghloul": "835",
+        "Nat West": "5466",
+        "Reuben Berlin": "659",
+        "Sam Sachs": "305",
+        "Sameer Kanal": "9929",
+        "Tiffani Penson": "7224",
+        "Will Mespelt": "762"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Antonio Jamal PettyJohnBlue",
+          "transfers": {
+            "Bob Simril": "8",
+            "Chris Olson": "4",
+            "Dan Ryan": "5",
+            "Debbie Kitchin": "5",
+            "Elana Pirtle-Guiney": "6",
+            "James Armstrong": "8",
+            "Jennifer Park": "9",
+            "Jonathan Tasini": "7",
+            "Laura Streib": "3",
+            "Liz Taylor": "16",
+            "Mariah Hudson": "9",
+            "Marnie Glickman": "6",
+            "Michael (Mike) Marshall": "7",
+            "Michelle DePass": "16",
+            "Nabil Zaghloul": "14",
+            "Nat West": "14",
+            "Reuben Berlin": "6",
+            "Sam Sachs": "6",
+            "Sameer Kanal": "16",
+            "Tiffani Penson": "13",
+            "Will Mespelt": "3",
+            "exhausted": "38"
+          }
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "tally": {
+        "Bob Simril": "2531",
+        "Chris Olson": "1238",
+        "Dan Ryan": "12066",
+        "Debbie Kitchin": "1238",
+        "Elana Pirtle-Guiney": "12458",
+        "James Armstrong": "1488",
+        "Jennifer Park": "1126",
+        "Jonathan Tasini": "3415",
+        "Laura Streib": "711",
+        "Liz Taylor": "646",
+        "Mariah Hudson": "2296",
+        "Marnie Glickman": "4004",
+        "Michael (Mike) Marshall": "1654",
+        "Michelle DePass": "6863",
+        "Nabil Zaghloul": "849",
+        "Nat West": "5480",
+        "Reuben Berlin": "665",
+        "Sam Sachs": "311",
+        "Sameer Kanal": "9945",
+        "Tiffani Penson": "7237",
+        "Will Mespelt": "765"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Sam Sachs",
+          "transfers": {
+            "Bob Simril": "32",
+            "Chris Olson": "9",
+            "Dan Ryan": "22",
+            "Debbie Kitchin": "7",
+            "Elana Pirtle-Guiney": "13",
+            "James Armstrong": "9",
+            "Jennifer Park": "11",
+            "Jonathan Tasini": "16",
+            "Laura Streib": "5",
+            "Liz Taylor": "5",
+            "Mariah Hudson": "21",
+            "Marnie Glickman": "7",
+            "Michael (Mike) Marshall": "15",
+            "Michelle DePass": "14",
+            "Nabil Zaghloul": "7",
+            "Nat West": "14",
+            "Reuben Berlin": "8",
+            "Sameer Kanal": "13",
+            "Tiffani Penson": "14",
+            "Will Mespelt": "14",
+            "exhausted": "55"
+          }
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "tally": {
+        "Bob Simril": "2563",
+        "Chris Olson": "1247",
+        "Dan Ryan": "12088",
+        "Debbie Kitchin": "1245",
+        "Elana Pirtle-Guiney": "12471",
+        "James Armstrong": "1497",
+        "Jennifer Park": "1137",
+        "Jonathan Tasini": "3431",
+        "Laura Streib": "716",
+        "Liz Taylor": "651",
+        "Mariah Hudson": "2317",
+        "Marnie Glickman": "4011",
+        "Michael (Mike) Marshall": "1669",
+        "Michelle DePass": "6877",
+        "Nabil Zaghloul": "856",
+        "Nat West": "5494",
+        "Reuben Berlin": "673",
+        "Sameer Kanal": "9958",
+        "Tiffani Penson": "7251",
+        "Will Mespelt": "779"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Liz Taylor",
+          "transfers": {
+            "Bob Simril": "17",
+            "Chris Olson": "22",
+            "Dan Ryan": "29",
+            "Debbie Kitchin": "20",
+            "Elana Pirtle-Guiney": "31",
+            "James Armstrong": "23",
+            "Jennifer Park": "37",
+            "Jonathan Tasini": "15",
+            "Laura Streib": "39",
+            "Mariah Hudson": "39",
+            "Marnie Glickman": "18",
+            "Michael (Mike) Marshall": "19",
+            "Michelle DePass": "31",
+            "Nabil Zaghloul": "16",
+            "Nat West": "25",
+            "Reuben Berlin": "3",
+            "Sameer Kanal": "22",
+            "Tiffani Penson": "90",
+            "Will Mespelt": "10",
+            "exhausted": "145"
+          }
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "tally": {
+        "Bob Simril": "2580",
+        "Chris Olson": "1269",
+        "Dan Ryan": "12117",
+        "Debbie Kitchin": "1265",
+        "Elana Pirtle-Guiney": "12502",
+        "James Armstrong": "1520",
+        "Jennifer Park": "1174",
+        "Jonathan Tasini": "3446",
+        "Laura Streib": "755",
+        "Mariah Hudson": "2356",
+        "Marnie Glickman": "4029",
+        "Michael (Mike) Marshall": "1688",
+        "Michelle DePass": "6908",
+        "Nabil Zaghloul": "872",
+        "Nat West": "5519",
+        "Reuben Berlin": "676",
+        "Sameer Kanal": "9980",
+        "Tiffani Penson": "7341",
+        "Will Mespelt": "789"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Reuben Berlin",
+          "transfers": {
+            "Bob Simril": "43",
+            "Chris Olson": "21",
+            "Dan Ryan": "54",
+            "Debbie Kitchin": "25",
+            "Elana Pirtle-Guiney": "12",
+            "James Armstrong": "80",
+            "Jennifer Park": "6",
+            "Jonathan Tasini": "15",
+            "Laura Streib": "12",
+            "Mariah Hudson": "40",
+            "Marnie Glickman": "23",
+            "Michael (Mike) Marshall": "30",
+            "Michelle DePass": "20",
+            "Nabil Zaghloul": "11",
+            "Nat West": "41",
+            "Sameer Kanal": "44",
+            "Tiffani Penson": "50",
+            "Will Mespelt": "51",
+            "exhausted": "98"
+          }
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "tally": {
+        "Bob Simril": "2623",
+        "Chris Olson": "1290",
+        "Dan Ryan": "12171",
+        "Debbie Kitchin": "1290",
+        "Elana Pirtle-Guiney": "12514",
+        "James Armstrong": "1600",
+        "Jennifer Park": "1180",
+        "Jonathan Tasini": "3461",
+        "Laura Streib": "767",
+        "Mariah Hudson": "2396",
+        "Marnie Glickman": "4052",
+        "Michael (Mike) Marshall": "1718",
+        "Michelle DePass": "6928",
+        "Nabil Zaghloul": "883",
+        "Nat West": "5560",
+        "Sameer Kanal": "10024",
+        "Tiffani Penson": "7391",
+        "Will Mespelt": "840"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Laura Streib",
+          "transfers": {
+            "Bob Simril": "19",
+            "Chris Olson": "6",
+            "Dan Ryan": "64",
+            "Debbie Kitchin": "19",
+            "Elana Pirtle-Guiney": "57",
+            "James Armstrong": "89",
+            "Jennifer Park": "34",
+            "Jonathan Tasini": "41",
+            "Mariah Hudson": "48",
+            "Marnie Glickman": "28",
+            "Michael (Mike) Marshall": "13",
+            "Michelle DePass": "60",
+            "Nabil Zaghloul": "14",
+            "Nat West": "74",
+            "Sameer Kanal": "46",
+            "Tiffani Penson": "58",
+            "Will Mespelt": "16",
+            "exhausted": "81"
+          }
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "tally": {
+        "Bob Simril": "2642",
+        "Chris Olson": "1296",
+        "Dan Ryan": "12235",
+        "Debbie Kitchin": "1309",
+        "Elana Pirtle-Guiney": "12571",
+        "James Armstrong": "1689",
+        "Jennifer Park": "1214",
+        "Jonathan Tasini": "3502",
+        "Mariah Hudson": "2444",
+        "Marnie Glickman": "4080",
+        "Michael (Mike) Marshall": "1731",
+        "Michelle DePass": "6988",
+        "Nabil Zaghloul": "897",
+        "Nat West": "5634",
+        "Sameer Kanal": "10070",
+        "Tiffani Penson": "7449",
+        "Will Mespelt": "856"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Will Mespelt",
+          "transfers": {
+            "Bob Simril": "108",
+            "Chris Olson": "15",
+            "Dan Ryan": "118",
+            "Debbie Kitchin": "29",
+            "Elana Pirtle-Guiney": "22",
+            "James Armstrong": "74",
+            "Jennifer Park": "10",
+            "Jonathan Tasini": "31",
+            "Mariah Hudson": "68",
+            "Marnie Glickman": "9",
+            "Michael (Mike) Marshall": "73",
+            "Michelle DePass": "10",
+            "Nabil Zaghloul": "12",
+            "Nat West": "40",
+            "Sameer Kanal": "21",
+            "Tiffani Penson": "48",
+            "exhausted": "168"
+          }
+        }
+      ]
+    },
+    {
+      "round": 8,
+      "tally": {
+        "Bob Simril": "2750",
+        "Chris Olson": "1311",
+        "Dan Ryan": "12353",
+        "Debbie Kitchin": "1338",
+        "Elana Pirtle-Guiney": "12593",
+        "James Armstrong": "1763",
+        "Jennifer Park": "1224",
+        "Jonathan Tasini": "3533",
+        "Mariah Hudson": "2512",
+        "Marnie Glickman": "4089",
+        "Michael (Mike) Marshall": "1804",
+        "Michelle DePass": "6998",
+        "Nabil Zaghloul": "909",
+        "Nat West": "5674",
+        "Sameer Kanal": "10091",
+        "Tiffani Penson": "7497"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Nabil Zaghloul",
+          "transfers": {
+            "Bob Simril": "63",
+            "Chris Olson": "11",
+            "Dan Ryan": "116",
+            "Debbie Kitchin": "23",
+            "Elana Pirtle-Guiney": "51",
+            "James Armstrong": "20",
+            "Jennifer Park": "17",
+            "Jonathan Tasini": "29",
+            "Mariah Hudson": "68",
+            "Marnie Glickman": "42",
+            "Michael (Mike) Marshall": "26",
+            "Michelle DePass": "60",
+            "Nat West": "45",
+            "Sameer Kanal": "97",
+            "Tiffani Penson": "92",
+            "exhausted": "149"
+          }
+        }
+      ]
+    },
+    {
+      "round": 9,
+      "tally": {
+        "Bob Simril": "2813",
+        "Chris Olson": "1322",
+        "Dan Ryan": "12469",
+        "Debbie Kitchin": "1361",
+        "Elana Pirtle-Guiney": "12644",
+        "James Armstrong": "1783",
+        "Jennifer Park": "1241",
+        "Jonathan Tasini": "3562",
+        "Mariah Hudson": "2580",
+        "Marnie Glickman": "4131",
+        "Michael (Mike) Marshall": "1830",
+        "Michelle DePass": "7058",
+        "Nat West": "5719",
+        "Sameer Kanal": "10188",
+        "Tiffani Penson": "7589"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Jennifer Park",
+          "transfers": {
+            "Bob Simril": "26",
+            "Chris Olson": "139",
+            "Dan Ryan": "43",
+            "Debbie Kitchin": "42",
+            "Elana Pirtle-Guiney": "128",
+            "James Armstrong": "32",
+            "Jonathan Tasini": "71",
+            "Mariah Hudson": "60",
+            "Marnie Glickman": "79",
+            "Michael (Mike) Marshall": "54",
+            "Michelle DePass": "52",
+            "Nat West": "137",
+            "Sameer Kanal": "185",
+            "Tiffani Penson": "105",
+            "exhausted": "88"
+          }
+        }
+      ]
+    },
+    {
+      "round": 10,
+      "tally": {
+        "Bob Simril": "2839",
+        "Chris Olson": "1461",
+        "Dan Ryan": "12512",
+        "Debbie Kitchin": "1403",
+        "Elana Pirtle-Guiney": "12772",
+        "James Armstrong": "1815",
+        "Jonathan Tasini": "3633",
+        "Mariah Hudson": "2640",
+        "Marnie Glickman": "4210",
+        "Michael (Mike) Marshall": "1884",
+        "Michelle DePass": "7110",
+        "Nat West": "5856",
+        "Sameer Kanal": "10373",
+        "Tiffani Penson": "7694"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Debbie Kitchin",
+          "transfers": {
+            "Bob Simril": "45",
+            "Chris Olson": "71",
+            "Dan Ryan": "127",
+            "Elana Pirtle-Guiney": "98",
+            "James Armstrong": "72",
+            "Jonathan Tasini": "30",
+            "Mariah Hudson": "69",
+            "Marnie Glickman": "184",
+            "Michael (Mike) Marshall": "36",
+            "Michelle DePass": "74",
+            "Nat West": "152",
+            "Sameer Kanal": "130",
+            "Tiffani Penson": "160",
+            "exhausted": "155"
+          }
+        }
+      ]
+    },
+    {
+      "round": 11,
+      "tally": {
+        "Bob Simril": "2884",
+        "Chris Olson": "1532",
+        "Dan Ryan": "12639",
+        "Elana Pirtle-Guiney": "12870",
+        "James Armstrong": "1887",
+        "Jonathan Tasini": "3663",
+        "Mariah Hudson": "2709",
+        "Marnie Glickman": "4394",
+        "Michael (Mike) Marshall": "1920",
+        "Michelle DePass": "7184",
+        "Nat West": "6008",
+        "Sameer Kanal": "10503",
+        "Tiffani Penson": "7854"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Chris Olson",
+          "transfers": {
+            "Bob Simril": "25",
+            "Dan Ryan": "48",
+            "Elana Pirtle-Guiney": "109",
+            "James Armstrong": "72",
+            "Jonathan Tasini": "201",
+            "Mariah Hudson": "29",
+            "Marnie Glickman": "150",
+            "Michael (Mike) Marshall": "73",
+            "Michelle DePass": "42",
+            "Nat West": "179",
+            "Sameer Kanal": "389",
+            "Tiffani Penson": "106",
+            "exhausted": "109"
+          }
+        }
+      ]
+    },
+    {
+      "round": 12,
+      "tally": {
+        "Bob Simril": "2909",
+        "Dan Ryan": "12687",
+        "Elana Pirtle-Guiney": "12979",
+        "James Armstrong": "1959",
+        "Jonathan Tasini": "3864",
+        "Mariah Hudson": "2738",
+        "Marnie Glickman": "4544",
+        "Michael (Mike) Marshall": "1993",
+        "Michelle DePass": "7226",
+        "Nat West": "6187",
+        "Sameer Kanal": "10892",
+        "Tiffani Penson": "7960"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "James Armstrong",
+          "transfers": {
+            "Bob Simril": "162",
+            "Dan Ryan": "303",
+            "Elana Pirtle-Guiney": "202",
+            "Jonathan Tasini": "54",
+            "Mariah Hudson": "181",
+            "Marnie Glickman": "40",
+            "Michael (Mike) Marshall": "168",
+            "Michelle DePass": "115",
+            "Nat West": "181",
+            "Sameer Kanal": "91",
+            "Tiffani Penson": "172",
+            "exhausted": "290"
+          }
+        }
+      ]
+    },
+    {
+      "round": 13,
+      "tally": {
+        "Bob Simril": "3071",
+        "Dan Ryan": "12990",
+        "Elana Pirtle-Guiney": "13181",
+        "Jonathan Tasini": "3918",
+        "Mariah Hudson": "2919",
+        "Marnie Glickman": "4584",
+        "Michael (Mike) Marshall": "2161",
+        "Michelle DePass": "7341",
+        "Nat West": "6368",
+        "Sameer Kanal": "10983",
+        "Tiffani Penson": "8132"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Michael (Mike) Marshall",
+          "transfers": {
+            "Bob Simril": "198",
+            "Dan Ryan": "372",
+            "Elana Pirtle-Guiney": "217",
+            "Jonathan Tasini": "183",
+            "Mariah Hudson": "173",
+            "Marnie Glickman": "111",
+            "Michelle DePass": "79",
+            "Nat West": "204",
+            "Sameer Kanal": "149",
+            "Tiffani Penson": "202",
+            "exhausted": "273"
+          }
+        }
+      ]
+    },
+    {
+      "round": 14,
+      "tally": {
+        "Bob Simril": "3269",
+        "Dan Ryan": "13362",
+        "Elana Pirtle-Guiney": "13398",
+        "Jonathan Tasini": "4101",
+        "Mariah Hudson": "3092",
+        "Marnie Glickman": "4695",
+        "Michelle DePass": "7420",
+        "Nat West": "6572",
+        "Sameer Kanal": "11132",
+        "Tiffani Penson": "8334"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Mariah Hudson",
+          "transfers": {
+            "Bob Simril": "338",
+            "Dan Ryan": "727",
+            "Elana Pirtle-Guiney": "296",
+            "Jonathan Tasini": "140",
+            "Marnie Glickman": "144",
+            "Michelle DePass": "156",
+            "Nat West": "205",
+            "Sameer Kanal": "145",
+            "Tiffani Penson": "450",
+            "exhausted": "491"
+          }
+        }
+      ]
+    },
+    {
+      "round": 15,
+      "tally": {
+        "Bob Simril": "3607",
+        "Dan Ryan": "14089",
+        "Elana Pirtle-Guiney": "13694",
+        "Jonathan Tasini": "4241",
+        "Marnie Glickman": "4839",
+        "Michelle DePass": "7576",
+        "Nat West": "6777",
+        "Sameer Kanal": "11277",
+        "Tiffani Penson": "8784"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Bob Simril",
+          "transfers": {
+            "Dan Ryan": "1031",
+            "Elana Pirtle-Guiney": "165",
+            "Jonathan Tasini": "128",
+            "Marnie Glickman": "114",
+            "Michelle DePass": "122",
+            "Nat West": "259",
+            "Sameer Kanal": "175",
+            "Tiffani Penson": "477",
+            "exhausted": "1136"
+          }
+        }
+      ]
+    },
+    {
+      "round": 16,
+      "tally": {
+        "Dan Ryan": "15120",
+        "Elana Pirtle-Guiney": "13859",
+        "Jonathan Tasini": "4369",
+        "Marnie Glickman": "4953",
+        "Michelle DePass": "7698",
+        "Nat West": "7036",
+        "Sameer Kanal": "11452",
+        "Tiffani Penson": "9261"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Jonathan Tasini",
+          "transfers": {
+            "Dan Ryan": "381",
+            "Elana Pirtle-Guiney": "927",
+            "Marnie Glickman": "373",
+            "Michelle DePass": "296",
+            "Nat West": "562",
+            "Sameer Kanal": "903",
+            "Tiffani Penson": "384",
+            "exhausted": "543"
+          }
+        }
+      ]
+    },
+    {
+      "round": 17,
+      "tally": {
+        "Dan Ryan": "15501",
+        "Elana Pirtle-Guiney": "14786",
+        "Marnie Glickman": "5326",
+        "Michelle DePass": "7994",
+        "Nat West": "7598",
+        "Sameer Kanal": "12355",
+        "Tiffani Penson": "9645"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Marnie Glickman",
+          "transfers": {
+            "Dan Ryan": "379",
+            "Elana Pirtle-Guiney": "572",
+            "Michelle DePass": "299",
+            "Nat West": "862",
+            "Sameer Kanal": "1905",
+            "Tiffani Penson": "739",
+            "exhausted": "570"
+          }
+        }
+      ]
+    },
+    {
+      "round": 18,
+      "tally": {
+        "Dan Ryan": "15880",
+        "Elana Pirtle-Guiney": "15358",
+        "Michelle DePass": "8293",
+        "Nat West": "8460",
+        "Sameer Kanal": "14260",
+        "Tiffani Penson": "10384"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Michelle DePass",
+          "transfers": {
+            "Dan Ryan": "611",
+            "Elana Pirtle-Guiney": "1305",
+            "Nat West": "771",
+            "Sameer Kanal": "3280",
+            "Tiffani Penson": "1447",
+            "exhausted": "879"
+          }
+        }
+      ]
+    },
+    {
+      "round": 19,
+      "tally": {
+        "Dan Ryan": "16491",
+        "Elana Pirtle-Guiney": "16663",
+        "Nat West": "9231",
+        "Sameer Kanal": "17540",
+        "Tiffani Penson": "11831"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Nat West",
+          "transfers": {
+            "Dan Ryan": "1219",
+            "Elana Pirtle-Guiney": "1472",
+            "Sameer Kanal": "2826",
+            "Tiffani Penson": "1488",
+            "exhausted": "2226"
+          }
+        }
+      ]
+    },
+    {
+      "round": 20,
+      "tally": {
+        "Dan Ryan": "17710",
+        "Elana Pirtle-Guiney": "18135",
+        "Sameer Kanal": "20366",
+        "Tiffani Penson": "13319"
+      },
+      "tallyResults": [
+        {
+          "elected": "Sameer Kanal",
+          "transfers": {
+            "Dan Ryan": "55.2816",
+            "Elana Pirtle-Guiney": "310.4640",
+            "Tiffani Penson": "213.4176",
+            "exhausted": "496.1616",
+            "residual surplus": "0.6752"
+          }
+        }
+      ]
+    },
+    {
+      "round": 21,
+      "tally": {
+        "Dan Ryan": "17765.2816",
+        "Elana Pirtle-Guiney": "18445.4640",
+        "Sameer Kanal": "19290",
+        "Tiffani Penson": "13532.4176"
+      },
+      "tallyResults": [
+        {
+          "eliminated": "Tiffani Penson",
+          "transfers": {
+            "Dan Ryan": "3473.5264",
+            "Elana Pirtle-Guiney": "3127.7152",
+            "exhausted": "6931.1760"
+          }
+        }
+      ]
+    },
+    {
+      "round": 22,
+      "tally": {
+        "Dan Ryan": "21238.8080",
+        "Elana Pirtle-Guiney": "21573.1792",
+        "Sameer Kanal": "19290"
+      },
+      "tallyResults": [
+        {
+          "elected": "Dan Ryan",
+          "transfers": {
+            "exhausted": "1947.5419",
+            "residual surplus": "1.2661"
+          }
+        },
+        {
+          "elected": "Elana Pirtle-Guiney",
+          "transfers": {
+            "exhausted": "2281.8655",
+            "residual surplus": "1.3137"
+          }
+        }
+      ]
+    },
+    {
+      "round": 23,
+      "tally": {
+        "Dan Ryan": "19290",
+        "Elana Pirtle-Guiney": "19290",
+        "Sameer Kanal": "19290"
+      },
+      "tallyResults": []
+    }
+  ]
+}

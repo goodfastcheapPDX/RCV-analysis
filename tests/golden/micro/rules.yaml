@@ -1,0 +1,26 @@
+# STV Election Rules Configuration
+# This file defines the rules for Single Transferable Vote (STV) counting
+
+# Number of seats to be filled
+seats: 3
+
+# Quota calculation method (currently only 'droop' is supported)
+# Droop quota = floor(total_valid_ballots / (seats + 1)) + 1
+quota: droop
+
+# Surplus transfer method (currently only 'fractional' Gregory method is supported)  
+# Fractional method: transfer_weight = surplus / candidate_total
+# Each ballot transfers at: original_weight * transfer_weight
+surplus_method: fractional
+
+# Numerical precision for vote comparisons (default: 1e-6)
+# Used for comparing vote totals with quota and determining equality
+precision: 1e-6
+
+# Tie-breaking method for eliminations
+# 'lexicographic': alphabetical order by candidate name
+# 'random': use random_seed for deterministic randomness (future feature)
+tie_break: lexicographic
+
+# Optional random seed for tie-breaking (not currently used)
+# random_seed: 12345

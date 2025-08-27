@@ -1,0 +1,6 @@
+# Portland City Council District 2, 2024 Election Rules
+seats: 3
+quota: droop
+surplus_method: fractional
+precision: 1e-6
+tie_break: lexicographic
