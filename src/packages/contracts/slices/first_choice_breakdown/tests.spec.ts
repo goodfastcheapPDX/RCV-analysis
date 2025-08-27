@@ -42,10 +42,10 @@ describe("first_choice_breakdown", () => {
 
     // Clean up test files
     const testFiles = [
-      "data/ingest/candidates.parquet",
-      "data/ingest/ballots_long.parquet",
-      "data/summary/first_choice.parquet",
-      "manifest.json",
+      "data/test/ingest/candidates.parquet",
+      "data/test/ingest/ballots_long.parquet",
+      "data/test/summary/first_choice.parquet",
+      "manifest.test.json",
     ];
 
     testFiles.forEach((file) => {
@@ -72,21 +72,21 @@ describe("first_choice_breakdown", () => {
 
   it("should create parquet export file", async () => {
     await computeFirstChoiceBreakdown();
-    expect(existsSync("data/summary/first_choice.parquet")).toBe(true);
+    expect(existsSync("data/test/summary/first_choice.parquet")).toBe(true);
   });
 
   it("should update manifest.json with correct structure", async () => {
     await computeFirstChoiceBreakdown();
 
-    expect(existsSync("manifest.json")).toBe(true);
+    expect(existsSync("manifest.test.json")).toBe(true);
 
-    const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
+    const manifest = JSON.parse(readFileSync("manifest.test.json", "utf8"));
     const manifestKey = `first_choice_breakdown@${version}`;
     const entry = manifest[manifestKey];
 
     expect(entry).toBeDefined();
-    expect(entry.files).toContain("data/summary/first_choice.parquet");
-    expect(entry.hashes["data/summary/first_choice.parquet"]).toMatch(
+    expect(entry.files).toContain("data/test/summary/first_choice.parquet");
+    expect(entry.hashes["data/test/summary/first_choice.parquet"]).toMatch(
       /^[a-f0-9]{64}$/,
     ); // SHA256 hash
     expect(entry.stats.total_valid_ballots).toBe(12);
@@ -96,23 +96,23 @@ describe("first_choice_breakdown", () => {
     expect(entry.datasetVersion).toBe(version);
 
     // ENFORCE CONTRACT: Validate manifest section
-    assertManifestSection("manifest.json", manifestKey, Stats);
+    assertManifestSection("manifest.test.json", manifestKey, Stats);
   });
 
   it("should maintain consistent file hashing", async () => {
     // Run twice and check that identical data produces identical hash
     await computeFirstChoiceBreakdown();
-    const manifest1 = JSON.parse(readFileSync("manifest.json", "utf8"));
+    const manifest1 = JSON.parse(readFileSync("manifest.test.json", "utf8"));
     const hash1 =
       manifest1["first_choice_breakdown@1.0.0"].hashes[
-        "data/summary/first_choice.parquet"
+        "data/test/summary/first_choice.parquet"
       ];
 
     await computeFirstChoiceBreakdown();
-    const manifest2 = JSON.parse(readFileSync("manifest.json", "utf8"));
+    const manifest2 = JSON.parse(readFileSync("manifest.test.json", "utf8"));
     const hash2 =
       manifest2["first_choice_breakdown@1.0.0"].hashes[
-        "data/summary/first_choice.parquet"
+        "data/test/summary/first_choice.parquet"
       ];
 
     expect(hash1).toBe(hash2);
@@ -120,13 +120,13 @@ describe("first_choice_breakdown", () => {
 
   it("should throw error when input parquet file does not exist", async () => {
     // Remove the input file temporarily
-    const inputPath = "data/ingest/ballots_long.parquet";
+    const inputPath = "data/test/ingest/ballots_long.parquet";
     const backup = readFileSync(inputPath);
     unlinkSync(inputPath);
 
     try {
       await expect(computeFirstChoiceBreakdown()).rejects.toThrow(
-        "Input file not found: data/ingest/ballots_long.parquet. Run ingest_cvr first.",
+        "Input file not found: data/test/ingest/ballots_long.parquet. Run ingest_cvr first.",
       );
     } finally {
       // Restore the file
@@ -144,7 +144,7 @@ describe("first_choice_breakdown", () => {
 
     try {
       await conn.run(
-        "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
       );
 
       // ENFORCE CONTRACT: Validate table schema and all rows
@@ -177,7 +177,7 @@ describe("first_choice_breakdown", () => {
 
     try {
       await conn.run(
-        "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
       );
 
       const result = await conn.run(
@@ -203,14 +203,14 @@ describe("first_choice_breakdown", () => {
 
   it("should handle corrupted manifest.json gracefully", async () => {
     // Create corrupted manifest
-    writeFileSync("manifest.json", "invalid json content");
+    writeFileSync("manifest.test.json", "invalid json content");
 
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     try {
       await computeFirstChoiceBreakdown();
       expect(warnSpy).toHaveBeenCalledWith(
-        "Could not parse existing manifest.json, creating new one",
+        "Could not parse existing manifest.test.json, creating new one",
       );
     } finally {
       warnSpy.mockRestore();
@@ -227,10 +227,10 @@ describe("first_choice_breakdown", () => {
 
     try {
       await conn.run(
-        "CREATE VIEW ballots_long AS SELECT * FROM 'data/ingest/ballots_long.parquet';",
+        "CREATE VIEW ballots_long AS SELECT * FROM 'data/test/ingest/ballots_long.parquet';",
       );
       await conn.run(
-        "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
       );
 
       // Count first choices directly from ballots_long

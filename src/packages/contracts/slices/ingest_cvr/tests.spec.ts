@@ -21,9 +21,9 @@ describe("ingest_cvr", () => {
 
     // Clean up test files
     const testFiles = [
-      "data/ingest/candidates.parquet",
-      "data/ingest/ballots_long.parquet",
-      "manifest.json",
+      "data/test/ingest/candidates.parquet",
+      "data/test/ingest/ballots_long.parquet",
+      "manifest.test.json",
     ];
 
     testFiles.forEach((file) => {
@@ -53,21 +53,21 @@ describe("ingest_cvr", () => {
   it("should create Parquet export files", async () => {
     await ingestCvr();
 
-    expect(existsSync("data/ingest/candidates.parquet")).toBe(true);
-    expect(existsSync("data/ingest/ballots_long.parquet")).toBe(true);
+    expect(existsSync("data/test/ingest/candidates.parquet")).toBe(true);
+    expect(existsSync("data/test/ingest/ballots_long.parquet")).toBe(true);
   });
 
   it("should update manifest.json", async () => {
     await ingestCvr();
 
-    expect(existsSync("manifest.json")).toBe(true);
+    expect(existsSync("manifest.test.json")).toBe(true);
 
-    const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
+    const manifest = JSON.parse(readFileSync("manifest.test.json", "utf8"));
     const entry = manifest["ingest_cvr@1.0.0"];
 
     expect(entry).toBeDefined();
-    expect(entry.files).toContain("data/ingest/candidates.parquet");
-    expect(entry.files).toContain("data/ingest/ballots_long.parquet");
+    expect(entry.files).toContain("data/test/ingest/candidates.parquet");
+    expect(entry.files).toContain("data/test/ingest/ballots_long.parquet");
     expect(entry.rows).toBe(31);
     expect(entry.min_rank).toBe(1);
     expect(entry.max_rank).toBe(3);
@@ -152,7 +152,7 @@ describe("ingest_cvr", () => {
   it("should handle corrupted manifest.json", async () => {
     // Create a corrupted manifest.json
     const fs = require("node:fs");
-    fs.writeFileSync("manifest.json", "invalid json content");
+    fs.writeFileSync("manifest.test.json", "invalid json content");
 
     // Spy on console.warn
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -160,13 +160,13 @@ describe("ingest_cvr", () => {
     try {
       await ingestCvr();
       expect(warnSpy).toHaveBeenCalledWith(
-        "Could not parse existing manifest.json, creating new one",
+        "Could not parse existing manifest.test.json, creating new one",
       );
     } finally {
       warnSpy.mockRestore();
       // Clean up
-      if (existsSync("manifest.json")) {
-        fs.unlinkSync("manifest.json");
+      if (existsSync("manifest.test.json")) {
+        fs.unlinkSync("manifest.test.json");
       }
     }
   });
@@ -219,8 +219,8 @@ describe("ingest_cvr", () => {
       expect(result.ballots_long.candidates).toBeGreaterThan(1); // Multiple candidates receiving votes
 
       // Verify Parquet files are created
-      expect(existsSync("data/ingest/candidates.parquet")).toBe(true);
-      expect(existsSync("data/ingest/ballots_long.parquet")).toBe(true);
+      expect(existsSync("data/test/ingest/candidates.parquet")).toBe(true);
+      expect(existsSync("data/test/ingest/ballots_long.parquet")).toBe(true);
     } finally {
       process.env.SRC_CSV = originalEnv;
     }

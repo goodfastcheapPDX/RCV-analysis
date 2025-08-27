@@ -1,5 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
+import { getArtifactPaths } from "../../lib/artifact-paths.js";
 import {
   assertManifestSection,
   assertTableColumns,
@@ -24,11 +26,12 @@ interface ManifestEntry {
 }
 
 export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdownOutput> {
+  const paths = getArtifactPaths();
+
   // Verify input file exists
-  const inputPath = "data/ingest/ballots_long.parquet";
-  if (!existsSync(inputPath)) {
+  if (!existsSync(paths.ingest.ballotsLong)) {
     throw new Error(
-      `Input file not found: ${inputPath}. Run ingest_cvr first.`,
+      `Input file not found: ${paths.ingest.ballotsLong}. Run ingest_cvr first.`,
     );
   }
 
@@ -41,10 +44,12 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
 
     // Step 1: Create view from existing ballots_long parquet
     console.log("Creating ballots_long view...");
-    await conn.run(SQL_QUERIES.createFirstChoiceView);
+    await conn.run(
+      `CREATE OR REPLACE VIEW ballots_long AS SELECT * FROM '${paths.ingest.ballotsLong}';`,
+    );
 
     // Step 2: Ensure output directory exists
-    mkdirSync("data/summary", { recursive: true });
+    mkdirSync(dirname(paths.summary.firstChoice), { recursive: true });
 
     // Step 3: Create temporary table for validation
     console.log("Computing first choice breakdown...");
@@ -89,13 +94,14 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
 
     // Step 7: Export to parquet after contract validation
     console.log("Exporting validated data to parquet...");
-    await conn.run(SQL_QUERIES.copyToParquet);
+    await conn.run(
+      `COPY first_choice_breakdown TO '${paths.summary.firstChoice}' (FORMAT 'parquet');`,
+    );
 
     await conn.run("COMMIT");
 
     // Step 8: Calculate file hash using contract enforcer
-    const outputPath = "data/summary/first_choice.parquet";
-    const fileHash = sha256(outputPath);
+    const fileHash = sha256(paths.summary.firstChoice);
 
     const parsedResult: FirstChoiceBreakdownOutput = {
       stats: validatedStats,
@@ -103,35 +109,34 @@ export async function computeFirstChoiceBreakdown(): Promise<FirstChoiceBreakdow
     };
 
     // Step 9: Update manifest.json
-    const manifestPath = "manifest.json";
     let manifest: Record<string, ManifestEntry> = {};
 
-    if (existsSync(manifestPath)) {
+    if (existsSync(paths.manifest)) {
       try {
-        manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+        manifest = JSON.parse(readFileSync(paths.manifest, "utf8"));
       } catch (_error) {
         console.warn(
-          "Could not parse existing manifest.json, creating new one",
+          `Could not parse existing ${paths.manifest}, creating new one`,
         );
       }
     }
 
     const manifestKey = `first_choice_breakdown@${version}`;
     manifest[manifestKey] = {
-      files: ["data/summary/first_choice.parquet"],
+      files: [paths.summary.firstChoice],
       hashes: {
-        "data/summary/first_choice.parquet": fileHash,
+        [paths.summary.firstChoice]: fileHash,
       },
       stats: parsedResult.stats,
       data: parsedResult.data,
       datasetVersion: version,
     };
 
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    writeFileSync(paths.manifest, JSON.stringify(manifest, null, 2));
 
     // Step 10: ENFORCE CONTRACT - Validate manifest section
     console.log("Enforcing contract: validating manifest section...");
-    assertManifestSection(manifestPath, manifestKey, Stats);
+    assertManifestSection(paths.manifest, manifestKey, Stats);
 
     console.log(`First choice breakdown completed:`);
     console.log(

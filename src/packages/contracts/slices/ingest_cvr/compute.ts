@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
+import { getArtifactPaths } from "../../lib/artifact-paths.js";
 import {
   CONTRACT_VERSION,
   type IngestCvrOutput,
@@ -24,6 +25,7 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
     throw new Error("SRC_CSV environment variable is required");
   }
 
+  const paths = getArtifactPaths();
   const dbPath = "data/working/election.duckdb";
 
   // Ensure database directory exists
@@ -76,11 +78,16 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
 
     // Step 6: Export to Arrow format
     console.log("Exporting candidates to Arrow format...");
-    mkdirSync("data/ingest", { recursive: true });
-    await conn.run(SQL_QUERIES.exportCandidates);
+    mkdirSync(dirname(paths.ingest.candidates), { recursive: true });
+    await conn.run(
+      `COPY candidates TO '${paths.ingest.candidates}' (FORMAT PARQUET)`,
+    );
 
     console.log("Exporting ballots_long to Arrow format...");
-    await conn.run(SQL_QUERIES.exportBallotsLong);
+    mkdirSync(dirname(paths.ingest.ballotsLong), { recursive: true });
+    await conn.run(
+      `COPY ballots_long TO '${paths.ingest.ballotsLong}' (FORMAT PARQUET)`,
+    );
 
     // Step 7: Get statistics
     console.log("Computing statistics...");
@@ -107,24 +114,20 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
     }
 
     // Step 8: Update manifest.json
-    const manifestPath = "manifest.json";
     let manifest: Record<string, ManifestEntry> = {};
 
-    if (existsSync(manifestPath)) {
+    if (existsSync(paths.manifest)) {
       try {
-        manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+        manifest = JSON.parse(readFileSync(paths.manifest, "utf8"));
       } catch (_error) {
         console.warn(
-          "Could not parse existing manifest.json, creating new one",
+          `Could not parse existing ${paths.manifest}, creating new one`,
         );
       }
     }
 
     manifest[`ingest_cvr@${CONTRACT_VERSION}`] = {
-      files: [
-        "data/ingest/candidates.parquet",
-        "data/ingest/ballots_long.parquet",
-      ],
+      files: [paths.ingest.candidates, paths.ingest.ballotsLong],
       hashes: {}, // TODO: Implement file hashing if needed
       rows: parsedResult.ballots_long.rows,
       min_rank: parsedResult.ballots_long.min_rank,
@@ -133,7 +136,7 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
       datasetVersion: CONTRACT_VERSION,
     };
 
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    writeFileSync(paths.manifest, JSON.stringify(manifest, null, 2));
 
     // Return validated output - this should now match the Zod schema exactly
     return IngestCvrOutputSchema.parse(parsedResult);

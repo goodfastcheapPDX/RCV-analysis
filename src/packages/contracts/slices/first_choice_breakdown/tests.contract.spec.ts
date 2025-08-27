@@ -29,10 +29,10 @@ describe("first_choice_breakdown contract enforcement", () => {
     }
 
     const testFiles = [
-      "data/ingest/candidates.parquet",
-      "data/ingest/ballots_long.parquet",
-      "data/summary/first_choice.parquet",
-      "manifest.json",
+      "data/test/ingest/candidates.parquet",
+      "data/test/ingest/ballots_long.parquet",
+      "data/test/summary/first_choice.parquet",
+      "manifest.test.json",
     ];
 
     testFiles.forEach((file) => {
@@ -53,7 +53,7 @@ describe("first_choice_breakdown contract enforcement", () => {
 
       try {
         await conn.run(
-          "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+          "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
         );
 
         // This should pass without throwing
@@ -69,7 +69,7 @@ describe("first_choice_breakdown contract enforcement", () => {
 
       try {
         await conn.run(
-          "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+          "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
         );
 
         // This should return validated rows
@@ -152,7 +152,7 @@ describe("first_choice_breakdown contract enforcement", () => {
 
       // This should pass without throwing
       expect(() => {
-        assertManifestSection("manifest.json", manifestKey, Stats);
+        assertManifestSection("manifest.test.json", manifestKey, Stats);
       }).not.toThrow();
     });
 
@@ -185,7 +185,7 @@ describe("first_choice_breakdown contract enforcement", () => {
 
     it("should fail for missing manifest sections", () => {
       expect(() => {
-        assertManifestSection("manifest.json", "nonexistent@1.0.0", Stats);
+        assertManifestSection("manifest.test.json", "nonexistent@1.0.0", Stats);
       }).toThrow(/Manifest missing key: nonexistent@1.0.0/);
     });
   });

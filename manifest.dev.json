@@ -1,0 +1,29 @@
+{
+  "ingest_cvr@1.0.0": {
+    "files": [
+      "data/dev/ingest/candidates.parquet",
+      "data/dev/ingest/ballots_long.parquet"
+    ],
+    "hashes": {},
+    "rows": 31,
+    "min_rank": 1,
+    "max_rank": 3,
+    "duplicate_ballots": 0,
+    "datasetVersion": "1.0.0"
+  },
+  "first_choice_breakdown@1.0.0": {
+    "files": ["data/dev/summary/first_choice.parquet"],
+    "hashes": {
+      "data/dev/summary/first_choice.parquet": "d16a2c9dcc26e7c34ac0bb842fd552dd8b415dacabf7dbed12dd7ee3ce470e60"
+    },
+    "stats": {
+      "total_valid_ballots": 12,
+      "candidate_count": 5,
+      "sum_first_choice": 12
+    },
+    "data": {
+      "rows": 5
+    },
+    "datasetVersion": "1.0.0"
+  }
+}
