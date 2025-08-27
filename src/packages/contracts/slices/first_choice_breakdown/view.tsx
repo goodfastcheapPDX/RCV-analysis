@@ -69,8 +69,8 @@ export function FirstChoiceBreakdownView({
       .replace(/\s+/g, "_");
     return {
       candidate:
-        item.candidate_name.length > 25
-          ? `${item.candidate_name.slice(0, 25)}...`
+        item.candidate_name.length > 35
+          ? `${item.candidate_name.slice(0, 35)}...`
           : item.candidate_name,
       fullName: item.candidate_name,
       first_choice_votes: item.first_choice_votes,
@@ -118,7 +118,7 @@ export function FirstChoiceBreakdownView({
               layout="vertical"
               margin={{
                 left: 0,
-                right: 80,
+                right: 120,
               }}
             >
               <YAxis
@@ -128,7 +128,7 @@ export function FirstChoiceBreakdownView({
                 tickMargin={10}
                 axisLine={false}
                 className="text-xs"
-                width={120}
+                width={160}
               />
               <XAxis dataKey="first_choice_votes" type="number" hide />
               <ChartTooltip
@@ -154,6 +154,7 @@ export function FirstChoiceBreakdownView({
                 <LabelList
                   dataKey="first_choice_votes"
                   position="right"
+                  offset={8}
                   className="text-xs font-medium fill-foreground"
                   formatter={(value: number) => value.toLocaleString()}
                 />

@@ -5,24 +5,24 @@
       "data/dev/ingest/ballots_long.parquet"
     ],
     "hashes": {},
-    "rows": 31,
+    "rows": 344920,
     "min_rank": 1,
-    "max_rank": 3,
+    "max_rank": 6,
     "duplicate_ballots": 0,
     "datasetVersion": "1.0.0"
   },
   "first_choice_breakdown@1.0.0": {
     "files": ["data/dev/summary/first_choice.parquet"],
     "hashes": {
-      "data/dev/summary/first_choice.parquet": "d16a2c9dcc26e7c34ac0bb842fd552dd8b415dacabf7dbed12dd7ee3ce470e60"
+      "data/dev/summary/first_choice.parquet": "604bfb60966fa8e4561b8850e03ced1c5522a49f4a7efdd9f7bdf78513478509"
     },
     "stats": {
-      "total_valid_ballots": 12,
-      "candidate_count": 5,
-      "sum_first_choice": 12
+      "total_valid_ballots": 75335,
+      "candidate_count": 26,
+      "sum_first_choice": 75335
     },
     "data": {
-      "rows": 5
+      "rows": 26
     },
     "datasetVersion": "1.0.0"
   }
