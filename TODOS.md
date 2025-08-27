@@ -1,0 +1,16 @@
+- organize routes
+- design full site hierarchy
+- standardize url hierarchy
+- swap hand-written css for shadcn components
+- write an end-to-end build pipeline script
+    - make all the data for an env from start to finish following the necessary order of operations
+    - add a "checker" that can skip any parts that are unecessary if the resulting artifact is already done
+- deploy to vercel
+- put on github
+- round explorer updates
+    - progress bar
+    - cross out eliminated names
+- add instructions to always start new ui work by checking for shadcn components that we could use off the shelf: https://ui.shadcn.com/docs/components
+- implement a typography system
+- setup the chatgpt project for management
+- coalition mass graph: https://github.com/vasturiano/react-force-graph

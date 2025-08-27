@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import yaml from "js-yaml";
-import { getArtifactPaths } from "../../lib/artifact-paths.js";
+import { getArtifactPaths } from "@/packages/contracts/lib/artifact-paths";
 import {
   assertManifestSection,
   assertTableColumns,
@@ -10,15 +10,15 @@ import {
   parseAllRows,
   sha256,
   validateDependencies,
-} from "../../lib/contract-enforcer.js";
-import { type BallotData, runSTV } from "./engine.js";
+} from "@/packages/contracts/lib/contract-enforcer";
+import { type BallotData, runSTV } from "./engine";
 import {
   RulesSchema,
   StvMetaOutput,
   StvRoundsOutput,
   StvRoundsStats,
   version,
-} from "./index.contract.js";
+} from "./index.contract";
 
 interface EnvironmentConfig {
   env: string;

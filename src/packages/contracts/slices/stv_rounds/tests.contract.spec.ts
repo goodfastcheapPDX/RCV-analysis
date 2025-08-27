@@ -8,90 +8,93 @@ import {
 } from "./index.contract.js";
 
 // Mock the contract enforcer functions
-vi.mock("../../lib/contract-enforcer.js", async (importOriginal) => {
-  const actual: any = await importOriginal();
-  let validateCalls: any[] = [];
-  let parseCallsCounter = 0;
-  let assertManifestCalls: any[] = [];
+vi.mock(
+  "@/packages/contracts/lib/contract-enforcer",
+  async (importOriginal) => {
+    const actual: any = await importOriginal();
+    let validateCalls: any[] = [];
+    let parseCallsCounter = 0;
+    let assertManifestCalls: any[] = [];
 
-  return {
-    ...actual,
-    assertTableColumns: vi.fn(
-      async (conn: DuckDBConnection, table: string, schema: any) => {
-        validateCalls.push({
-          type: "assertTableColumns",
-          table,
-          schema: schema.constructor.name,
-        });
-        return Promise.resolve();
-      },
-    ),
-    parseAllRows: vi.fn(
-      async (conn: DuckDBConnection, table: string, schema: any) => {
-        parseCallsCounter++;
-        validateCalls.push({
-          type: "parseAllRows",
-          table,
-          schema: schema.constructor.name,
-        });
+    return {
+      ...actual,
+      assertTableColumns: vi.fn(
+        async (conn: DuckDBConnection, table: string, schema: any) => {
+          validateCalls.push({
+            type: "assertTableColumns",
+            table,
+            schema: schema.constructor.name,
+          });
+          return Promise.resolve();
+        },
+      ),
+      parseAllRows: vi.fn(
+        async (conn: DuckDBConnection, table: string, schema: any) => {
+          parseCallsCounter++;
+          validateCalls.push({
+            type: "parseAllRows",
+            table,
+            schema: schema.constructor.name,
+          });
 
-        // Return mock data that matches our schemas
-        if (table === "tmp_stv_rounds") {
-          return [
-            {
-              round: 1,
-              candidate_name: "Candidate A",
-              votes: 100,
-              status: "standing",
-            },
-            {
-              round: 1,
-              candidate_name: "Candidate B",
-              votes: 80,
-              status: "standing",
-            },
-          ];
-        } else if (table === "tmp_stv_meta") {
-          return [
-            {
-              round: 1,
-              quota: 51,
-              exhausted: 0,
-              elected_this_round: null,
-              eliminated_this_round: null,
-            },
-          ];
-        }
-        return [];
+          // Return mock data that matches our schemas
+          if (table === "tmp_stv_rounds") {
+            return [
+              {
+                round: 1,
+                candidate_name: "Candidate A",
+                votes: 100,
+                status: "standing",
+              },
+              {
+                round: 1,
+                candidate_name: "Candidate B",
+                votes: 80,
+                status: "standing",
+              },
+            ];
+          } else if (table === "tmp_stv_meta") {
+            return [
+              {
+                round: 1,
+                quota: 51,
+                exhausted: 0,
+                elected_this_round: null,
+                eliminated_this_round: null,
+              },
+            ];
+          }
+          return [];
+        },
+      ),
+      assertManifestSection: vi.fn(
+        async (path: string, key: string, schema: any) => {
+          assertManifestCalls.push({
+            path,
+            key,
+            schema: schema.constructor.name,
+          });
+          return Promise.resolve();
+        },
+      ),
+      sha256: vi.fn(
+        (filePath: string) => `mock-hash-${filePath.split("/").pop()}`,
+      ),
+      validateDependencies: vi.fn(() => {
+        // Mock successful dependency validation by default
+        return;
+      }),
+      __getValidateCalls: () => validateCalls,
+      __getParseCallsCounter: () => parseCallsCounter,
+      __getAssertManifestCalls: () => assertManifestCalls,
+      __resetMocks: () => {
+        validateCalls = [];
+        parseCallsCounter = 0;
+        assertManifestCalls = [];
       },
-    ),
-    assertManifestSection: vi.fn(
-      async (path: string, key: string, schema: any) => {
-        assertManifestCalls.push({
-          path,
-          key,
-          schema: schema.constructor.name,
-        });
-        return Promise.resolve();
-      },
-    ),
-    sha256: vi.fn(
-      (filePath: string) => `mock-hash-${filePath.split("/").pop()}`,
-    ),
-    validateDependencies: vi.fn(() => {
-      // Mock successful dependency validation by default
-      return;
-    }),
-    __getValidateCalls: () => validateCalls,
-    __getParseCallsCounter: () => parseCallsCounter,
-    __getAssertManifestCalls: () => assertManifestCalls,
-    __resetMocks: () => {
-      validateCalls = [];
-      parseCallsCounter = 0;
-      assertManifestCalls = [];
-    },
-  };
-});
+    };
+  },
+);
 
 // Mock file system operations
 vi.mock("node:fs", async (importOriginal) => {
@@ -197,7 +200,9 @@ describe("STV Rounds Contract Tests", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     // Reset mock state
-    const contractEnforcer = await import("../../lib/contract-enforcer.js");
+    const contractEnforcer = await import(
+      "@/packages/contracts/lib/contract-enforcer"
+    );
     (contractEnforcer as any).__resetMocks?.();
   });
 
@@ -205,7 +210,9 @@ describe("STV Rounds Contract Tests", () => {
     const result = await computeStvRounds();
 
     // Verify contract enforcer functions were called
-    const contractEnforcer = await import("../../lib/contract-enforcer.js");
+    const contractEnforcer = await import(
+      "@/packages/contracts/lib/contract-enforcer"
+    );
 
     expect(contractEnforcer.assertTableColumns).toHaveBeenCalledWith(
       expect.anything(),
@@ -383,7 +390,9 @@ describe("STV Rounds Contract Tests", () => {
 
     await computeStvRounds();
 
-    const contractEnforcer = await import("../../lib/contract-enforcer.js");
+    const contractEnforcer = await import(
+      "@/packages/contracts/lib/contract-enforcer"
+    );
     const calls = (contractEnforcer as any).__getValidateCalls?.() || [];
     const parseCallsCount =
       (contractEnforcer as any).__getParseCallsCounter?.() || 0;

@@ -11,6 +11,10 @@ export interface ArtifactPaths {
     candidates: string;
     ballotsLong: string;
   };
+  stv: {
+    meta: string;
+    rounds: string;
+  };
   summary: {
     firstChoice: string;
   };
@@ -30,6 +34,10 @@ export function getArtifactPaths(): ArtifactPaths {
     ingest: {
       candidates: `${base}/ingest/candidates.parquet`,
       ballotsLong: `${base}/ingest/ballots_long.parquet`,
+    },
+    stv: {
+      meta: `${base}/stv/stv_meta.parquet`,
+      rounds: `${base}/stv/stv_rounds.parquet`,
     },
     summary: {
       firstChoice: `${base}/summary/first_choice.parquet`,
