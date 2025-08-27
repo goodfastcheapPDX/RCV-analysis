@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
+import { getArtifactPaths } from "../src/packages/contracts/lib/artifact-paths.js";
 import { CONTRACT_VERSION } from "../src/packages/contracts/slices/first_choice_breakdown/index.contract.js";
 
 interface OfficialResult {
@@ -20,13 +21,14 @@ function normalizeCandidate(name: string): string {
 async function validateStructural(): Promise<void> {
   console.log("Running structural validation...");
 
+  const paths = getArtifactPaths();
   const instance = await DuckDBInstance.create();
   const conn = await instance.connect();
 
   try {
     // Load the output file
     await conn.run(
-      "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+      `CREATE VIEW first_choice AS SELECT * FROM '${paths.summary.firstChoice}';`,
     );
 
     // Check for NULL candidate names
@@ -83,12 +85,14 @@ async function validateStructural(): Promise<void> {
 async function validateSemantic(): Promise<void> {
   console.log("Running semantic validation...");
 
+  const paths = getArtifactPaths();
+
   // Load manifest
-  if (!existsSync("manifest.json")) {
-    throw new Error("manifest.json not found");
+  if (!existsSync(paths.manifest)) {
+    throw new Error(`${paths.manifest} not found`);
   }
 
-  const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
+  const manifest = JSON.parse(readFileSync(paths.manifest, "utf8"));
   const ingestCvrEntry = manifest[`ingest_cvr@1.0.0`];
   const firstChoiceEntry =
     manifest[`first_choice_breakdown@${CONTRACT_VERSION}`];
@@ -108,12 +112,12 @@ async function validateSemantic(): Promise<void> {
 
   try {
     await conn.run(
-      "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+      `CREATE VIEW first_choice AS SELECT * FROM '${paths.summary.firstChoice}';`,
     );
 
     // Get count of first choice votes from ballots_long directly for verification
     await conn.run(
-      "CREATE VIEW ballots_long AS SELECT * FROM 'data/ingest/ballots_long.parquet';",
+      `CREATE VIEW ballots_long AS SELECT * FROM '${paths.ingest.ballotsLong}';`,
     );
     const actualFirstChoicesResult = await conn.run(
       "SELECT COUNT(*) as actual_count FROM ballots_long WHERE rank_position = 1 AND has_vote = TRUE;",
@@ -181,9 +185,11 @@ async function validateOfficialResults(caseName: string): Promise<void> {
   const instance = await DuckDBInstance.create();
   const conn = await instance.connect();
 
+  const paths = getArtifactPaths();
+
   try {
     await conn.run(
-      "CREATE VIEW first_choice AS SELECT * FROM 'data/summary/first_choice.parquet';",
+      `CREATE VIEW first_choice AS SELECT * FROM '${paths.summary.firstChoice}';`,
     );
     const computedResult = await conn.run(
       "SELECT candidate_name, first_choice_votes FROM first_choice ORDER BY candidate_name;",

@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import { getArtifactPaths } from "../src/packages/contracts/lib/artifact-paths";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 
 async function main() {
@@ -16,6 +17,8 @@ async function main() {
 
     const result = await ingestCvr();
 
+    const paths = getArtifactPaths();
+
     console.log("✅ Data ingestion completed successfully!");
     console.log(`📊 Statistics:`);
     console.log(`  - Candidates: ${result.candidates.rows}`);
@@ -29,9 +32,9 @@ async function main() {
     );
 
     console.log("\n📁 Files created:");
-    console.log("  - data/ingest/candidates.parquet");
-    console.log("  - data/ingest/ballots_long.parquet");
-    console.log("  - manifest.json (updated)");
+    console.log(`  - ${paths.ingest.candidates}`);
+    console.log(`  - ${paths.ingest.ballotsLong}`);
+    console.log(`  - ${paths.manifest} (updated)`);
   } catch (error) {
     console.error("❌ Data ingestion failed:");
     console.error(error);
