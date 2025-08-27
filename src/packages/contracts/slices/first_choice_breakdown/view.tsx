@@ -117,7 +117,7 @@ export function FirstChoiceBreakdownView({
         </div>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
+        <ChartContainer config={chartConfig} className="min-h-[500px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               accessibilityLayer
@@ -135,7 +135,8 @@ export function FirstChoiceBreakdownView({
                 tickMargin={10}
                 axisLine={false}
                 className="text-xs"
-                width={160}
+                width={200}
+                interval={0}
               />
               <XAxis dataKey="first_choice_votes" type="number" hide />
               <ChartTooltip
@@ -162,7 +163,8 @@ export function FirstChoiceBreakdownView({
                   dataKey="first_choice_votes"
                   position="right"
                   offset={8}
-                  className="text-xs font-medium fill-foreground"
+                  className="text-xs font-medium"
+                  fill="currentColor"
                   formatter={(value: number) => value.toLocaleString()}
                 />
               </Bar>
