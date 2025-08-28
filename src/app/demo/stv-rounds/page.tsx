@@ -1,4 +1,7 @@
 "use client";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { StvRoundsView } from "@/packages/contracts/slices/stv_rounds/view";
 import type { StvData } from "./data";
