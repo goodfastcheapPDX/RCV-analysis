@@ -33,7 +33,7 @@ export default defineConfig({
     testTimeout: 30000,
     coverage: {
       exclude: ["**/src/**/*.stories.tsx", ...coverageConfigDefaults.exclude],
-      include: ["**/src/packages/**"],
+      include: ["**/src/packages/**", "**/src/app/api/**", "**/src/app/lib/**", "**/src/app/e/**"],
       thresholds: {
         statements: 80,
         branches: 80,
