@@ -142,7 +142,7 @@ async function validateBasicStructure(
     if (!roundGroups.has(record.round)) {
       roundGroups.set(record.round, []);
     }
-    roundGroups.get(record.round)!.push(record);
+    roundGroups.get(record.round)?.push(record);
   }
 
   // Validate each round has all continuing candidates
@@ -191,10 +191,16 @@ async function validateVoteConservation(
     if (!roundGroups.has(record.round)) {
       roundGroups.set(record.round, {
         rounds: [],
-        meta: meta.find((m) => m.round === record.round)!,
+        meta: meta.find((m) => m.round === record.round) ?? {
+          round: record.round,
+          quota: 0,
+          exhausted: 0,
+          elected_this_round: null,
+          eliminated_this_round: null,
+        },
       });
     }
-    roundGroups.get(record.round)!.rounds.push(record);
+    roundGroups.get(record.round)?.rounds.push(record);
   }
 
   let previousTotal: DecimalType | null = null;

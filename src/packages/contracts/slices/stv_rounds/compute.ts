@@ -219,7 +219,7 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
 function getEnvironmentConfig(): EnvironmentConfig {
   const env = process.env.NODE_ENV === "development" ? "dev" : "prod";
   const testCase = process.env.CASE;
-  const seats = process.env.SEATS ? parseInt(process.env.SEATS) : 3;
+  const seats = process.env.SEATS ? parseInt(process.env.SEATS, 10) : 3;
 
   return {
     env,

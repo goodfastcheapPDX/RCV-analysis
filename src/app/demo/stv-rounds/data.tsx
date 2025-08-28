@@ -1,6 +1,6 @@
 "use server";
+
 import { existsSync } from "node:fs";
-import { DuckDBInstance } from "@duckdb/node-api";
 import { getArtifactPaths } from "@/packages/contracts/lib/artifact-paths";
 import { parseAllRows } from "@/packages/contracts/lib/contract-enforcer";
 import {
@@ -33,8 +33,9 @@ export async function getStvData(): Promise<StvData> {
       `STV meta data not found: ${stvMetaPath}. Run 'npm run build:data:stv' first.`,
     );
   }
+  const duck = await import("@duckdb/node-api");
 
-  const instance = await DuckDBInstance.create();
+  const instance = await duck.DuckDBInstance.create();
   const conn = await instance.connect();
 
   try {

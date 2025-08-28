@@ -11,30 +11,38 @@ import {
 vi.mock(
   "@/packages/contracts/lib/contract-enforcer",
   async (importOriginal) => {
-    const actual: any = await importOriginal();
-    let validateCalls: any[] = [];
+    const actual =
+      (await importOriginal()) as typeof import("@/packages/contracts/lib/contract-enforcer");
+    let validateCalls: Array<{ type: string; table: string; schema: string }> =
+      [];
     let parseCallsCounter = 0;
-    let assertManifestCalls: any[] = [];
+    let assertManifestCalls: Array<{
+      path: string;
+      key: string;
+      schema: string;
+    }> = [];
 
     return {
       ...actual,
       assertTableColumns: vi.fn(
-        async (conn: DuckDBConnection, table: string, schema: any) => {
+        async (_conn: DuckDBConnection, table: string, schema: unknown) => {
           validateCalls.push({
             type: "assertTableColumns",
             table,
-            schema: schema.constructor.name,
+            schema: (schema as { constructor: { name: string } }).constructor
+              .name,
           });
           return Promise.resolve();
         },
       ),
       parseAllRows: vi.fn(
-        async (conn: DuckDBConnection, table: string, schema: any) => {
+        async (_conn: DuckDBConnection, table: string, schema: unknown) => {
           parseCallsCounter++;
           validateCalls.push({
             type: "parseAllRows",
             table,
-            schema: schema.constructor.name,
+            schema: (schema as { constructor: { name: string } }).constructor
+              .name,
           });
 
           // Return mock data that matches our schemas
@@ -68,11 +76,12 @@ vi.mock(
         },
       ),
       assertManifestSection: vi.fn(
-        async (path: string, key: string, schema: any) => {
+        async (path: string, key: string, schema: unknown) => {
           assertManifestCalls.push({
             path,
             key,
-            schema: schema.constructor.name,
+            schema: (schema as { constructor: { name: string } }).constructor
+              .name,
           });
           return Promise.resolve();
         },
@@ -122,7 +131,7 @@ vi.mock("node:fs", async (importOriginal) => {
 // Mock DuckDB
 vi.mock("@duckdb/node-api", () => {
   const mockConn = {
-    run: vi.fn(async (query: string, ...params: any[]) => {
+    run: vi.fn(async (query: string, ..._params: unknown[]) => {
       if (query.includes("SELECT BallotID, candidate_name, rank_position")) {
         return {
           getRowObjects: () =>
@@ -168,7 +177,7 @@ vi.mock("@duckdb/node-api", () => {
 
 // Mock the STV engine
 vi.mock("./engine.js", () => ({
-  runSTV: vi.fn((ballotsData, rules) => ({
+  runSTV: vi.fn((_ballotsData, _rules) => ({
     rounds: [
       {
         round: 1,
@@ -203,6 +212,7 @@ describe("STV Rounds Contract Tests", () => {
     const contractEnforcer = await import(
       "@/packages/contracts/lib/contract-enforcer"
     );
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test cleanup
     (contractEnforcer as any).__resetMocks?.();
   });
 
@@ -260,7 +270,12 @@ describe("STV Rounds Contract Tests", () => {
     const { runSTV } = await import("./engine.js");
     vi.mocked(runSTV).mockReturnValue({
       rounds: [
-        { round: -1, candidate_name: "", votes: -5, status: "invalid" as any }, // Invalid data
+        {
+          round: -1,
+          candidate_name: "",
+          votes: -5,
+          status: "invalid" as "standing",
+        }, // Invalid data
       ],
       meta: [
         {
@@ -393,26 +408,31 @@ describe("STV Rounds Contract Tests", () => {
     const contractEnforcer = await import(
       "@/packages/contracts/lib/contract-enforcer"
     );
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test validation
     const calls = (contractEnforcer as any).__getValidateCalls?.() || [];
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test validation
     const parseCallsCount =
       (contractEnforcer as any).__getParseCallsCounter?.() || 0;
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test validation
     const manifestCalls =
       (contractEnforcer as any).__getAssertManifestCalls?.() || [];
 
     // Verify all required contract enforcement calls were made
     expect(
-      calls.filter((c: any) => c.type === "assertTableColumns"),
+      calls.filter((c: { type: string }) => c.type === "assertTableColumns"),
     ).toHaveLength(2); // rounds + meta
     expect(parseCallsCount).toBeGreaterThanOrEqual(2); // rounds + meta parsing
     expect(manifestCalls).toHaveLength(1); // manifest validation
 
     // Verify the correct schemas were used
     const tableAssertions = calls.filter(
-      (c: any) => c.type === "assertTableColumns",
+      (c: { type: string }) => c.type === "assertTableColumns",
     );
-    expect(tableAssertions.map((c: any) => c.table)).toContain(
+    expect(tableAssertions.map((c: { table: string }) => c.table)).toContain(
       "tmp_stv_rounds",
     );
-    expect(tableAssertions.map((c: any) => c.table)).toContain("tmp_stv_meta");
+    expect(tableAssertions.map((c: { table: string }) => c.table)).toContain(
+      "tmp_stv_meta",
+    );
   });
 });

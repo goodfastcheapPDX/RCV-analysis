@@ -1,120 +1,214 @@
-Title: Implement slice `stv_rounds` (per-round tallies & events with official comparison)
+Title
 
-You are implementing ONE vertical slice end-to-end. Stay inside the new slice folder, manifest, and tests only. If blocked, STOP and print a diagnostic + next step.
+[Stage 0a] Manifest Schema + Env-Aware Artifact Resolver (v1: flat layout)
 
-Goal
-Compute Single Transferable Vote (STV) round-by-round tallies from `ballots_long.parquet`, write contracted parquet artifacts, and validate against official JSON results when present.
+Context
 
-Inputs
-- Artifacts from `ingest_cvr`:
-  - `data/{env}/ingest/ballots_long.parquet`
-    Schema: BallotID, PrecinctID?, BallotStyleID?, candidate_id, candidate_name, rank_position, has_vote (TRUE)
-- Rules file per case (YAML): seats, quota=droop, surplus_method=fractional (Gregory), precision (default 1e-6), tie_break=lexicographic.
-- Optional official JSON per case: `tests/golden/<case>/official-results.json`
+We need a single, validated manifest to enumerate elections/contests for static routes, and an artifact resolver that abstracts file paths. Current data is organized by environment (dev/, test/, prod/) and uses a flat structure. Stage 0a must honor that structure while establishing an API we can later point at a hierarchical tree—without touching pages.
 
-Outputs (artifacts)
-1) `data/stv/stv_rounds.parquet`  (one row per candidate per round)
-   Schema:
-     round INT, candidate_name TEXT, votes DOUBLE,
-     status TEXT  -- 'standing' | 'elected' | 'eliminated'
-2) `data/stv/stv_meta.parquet`   (one row per round)
-   Schema:
-     round INT, quota DOUBLE, exhausted DOUBLE, elected_this_round TEXT[] NULL, eliminated_this_round TEXT[] NULL
+Scope
 
-Manifest
-- Key: `stv_rounds@1.0.0`
-- Include file hashes, row counts, number_of_rounds, winners (sorted), seats, quota (first-round), and precision used.
+Manifest (contract-first)
 
-Computation Requirements
-- Quota: Droop = floor(total_valid_ballots / (seats + 1)) + 1
-- First-choice tallies are round 1 base.
-- Election rule: candidate >= quota ⇒ elected in that round.
-- Surplus transfers: fractional (Gregory) weighting from each elected candidate’s ballots:
-    weight = surplus / candidate_total, applied to next-preference continuing candidates.
-- Elimination: if no one reaches quota, eliminate the lowest tally candidate (tie_break=lexicographic on candidate_name unless overridden by rules).
-- Continuing candidates: exclude elected/eliminated from future preference searches.
-- Exhausted: ballots with no further valid preferences become exhausted and stay in exhausted pool.
-- Continue until seats filled or candidates <= seats.
+Add /manifest.json:
 
-Precision & Determinism
-- Use decimal math with FLOAT but compare with tolerance `precision` from rules (default 1e-6).
-- Deterministic ordering: when multiple events happen in one round (e.g., multiple elected from transfers), order `elected_this_round` lexicographically.
-- No randomness. If tie_break requires randomness, accept `random:seed=<int>` in rules and use it.
+{
+  "buildId": "<sha>",
+  "elections": [
+    {
+      "id": "portland-2024-general",
+      "name": "Portland General Election 2024",
+      "contests": [
+        { "id": "council-district-2", "name": "City Council District 2", "seats": 3 }
+      ]
+    }
+  ]
+}
 
-Scope (files to create)
-1) `packages/contracts/slices/stv_rounds/index.contract.ts`
-   - Zod schemas:
-     OutputRow = z.object({
-       round: z.number().int().positive(),
-       candidate_name: z.string(),
-       votes: z.number().nonnegative(),
-       status: z.enum(['standing','elected','eliminated'])
-     })
-     MetaRow = z.object({
-       round: z.number().int().positive(),
-       quota: z.number().positive(),
-       exhausted: z.number().min(0),
-       elected_this_round: z.array(z.string()).optional().nullable(),
-       eliminated_this_round: z.array(z.string()).optional().nullable()
-     })
-     Stats = z.object({
-       number_of_rounds: z.number().int().positive(),
-       winners: z.array(z.string()),
-       seats: z.number().int().positive(),
-       first_round_quota: z.number().positive(),
-       precision: z.number().positive()
-     })
-     export const version = '1.0.0'
 
-2) `packages/contracts/slices/stv_rounds/engine.ts`
-   - Pure TS implementation of STV per above rules.
-   - API: `runSTV(ballotsLong: Row[], rules: Rules): { rounds: OutputRow[]; meta: MetaRow[]; winners: string[] }`
-   - Must pass Zod parse on every emitted row before COPY.
-   - Efficiency target: handle ~100k ballots, dozens of candidates within <60s locally.
+Create lib/manifest.ts:
 
-3) `packages/contracts/slices/stv_rounds/compute.ts`
-   - Open DuckDB DB; `CREATE VIEW ballots_long AS SELECT * FROM 'data/{env}/ingest/ballots_long.parquet'`
-   - Load rows needed for engine as JSON via `SELECT BallotID, candidate_name, rank_position FROM ballots_long ORDER BY BallotID, rank_position`
-   - Load rules from `tests/golden/<case>/rules.yaml` if CASE env is set; else use defaults (seats from env `SEATS` required).
-   - Call `runSTV(...)`, validate all rows with Zod, then:
-       * Create temp DuckDB tables `tmp_stv_rounds`, `tmp_stv_meta`
-       * INSERT validated rows
-       * COPY to parquet:
-         COPY tmp_stv_rounds TO 'data/stv/stv_rounds.parquet' (FORMAT 'parquet');
-         COPY tmp_stv_meta   TO 'data/stv/stv_meta.parquet'   (FORMAT 'parquet');
-   - Update manifest under `stv_rounds@1.0.0` with Stats + SHA256 file hashes.
+Zod schemas (Contest, Election, Manifest).
 
-4) Validation CLI: `scripts/validateStvRounds.ts`
-   - Read artifacts back via DuckDB; assert:
-     a) Each round has every continuing candidate (status consistent)
-     b) Per-round conservation: sum(votes of continuing + exhausted) equals previous round’s sum (± precision), after adding transfers/elimination effects
-     c) Winners length == seats; winners are exactly those with status 'elected' in some round
-   - If `official-results.json` exists for CASE:
-     - Normalize names (map provided if needed).
-     - Compare per round:
-        • candidate set equality
-        • tallies within `precision`
-        • elected/eliminated events sequences equal
-        • quota equals official threshold (numeric)
-     - On first mismatch, print compact diff and exit nonzero.
+loadManifest() → reads and validates; throws with diagnostics on failure.
 
-5) Tests
-   - Micro cases (3–20 ballots): exact match to `expect.json` (no tolerance).
-   - Real case (e.g., Portland D2): match official JSON within precision.
-   - Contract tests: assert `Output.parse` and `MetaRow.parse` are called before COPY; `Stats` validated in manifest.
+Export inferred TS types.
+
+Environment selection (no I/O mutation)
+
+Define DATA_ENV with allowed values: "dev" | "test" | "prod".
+
+Add lib/env.ts:
+
+getDataEnv() → reads process.env.DATA_ENV ?? "dev", validates (Zod), returns a frozen union type.
+
+getArtifactRoot(env) → returns filesystem root (default /data/<env>). Do not create or write—resolver is read-only.
+
+Artifact Resolver (v1: flat mapping)
+
+Add lib/artifacts.ts:
+
+getArtifacts(electionId, contestId, env) → returns paths for the known slices, mapping to existing flat files under /data/<env>/....
+
+Guard: if (electionId, contestId) ≠ the canonical pair you currently support, throw:
+
+“Flat layout only supports {portland-2024-general}/{council-district-2} in env=<env>.”
+
+Return shape (extend as you add slices):
+
+type ArtifactPaths = {
+  electionSummary?: string;          // if you already export it
+  firstChoiceParquet?: string;       // current summary fallback
+  stvTabulationParquet: string;
+  stvMetaParquet: string;
+};
+
+
+No file reads here—just deterministic path assembly.
+
+Route static params (compile-time)
+
+In /e/[electionId] and /e/[electionId]/c/[contestId], implement generateStaticParams() using loadManifest().
+
+Pages may import getDataEnv() + getArtifacts() later; in Stage 0a they can just render IDs to prove enumeration works.
 
 Guardrails
-- Do NOT implement Sankey/visualization; data/validation only.
-- Do NOT read raw CSV directly; read only `ballots_long.parquet`.
-- Must call `Output.parse` / `MetaRow.parse` for every row and `Stats.parse` for manifest (fail build if absent).
-- Deterministic: when multiple lowest tallies tie and tie_break=lexicographic, choose alphabetically; document the chosen candidate in meta (optional `tiebreak_note`).
+
+Contract-first: manifest & env both validated via Zod; builds fail on invalid config.
+
+Read-only: resolver never writes; no cleanup needed; avoids test/dev thrash.
+
+Env explicit: only "dev" | "test" | "prod" allowed; any other value fails fast with a clear message.
+
+No scope creep: no UI, no shadcn, no visualization; skeleton pages may only render IDs.
+
+Absolute imports per repo rules.
 
 Done When
-- `npm run build:data:stv` writes `data/stv/stv_rounds.parquet` and `data/stv/stv_meta.parquet`
-- `npm run validate:stv --case=<golden>` passes on micro and at least one real case with official JSON
-- Manifest contains `stv_rounds@1.0.0` with correct winners, rounds, quota, precision, and hashes
 
-Developer commands to print at the end
-- `CASE=portland_d2_2024 SEATS=3 npm run build:data:stv && npm run validate:stv --case=portland_d2_2024`
-- `npm run validate:stv --all`
-- Note any name-normalization applied
+pnpm build fails with a useful error if manifest.json is malformed or DATA_ENV is invalid.
+
+generateStaticParams() enumerates elections/contests from the validated manifest.
+
+A placeholder contest page renders the {electionId, contestId} coming from static params.
+
+getArtifacts() returns existing flat paths under /data/<env> and throws a clear error if called with unsupported IDs (protects against silent misroutes).
+
+No writes occur in any code path; tests can set DATA_ENV=test without file thrash.
+
+Output
+
+PR containing:
+
+manifest.json (seeded with one election/contest).
+
+lib/manifest.ts (Zod + loader).
+
+lib/env.ts (DATA_ENV contract).
+
+lib/artifacts.ts (env-aware, flat resolver shim).
+
+Minimal updates to [electionId] and [contestId] route files for generateStaticParams().
+
+A 3–5 line ASSUMPTIONS.md note:
+
+IDs are kebab-case and stable across builds.
+
+DATA_ENV is read-only context selection (dev|test|prod), not a write target.
+
+v1 resolver maps to current flat files under /data/<env>.
+
+v2 will switch to /data/<env>/processed/{electionId}/{contestId}/... with no page changes.
+
+buildId is a short hex SHA used for future ?v= pinning (not enforced in 0a).
+
+Tiny code sketches (for clarity)
+// lib/env.ts
+import { z } from "zod";
+const Env = z.enum(["dev", "test", "prod"]);
+export type DataEnv = z.infer<typeof Env>;
+export function getDataEnv(): DataEnv {
+  return Env.parse(process.env.DATA_ENV ?? "dev");
+}
+export function getArtifactRoot(env: DataEnv) {
+  // adjust if your monorepo uses a different base
+  return `/data/${env}`;
+}
+
+// lib/artifacts.ts
+import { getArtifactRoot, type DataEnv } from "@/lib/env";
+
+const CANON_ELECTION = "portland-2024-general";
+const CANON_CONTEST  = "council-district-2";
+
+export type ArtifactPaths = {
+  firstChoiceParquet?: string;
+  stvTabulationParquet: string;
+  stvMetaParquet: string;
+};
+
+export function getArtifacts(electionId: string, contestId: string, env: DataEnv): ArtifactPaths {
+  if (electionId !== CANON_ELECTION || contestId !== CANON_CONTEST) {
+    throw new Error(`Flat data layout only supports ${CANON_ELECTION}/${CANON_CONTEST} (env=${env}).`);
+  }
+  const root = getArtifactRoot(env);
+  return {
+    firstChoiceParquet: `${root}/summary/first_choice.parquet`,
+    stvTabulationParquet: `${root}/stv/stv_rounds.parquet`,
+    stvMetaParquet: `${root}/stv/stv_meta.parquet`,
+  };
+}
+
+// lib/manifest.ts
+import { z } from "zod";
+import fs from "node:fs/promises";
+const Contest = z.object({ id: z.string(), name: z.string(), seats: z.number().int().positive() });
+const Election = z.object({ id: z.string(), name: z.string(), contests: z.array(Contest).nonempty() });
+export const Manifest = z.object({ buildId: z.string().min(6), elections: z.array(Election).nonempty() });
+export type ManifestT = z.infer<typeof Manifest>;
+
+export async function loadManifest(path = "manifest.json"): Promise<ManifestT> {
+  const raw = await fs.readFile(path, "utf8");
+  return Manifest.parse(JSON.parse(raw));
+}
+
+
+This keeps your env directory discipline intact, avoids test/dev clobbering, and sets you up to flip to a hierarchical tree later by changing only the resolver.
+
+Files to add
+
+manifest.json (nav manifest; seed with one election & one contest).
+
+lib/manifest.ts (Zod schemas + loadManifest()).
+
+lib/env.ts (getDataEnv(), getArtifactRoot(); enum-validated).
+
+lib/artifacts.ts (env-aware, flat resolver shim; read-only).
+
+Minimal updates to /e/[electionId]/page.tsx and /e/[electionId]/c/[contestId]/page.tsx to use generateStaticParams() from loadManifest() and render IDs (placeholders).
+
+Do not touch
+
+Existing /demo/* routes.
+
+src/packages/contracts/lib/artifact-paths.ts.
+
+Slice manifests (manifest.dev.json, manifest.test.json).
+
+Env directories
+
+Resolver builds paths like /data/<env>/summary/first_choice.parquet, /data/<env>/stv/stv_rounds.parquet, /data/<env>/stv/stv_meta.parquet.
+
+No writes. No cleanup. Read-only.
+
+Assumptions (document in PR)
+
+IDs are kebab-case and stable.
+
+DATA_ENV is one of dev|test|prod (default dev).
+
+Flat layout supports exactly the seeded (electionId, contestId) pair; others error.
+
+Later migration moves to /data/<env>/processed/{electionId}/{contestId}/… by editing only lib/artifacts.ts.
+
+buildId is a hex SHA (string length ≥ 6) for future URL pinning; not enforced in 0a.

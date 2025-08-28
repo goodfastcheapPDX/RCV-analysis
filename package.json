@@ -15,8 +15,10 @@
     "lint": "biome check --fix",
     "format": "biome format --write --fix",
     "typecheck": "npx tsc --noEmit",
-    "test": "vitest",
-    "coverage": "vitest run --coverage",
+    "test": "vitest --silent",
+    "test:debug": "vitest",
+    "coverage": "vitest run --coverage --silent",
+    "coverage:debug": "vitest run --coverage",
     "prepare": "husky",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

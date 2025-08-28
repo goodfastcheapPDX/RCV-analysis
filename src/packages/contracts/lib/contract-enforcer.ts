@@ -242,7 +242,7 @@ export function validateDependencies(
     );
   }
 
-  let manifest: Record<string, any>;
+  let manifest: Record<string, unknown>;
   try {
     const manifestContent = readFileSync(manifestPath, "utf8");
     manifest = JSON.parse(manifestContent);
@@ -265,10 +265,17 @@ export function validateDependencies(
     const entry = manifest[dep.key];
 
     // Check version compatibility if specified
-    if (dep.minVersion && entry.version) {
-      if (!isVersionCompatible(entry.version, dep.minVersion)) {
+    if (
+      dep.minVersion &&
+      entry &&
+      typeof entry === "object" &&
+      entry !== null &&
+      "version" in entry &&
+      typeof entry.version === "string"
+    ) {
+      if (!isVersionCompatible(entry.version as string, dep.minVersion)) {
         throw new Error(
-          `Dependency '${dep.key}' version ${entry.version} is incompatible with required ${dep.minVersion}. Run: ${dep.buildCommand}`,
+          `Dependency '${dep.key}' version ${entry.version as string} is incompatible with required ${dep.minVersion}. Run: ${dep.buildCommand}`,
         );
       }
     }
@@ -282,7 +289,13 @@ export function validateDependencies(
       }
 
       // Verify file integrity using SHA256 hash
-      const expectedHash = entry[artifact.hashKey];
+      const expectedHash =
+        entry &&
+        typeof entry === "object" &&
+        entry !== null &&
+        artifact.hashKey in entry
+          ? (entry as Record<string, unknown>)[artifact.hashKey]
+          : null;
       if (expectedHash) {
         let actualHash: string;
         try {

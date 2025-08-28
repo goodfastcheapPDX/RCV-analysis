@@ -139,7 +139,7 @@ function prepareBallots(ballotsData: BallotData[]): Ballot[] {
     if (!ballotMap.has(row.BallotID)) {
       ballotMap.set(row.BallotID, new Map());
     }
-    ballotMap.get(row.BallotID)!.set(row.rank_position, row.candidate_name);
+    ballotMap.get(row.BallotID)?.set(row.rank_position, row.candidate_name);
   }
 
   // Convert to ordered preference lists
@@ -148,7 +148,10 @@ function prepareBallots(ballotsData: BallotData[]): Ballot[] {
     const preferences: string[] = [];
     const sortedRanks = Array.from(ranks.keys()).sort((a, b) => a - b);
     for (const rank of sortedRanks) {
-      preferences.push(ranks.get(rank)!);
+      const candidate = ranks.get(rank);
+      if (candidate) {
+        preferences.push(candidate);
+      }
     }
     ballots.push({ id: ballotId, preferences });
   }
@@ -198,9 +201,11 @@ function initializeFirstRound(
   for (const ballot of ballots) {
     const firstChoice = getNextValidPreference(ballot, candidates);
     if (firstChoice) {
-      const candidateVotes = candidates.get(firstChoice)!;
-      candidateVotes.votes = candidateVotes.votes.plus(1);
-      candidateVotes.ballots.push({ ballot, weight: new Decimal(1) });
+      const candidateVotes = candidates.get(firstChoice);
+      if (candidateVotes) {
+        candidateVotes.votes = candidateVotes.votes.plus(1);
+        candidateVotes.ballots.push({ ballot, weight: new Decimal(1) });
+      }
     } else {
       exhausted = exhausted.plus(1);
     }
@@ -298,7 +303,8 @@ function transferSurplus(
   candidateName: string,
   precision: number,
 ): void {
-  const candidate = state.candidates.get(candidateName)!;
+  const candidate = state.candidates.get(candidateName);
+  if (!candidate) return;
   const surplus = candidate.votes.minus(state.quota);
   const precisionDecimal = new Decimal(precision);
 
@@ -315,9 +321,11 @@ function transferSurplus(
     const nextPreference = getNextValidPreference(ballot, state.candidates);
 
     if (nextPreference) {
-      const targetCandidate = state.candidates.get(nextPreference)!;
-      targetCandidate.votes = targetCandidate.votes.plus(newWeight);
-      targetCandidate.ballots.push({ ballot, weight: newWeight });
+      const targetCandidate = state.candidates.get(nextPreference);
+      if (targetCandidate) {
+        targetCandidate.votes = targetCandidate.votes.plus(newWeight);
+        targetCandidate.ballots.push({ ballot, weight: newWeight });
+      }
     } else {
       state.exhausted = state.exhausted.plus(newWeight);
     }
@@ -365,7 +373,8 @@ function findLowestCandidate(
 }
 
 function eliminateCandidate(state: RoundState, candidateName: string): void {
-  const candidate = state.candidates.get(candidateName)!;
+  const candidate = state.candidates.get(candidateName);
+  if (!candidate) return;
   candidate.status = "eliminated";
   state.eliminated.push(candidateName);
 
@@ -374,9 +383,11 @@ function eliminateCandidate(state: RoundState, candidateName: string): void {
     const nextPreference = getNextValidPreference(ballot, state.candidates);
 
     if (nextPreference) {
-      const targetCandidate = state.candidates.get(nextPreference)!;
-      targetCandidate.votes = targetCandidate.votes.plus(weight);
-      targetCandidate.ballots.push({ ballot, weight });
+      const targetCandidate = state.candidates.get(nextPreference);
+      if (targetCandidate) {
+        targetCandidate.votes = targetCandidate.votes.plus(weight);
+        targetCandidate.ballots.push({ ballot, weight });
+      }
     } else {
       state.exhausted = state.exhausted.plus(weight);
     }
