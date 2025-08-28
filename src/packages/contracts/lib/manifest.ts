@@ -22,7 +22,9 @@ export type Contest = z.infer<typeof Contest>;
 export type Election = z.infer<typeof Election>;
 export type ManifestT = z.infer<typeof Manifest>;
 
-export async function loadManifest(path = "manifest.json"): Promise<ManifestT> {
+export async function loadManifestFromFs(
+  path = "manifest.json",
+): Promise<ManifestT> {
   try {
     const raw = await fs.readFile(path, "utf8");
     const parsed = JSON.parse(raw);
