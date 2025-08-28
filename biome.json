@@ -8,7 +8,9 @@
   "files": {
     "ignoreUnknown": true,
     "includes": [
-      "**",
+      "src",
+      "tests",
+      "scripts",
       "!node_modules",
       "!.next",
       "!dist",
