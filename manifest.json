@@ -1,0 +1,16 @@
+{
+  "buildId": "706856c",
+  "elections": [
+    {
+      "id": "portland-2024-general",
+      "name": "Portland General Election 2024",
+      "contests": [
+        {
+          "id": "council-district-2",
+          "name": "City Council District 2",
+          "seats": 3
+        }
+      ]
+    }
+  ]
+}
