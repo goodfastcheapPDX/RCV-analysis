@@ -1,3 +1,6 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { existsSync } from "node:fs";
 import { NextResponse } from "next/server";
 import { getArtifactPaths } from "@/packages/contracts/lib/artifact-paths";
