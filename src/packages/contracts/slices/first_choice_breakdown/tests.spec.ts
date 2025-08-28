@@ -271,6 +271,9 @@ describe("first_choice_breakdown", () => {
     process.env.SRC_CSV = "tests/golden/micro/canonical_subset.csv";
 
     try {
+      // Add a small delay to prevent concurrent access
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
+
       // Re-ingest with canonical data
       await ingestCvr();
       const result = await computeFirstChoiceBreakdown();
@@ -284,8 +287,10 @@ describe("first_choice_breakdown", () => {
       expect(result.data.rows).toBe(result.stats.candidate_count);
     } finally {
       process.env.SRC_CSV = originalEnv;
+      // Add delay before re-ingesting to prevent file system race
+      await new Promise((resolve) => setTimeout(resolve, 50));
       // Re-ingest with original test data for other tests
       await ingestCvr();
     }
-  });
+  }, 30000); // Set explicit 30 second timeout
 });

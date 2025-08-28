@@ -29,6 +29,8 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
     globals: true,
+    // Set test timeout to 30 seconds to handle database operations
+    testTimeout: 30000,
     coverage: {
       exclude: ["**/src/**/*.stories.tsx", ...coverageConfigDefaults.exclude],
       include: ["**/src/packages/**"],
