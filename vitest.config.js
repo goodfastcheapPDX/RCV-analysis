@@ -32,8 +32,12 @@ export default defineConfig({
     // Set test timeout to 30 seconds to handle database operations
     testTimeout: 30000,
     coverage: {
-      exclude: ["**/src/**/*.stories.tsx", ...coverageConfigDefaults.exclude],
-      include: ["**/src/packages/**", "**/src/app/api/**", "**/src/app/lib/**", "**/src/app/e/**"],
+      exclude: [
+        "**/src/**/*.stories.tsx", 
+        "**/src/app/e/**", // Next.js route pages tested via build process
+        ...coverageConfigDefaults.exclude
+      ],
+      include: ["**/src/packages/**", "**/src/app/api/**", "**/src/lib/**"],
       thresholds: {
         statements: 80,
         branches: 80,
