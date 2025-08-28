@@ -4,8 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { StvRoundsView } from "@/packages/contracts/slices/stv_rounds/view";
-import type { StvData } from "./data";
-import { getStvData } from "./data";
+import type { StvData } from "@/types/stv-data";
 
 export default function StvRoundsDemoPage() {
   const [data, setData] = useState<StvData | null>(null);
@@ -16,7 +15,14 @@ export default function StvRoundsDemoPage() {
     (async () => {
       try {
         setLoading(true);
-        const stvData = await getStvData();
+        const response = await fetch("/api/stv-data");
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        const stvData: StvData = await response.json();
         setData(stvData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error occurred");
