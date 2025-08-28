@@ -4,6 +4,7 @@ A comprehensive analysis platform for ranked-choice voting elections, featuring 
 
 ## Development Rules
 
+- the vercel build environment does not have the necessary c++ bindings for duckdb. therefore any usage of duckdb in the app/ directory must be in a route.js file with the necessary configuration exports to prevent nextjs from attempting to run the files at build time. see /api/stv-rounds and /demo/stv-rounds for an example of the correct pattern
 - src\packages\contracts\lib\contract-enforcer.ts is always the single source of truth for any downstream code that interacts with data structures
 - your current task is always described in CURRENT_TASK.md. if it is empty it means we must define the task together before proceeding.
 - never work beyond the scope of CURRENT_TASK.md
