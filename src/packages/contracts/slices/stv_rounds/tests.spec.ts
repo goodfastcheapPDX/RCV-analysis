@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { BallotData } from "./engine.js";
-import { runSTV } from "./engine.js";
-import { RulesSchema } from "./index.contract.js";
+import { createIdentity } from "@/contracts/ids";
+import type { BallotData } from "./engine";
+import { runSTV } from "./engine";
+import { RulesSchema } from "./index.contract";
 
 describe("STV Engine Functional Tests", () => {
   const defaultRules = RulesSchema.parse({
@@ -11,6 +12,8 @@ describe("STV Engine Functional Tests", () => {
     precision: 1e-6,
     tie_break: "lexicographic",
   });
+
+  const testIdentity = createIdentity("test-20241105-gen", "d1-2seat", "d1", 2);
 
   describe("Basic STV Mechanics", () => {
     it("should handle simple two-seat election with clear winners", () => {
@@ -34,7 +37,7 @@ describe("STV Engine Functional Tests", () => {
         { BallotID: "B6", candidate_name: "Alice", rank_position: 2 },
       ];
 
-      const result = runSTV(ballots, defaultRules);
+      const result = runSTV(ballots, defaultRules, testIdentity);
 
       expect(result.winners).toHaveLength(2);
       expect(result.winners).toContain("Alice");
@@ -68,7 +71,7 @@ describe("STV Engine Functional Tests", () => {
       ];
 
       // 7 ballots, 2 seats -> Droop quota = floor(7/(2+1)) + 1 = floor(2.33) + 1 = 3
-      const result = runSTV(ballots, defaultRules);
+      const result = runSTV(ballots, defaultRules, testIdentity);
 
       expect(result.meta[0].quota).toBe(3);
     });
@@ -91,7 +94,7 @@ describe("STV Engine Functional Tests", () => {
       ];
 
       // 6 ballots, 2 seats -> Droop quota = floor(6/3) + 1 = 3
-      const result = runSTV(ballots, defaultRules);
+      const result = runSTV(ballots, defaultRules, testIdentity);
 
       // Alice should be elected immediately (3 votes >= 3 quota)
       expect(result.winners).toContain("Alice");
@@ -126,7 +129,7 @@ describe("STV Engine Functional Tests", () => {
       // 6 ballots, 2 seats -> Droop quota = 3
       // Alice gets 4 votes, surplus = 1
       // Transfer weight = 1/4 = 0.25 per ballot
-      const result = runSTV(ballots, defaultRules);
+      const result = runSTV(ballots, defaultRules, testIdentity);
 
       expect(result.winners).toContain("Alice");
       expect(result.rounds.length).toBeGreaterThan(2); // Should have multiple rounds due to surplus transfer
@@ -156,7 +159,7 @@ describe("STV Engine Functional Tests", () => {
         { BallotID: "B6", candidate_name: "Bob", rank_position: 1 },
       ];
 
-      const result = runSTV(ballots, defaultRules);
+      const result = runSTV(ballots, defaultRules, testIdentity);
 
       // Should have some exhausted votes after elimination
       const finalMeta = result.meta[result.meta.length - 1];
@@ -177,7 +180,7 @@ describe("STV Engine Functional Tests", () => {
       // 5 ballots, 2 seats -> quota = 2
       // Winner gets 3 votes (elected), Alpha and Zebra tie with 1 vote each
       // Alpha should be eliminated first (lexicographically before Zebra)
-      const result = runSTV(ballots, defaultRules);
+      const result = runSTV(ballots, defaultRules, testIdentity);
 
       const eliminatedCandidates = result.rounds
         .filter((r) => r.status === "eliminated")
@@ -198,7 +201,7 @@ describe("STV Engine Functional Tests", () => {
         seats: 1,
       });
 
-      const result = runSTV(ballots, singleSeatRules);
+      const result = runSTV(ballots, singleSeatRules, testIdentity);
 
       expect(result.winners).toEqual(["OnlyCandidate"]);
       expect(result.rounds.length).toBeGreaterThan(0);
@@ -215,7 +218,7 @@ describe("STV Engine Functional Tests", () => {
         seats: 3, // More seats than candidates
       });
 
-      const result = runSTV(ballots, manySeatsRules);
+      const result = runSTV(ballots, manySeatsRules, testIdentity);
 
       // Should elect all available candidates
       expect(result.winners).toContain("Alice");
@@ -252,7 +255,11 @@ describe("STV Engine Functional Tests", () => {
         });
       }
 
-      const result = runSTV(ballots, { ...defaultRules, seats: 1 });
+      const result = runSTV(
+        ballots,
+        { ...defaultRules, seats: 1 },
+        testIdentity,
+      );
 
       expect(result.winners).toContain("MajorityWinner");
       expect(result.rounds.every((r) => !Number.isNaN(r.votes))).toBe(true);
@@ -275,7 +282,7 @@ describe("STV Engine Functional Tests", () => {
         { BallotID: "B5", candidate_name: "B", rank_position: 1 },
       ];
 
-      const result = runSTV(ballots, defaultRules);
+      const result = runSTV(ballots, defaultRules, testIdentity);
       const totalBallots = 5;
 
       // Check vote conservation in each round
@@ -304,7 +311,7 @@ describe("STV Compute Function Tests", () => {
   describe("getEnvironmentConfig", () => {
     it("should return 'dev' env when NODE_ENV is development", async () => {
       process.env = { ...originalEnv, NODE_ENV: "development" };
-      const { computeStvRounds } = await import("./compute.js");
+      const { computeStvRounds } = await import("./compute");
 
       // We can't directly test getEnvironmentConfig since it's not exported,
       // but we can test it indirectly through computeStvRounds behavior
@@ -314,14 +321,14 @@ describe("STV Compute Function Tests", () => {
 
     it("should return 'prod' env when NODE_ENV is not development", async () => {
       process.env = { ...originalEnv, NODE_ENV: "production" };
-      const { computeStvRounds } = await import("./compute.js");
+      const { computeStvRounds } = await import("./compute");
 
       expect(process.env.NODE_ENV).toBe("production");
     });
 
     it("should use SEATS environment variable when provided", async () => {
       process.env = { ...originalEnv, SEATS: "5" };
-      const { computeStvRounds } = await import("./compute.js");
+      const { computeStvRounds } = await import("./compute");
 
       expect(process.env.SEATS).toBe("5");
     });
@@ -329,7 +336,7 @@ describe("STV Compute Function Tests", () => {
     it("should default to 3 seats when SEATS is not provided", async () => {
       process.env = { ...originalEnv };
       delete process.env.SEATS;
-      const { computeStvRounds } = await import("./compute.js");
+      const { computeStvRounds } = await import("./compute");
 
       expect(process.env.SEATS).toBeUndefined();
     });
@@ -338,7 +345,7 @@ describe("STV Compute Function Tests", () => {
   describe("loadRules", () => {
     it("should handle case with existing rules file", async () => {
       process.env = { ...originalEnv, CASE: "micro" };
-      const { computeStvRounds } = await import("./compute.js");
+      const { computeStvRounds } = await import("./compute");
 
       // This will test the config.case branch and existsSync(rulesPath) branch
       expect(process.env.CASE).toBe("micro");
@@ -346,7 +353,7 @@ describe("STV Compute Function Tests", () => {
 
     it("should handle case with non-existing rules file", async () => {
       process.env = { ...originalEnv, CASE: "nonexistent" };
-      const { computeStvRounds } = await import("./compute.js");
+      const { computeStvRounds } = await import("./compute");
 
       // This will test the config.case branch and the else branch of existsSync
       expect(process.env.CASE).toBe("nonexistent");
@@ -355,7 +362,7 @@ describe("STV Compute Function Tests", () => {
     it("should handle no case specified", async () => {
       process.env = { ...originalEnv };
       delete process.env.CASE;
-      const { computeStvRounds } = await import("./compute.js");
+      const { computeStvRounds } = await import("./compute");
 
       // This will test the !config.case branch
       expect(process.env.CASE).toBeUndefined();

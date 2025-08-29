@@ -1,15 +1,18 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import yaml from "js-yaml";
-import { getArtifactPaths } from "@/packages/contracts/lib/artifact-paths";
 import {
-  assertManifestSection,
+  type ContestId,
+  createIdentity,
+  type DistrictId,
+  type ElectionId,
+} from "@/contracts/ids";
+import type { Manifest } from "@/contracts/manifest";
+import { getDataEnv } from "@/lib/env";
+import {
   assertTableColumns,
-  type DependencySpec,
   parseAllRows,
   sha256,
-  validateDependencies,
 } from "@/packages/contracts/lib/contract-enforcer";
 import { type BallotData, runSTV } from "./engine";
 import {
@@ -17,55 +20,98 @@ import {
   StvMetaOutput,
   StvRoundsOutput,
   StvRoundsStats,
-  version,
 } from "./index.contract";
 
-interface EnvironmentConfig {
-  env: string;
-  case?: string;
-  seats: number;
+interface ComputeStvOptions {
+  electionId: ElectionId;
+  contestId: ContestId;
+  districtId: DistrictId;
+  seatCount: number;
+}
+
+function getOutputPath(
+  env: string,
+  electionId: ElectionId,
+  contestId: ContestId,
+): string {
+  return `data/${env}/${electionId}/${contestId}/stv`;
+}
+
+function getManifestPath(env: string): string {
+  return `data/${env}/manifest.json`;
 }
 
 /**
  * Main compute function for STV rounds analysis
  */
-export async function computeStvRounds(): Promise<StvRoundsStats> {
-  const config = getEnvironmentConfig();
-  const paths = getArtifactPaths();
+export async function computeStvRounds(
+  options?: ComputeStvOptions,
+): Promise<StvRoundsStats> {
+  // Support both new parameterized call and legacy environment-based call
+  const electionId =
+    options?.electionId || ("portland-20241105-gen" as ElectionId);
+  const contestId = options?.contestId || ("d2-3seat" as ContestId);
+  const districtId = options?.districtId || ("d2" as DistrictId);
+  const seatCount = options?.seatCount || 3;
 
-  // Validate dependencies before proceeding
-  const dependencies: DependencySpec[] = [
-    {
-      key: `ingest_cvr@1.0.0`,
-      minVersion: "1.0.0",
-      buildCommand: "npm run build:data",
-      artifacts: [
-        {
-          path: paths.ingest.ballotsLong,
-          hashKey: "ballots_long_hash",
-        },
-        {
-          path: paths.ingest.candidates,
-          hashKey: "candidates_hash",
-        },
-      ],
-    },
-  ];
+  const env = getDataEnv();
+  const outputPath = getOutputPath(env, electionId, contestId);
+  const manifestPath = getManifestPath(env);
 
-  console.log("Validating dependencies...");
-  validateDependencies(paths.manifest, dependencies);
-  console.log("✅ All dependencies validated");
+  // Create identity for this contest
+  const identity = createIdentity(electionId, contestId, districtId, seatCount);
+
+  console.log(`Processing STV for ${electionId}/${contestId}`);
+  console.log(`Output path: ${outputPath}`);
+
+  // Ensure directories exist
+  mkdirSync(outputPath, { recursive: true });
+
+  // Load manifest to get ballots data path
+  let manifest: Manifest;
+  if (!existsSync(manifestPath)) {
+    throw new Error(
+      `Manifest not found: ${manifestPath}. Run CVR ingestion first.`,
+    );
+  }
+
+  const manifestData = JSON.parse(readFileSync(manifestPath, "utf8"));
+  manifest = manifestData as Manifest;
+
+  // Find the contest in manifest
+  const election = manifest.elections.find(
+    (e: any) => e.election_id === electionId,
+  );
+  if (!election) {
+    throw new Error(`Election ${electionId} not found in manifest`);
+  }
+
+  const contest = election.contests.find(
+    (c: any) => c.contest_id === contestId,
+  );
+  if (!contest) {
+    throw new Error(`Contest ${contestId} not found in manifest`);
+  }
+
+  if (!contest.cvr.ballots_long) {
+    throw new Error(
+      `Ballots data not found for contest ${electionId}/${contestId}`,
+    );
+  }
+
+  const ballotsPath = contest.cvr.ballots_long.uri;
+  console.log(`Loading ballots from: ${ballotsPath}`);
 
   const db = await DuckDBInstance.create();
   const conn = await db.connect();
 
   try {
-    // Load ballot data from parquet
-    console.log(`Loading ballots from: ${paths.ingest.ballotsLong}`);
+    await conn.run("BEGIN TRANSACTION");
 
+    // Load ballot data from parquet
     await conn.run(`
       CREATE VIEW ballots_long AS 
-      SELECT * FROM '${paths.ingest.ballotsLong}'
+      SELECT * FROM '${ballotsPath}'
     `);
 
     // Load ballot data for STV engine
@@ -78,13 +124,19 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
     const ballotsData =
       (await ballotsResult.getRowObjects()) as unknown as BallotData[];
 
-    // Load rules
-    const rules = loadRules(config);
+    // Load rules from contest manifest
+    const rules = {
+      seats: seatCount,
+      quota: "droop" as const,
+      surplus_method: "fractional" as const,
+      precision: 0.000001,
+      tie_break: "lexicographic" as const,
+    };
     console.log(`Using rules: ${JSON.stringify(rules, null, 2)}`);
 
     // Run STV algorithm
     console.log(`Running STV with ${ballotsData.length} ballot records...`);
-    const stvResult = runSTV(ballotsData, rules);
+    const stvResult = runSTV(ballotsData, rules, identity);
 
     console.log(
       `STV completed: ${stvResult.rounds.length} round records, ${stvResult.winners.length} winners`,
@@ -97,19 +149,17 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
     );
     const validatedMeta = stvResult.meta.map((row) => StvMetaOutput.parse(row));
 
-    // Create output directory
-    const outputDir = `data/${config.env}/stv`;
-    if (!existsSync(outputDir)) {
-      mkdirSync(outputDir, { recursive: true });
-    }
-
     // Create temporary tables and export to parquet
     await conn.run(`DROP TABLE IF EXISTS tmp_stv_rounds`);
     await conn.run(`DROP TABLE IF EXISTS tmp_stv_meta`);
 
-    // Create temp tables with proper schema
+    // Create temp tables with proper schema including identity columns
     await conn.run(`
       CREATE TABLE tmp_stv_rounds (
+        election_id VARCHAR,
+        contest_id VARCHAR,
+        district_id VARCHAR,
+        seat_count INTEGER,
         round INTEGER,
         candidate_name VARCHAR,
         votes DOUBLE,
@@ -119,6 +169,10 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
 
     await conn.run(`
       CREATE TABLE tmp_stv_meta (
+        election_id VARCHAR,
+        contest_id VARCHAR,
+        district_id VARCHAR,
+        seat_count INTEGER,
         round INTEGER,
         quota DOUBLE,
         exhausted DOUBLE,
@@ -131,9 +185,18 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
     for (const row of validatedRounds) {
       await conn.run(
         `
-        INSERT INTO tmp_stv_rounds VALUES (?, ?, ?, ?)
+        INSERT INTO tmp_stv_rounds VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
-        [row.round, row.candidate_name, row.votes, row.status],
+        [
+          row.election_id,
+          row.contest_id,
+          row.district_id,
+          row.seat_count,
+          row.round,
+          row.candidate_name,
+          row.votes,
+          row.status,
+        ],
       );
     }
 
@@ -147,9 +210,17 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
 
       await conn.run(
         `
-        INSERT INTO tmp_stv_meta VALUES (?, ?, ?, ${electedArray}, ${eliminatedArray})
+        INSERT INTO tmp_stv_meta VALUES (?, ?, ?, ?, ?, ?, ?, ${electedArray}, ${eliminatedArray})
       `,
-        [row.round, row.quota, row.exhausted],
+        [
+          row.election_id,
+          row.contest_id,
+          row.district_id,
+          row.seat_count,
+          row.round,
+          row.quota,
+          row.exhausted,
+        ],
       );
     }
 
@@ -162,8 +233,8 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
     await parseAllRows(conn, "tmp_stv_meta", StvMetaOutput);
 
     // Export to parquet
-    const roundsPath = `${outputDir}/stv_rounds.parquet`;
-    const metaPath = `${outputDir}/stv_meta.parquet`;
+    const roundsPath = `${outputPath}/rounds.parquet`;
+    const metaPath = `${outputPath}/meta.parquet`;
 
     await conn.run(`COPY tmp_stv_rounds TO '${roundsPath}' (FORMAT 'parquet')`);
     await conn.run(`COPY tmp_stv_meta TO '${metaPath}' (FORMAT 'parquet')`);
@@ -183,54 +254,60 @@ export async function computeStvRounds(): Promise<StvRoundsStats> {
     // Validate stats with contract
     const validatedStats = StvRoundsStats.parse(stats);
 
-    // Update manifest
-    const manifestData = existsSync(paths.manifest)
-      ? JSON.parse(readFileSync(paths.manifest, "utf-8"))
-      : {};
+    await conn.run("COMMIT");
 
-    const manifestSection = {
+    // Calculate file hashes
+    const roundsHash = sha256(roundsPath);
+    const metaHash = sha256(metaPath);
+
+    // Update manifest with STV data
+    console.log("Updating manifest...");
+
+    // Update the contest with STV results
+    contest.stv = {
+      rounds: {
+        uri: roundsPath,
+        sha256: roundsHash,
+        rows: validatedRounds.length,
+      },
+      meta: {
+        uri: metaPath,
+        sha256: metaHash,
+        rows: validatedMeta.length,
+      },
       stats: validatedStats,
-      stv_rounds_hash: sha256(roundsPath),
-      stv_meta_hash: sha256(metaPath),
-      version,
-      created_at: new Date().toISOString(),
     };
 
-    manifestData[`stv_rounds@${version}`] = manifestSection;
+    // Update manifest generated timestamp
+    manifest.generated_at = new Date().toISOString();
 
-    // Write updated manifest
-    mkdirSync(dirname(paths.manifest), { recursive: true });
-    writeFileSync(paths.manifest, JSON.stringify(manifestData, null, 2));
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-    // Assert manifest section
-    await assertManifestSection(
-      paths.manifest,
-      `stv_rounds@${version}`,
-      StvRoundsStats,
+    console.log("✅ STV computation completed successfully!");
+    console.log(`📊 Statistics:`);
+    console.log(`  - Rounds: ${validatedStats.number_of_rounds}`);
+    console.log(`  - Winners: ${validatedStats.winners.join(", ")}`);
+    console.log(`  - Seats: ${validatedStats.seats}`);
+    console.log(
+      `  - First round quota: ${validatedStats.first_round_quota.toFixed(2)}`,
     );
-
-    console.log(`Updated manifest: ${paths.manifest}`);
     return validatedStats;
+  } catch (error) {
+    try {
+      await conn.run("ROLLBACK");
+    } catch {
+      // Ignore rollback errors
+    }
+    throw error;
   } finally {
     await conn.closeSync();
   }
 }
 
-function getEnvironmentConfig(): EnvironmentConfig {
-  const env = process.env.NODE_ENV === "development" ? "dev" : "prod";
-  const testCase = process.env.CASE;
-  const seats = process.env.SEATS ? parseInt(process.env.SEATS, 10) : 3;
-
-  return {
-    env,
-    case: testCase,
-    seats,
-  };
-}
-
-function loadRules(config: EnvironmentConfig): RulesSchema {
+// Legacy function for backward compatibility
+function loadRulesFromYaml(testCase?: string): RulesSchema {
   let rules: Partial<RulesSchema> = {
-    seats: config.seats,
+    seats: 3,
     quota: "droop",
     surplus_method: "fractional",
     precision: 1e-6,
@@ -238,8 +315,8 @@ function loadRules(config: EnvironmentConfig): RulesSchema {
   };
 
   // Try to load rules from YAML file if case is specified
-  if (config.case) {
-    const rulesPath = `tests/golden/${config.case}/rules.yaml`;
+  if (testCase) {
+    const rulesPath = `tests/golden/${testCase}/rules.yaml`;
     if (existsSync(rulesPath)) {
       console.log(`Loading rules from: ${rulesPath}`);
       const yamlContent = readFileSync(rulesPath, "utf-8");

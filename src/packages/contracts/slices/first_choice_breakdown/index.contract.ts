@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { IdentitySchema } from "@/contracts/ids";
 
 // Output schema - defines the structure of each row in the first_choice.parquet file
-export const Output = z.object({
+export const Output = IdentitySchema.extend({
   candidate_name: z.string().min(1),
   first_choice_votes: z.number().int().nonnegative(),
   pct: z.number().min(0).max(100),
@@ -44,9 +45,9 @@ export const version = "1.0.0";
 export const CONTRACT_VERSION = version;
 
 export const SQL_QUERIES = {
-  createFirstChoiceView: `
+  createFirstChoiceView: (inputPath: string) => `
     CREATE OR REPLACE VIEW ballots_long AS 
-    SELECT * FROM 'data/ingest/ballots_long.parquet';
+    SELECT * FROM '${inputPath}/ballots_long.parquet';
   `,
 
   computeFirstChoiceBreakdown: `
@@ -126,8 +127,8 @@ export const SQL_QUERIES = {
     ORDER BY first_choice_votes DESC, candidate_name ASC;
   `,
 
-  copyToParquet: `
-    COPY first_choice_breakdown TO 'data/summary/first_choice.parquet' (FORMAT 'parquet');
+  copyToParquet: (outputPath: string) => `
+    COPY first_choice_breakdown_with_identity TO '${outputPath}/first_choice.parquet' (FORMAT 'parquet');
   `,
 } as const;
 
@@ -147,3 +148,37 @@ export const VALIDATION_RULES = {
     "Name normalization: trim whitespace, case-insensitive comparison",
   ],
 } as const;
+
+// Test fixture generators - single source of truth for test data
+export const createOutputFixture = (
+  overrides: Partial<Output> = {},
+): Output => ({
+  election_id: "portland-20241105-gen",
+  contest_id: "d2-3seat",
+  district_id: "d2",
+  seat_count: 3,
+  candidate_name: "Test Candidate",
+  first_choice_votes: 100,
+  pct: 25.0,
+  ...overrides,
+});
+
+export const createStatsFixture = (overrides: Partial<Stats> = {}): Stats => ({
+  total_valid_ballots: 400,
+  candidate_count: 4,
+  sum_first_choice: 400,
+  ...overrides,
+});
+
+export const createDataFixture = (overrides: Partial<Data> = {}): Data => ({
+  rows: 4,
+  ...overrides,
+});
+
+export const createFirstChoiceBreakdownOutputFixture = (
+  overrides: Partial<FirstChoiceBreakdownOutput> = {},
+): FirstChoiceBreakdownOutput => ({
+  stats: createStatsFixture(overrides.stats),
+  data: createDataFixture(overrides.data),
+  ...overrides,
+});

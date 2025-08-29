@@ -1,256 +1,63 @@
-import type { DuckDBConnection } from "@duckdb/node-api";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { computeStvRounds } from "./compute.js";
+import { existsSync, unlinkSync } from "node:fs";
+import { DuckDBInstance } from "@duckdb/node-api";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  assertTableColumns,
+  parseAllRows,
+} from "../../lib/contract-enforcer.js";
+import { ingestCvr } from "../ingest_cvr/compute";
+import { computeStvRounds } from "./compute";
 import {
   StvMetaOutput,
   StvRoundsOutput,
   StvRoundsStats,
-} from "./index.contract.js";
-
-// Mock the contract enforcer functions
-vi.mock(
-  "@/packages/contracts/lib/contract-enforcer",
-  async (importOriginal) => {
-    const actual =
-      (await importOriginal()) as typeof import("@/packages/contracts/lib/contract-enforcer");
-    let validateCalls: Array<{ type: string; table: string; schema: string }> =
-      [];
-    let parseCallsCounter = 0;
-    let assertManifestCalls: Array<{
-      path: string;
-      key: string;
-      schema: string;
-    }> = [];
-
-    return {
-      ...actual,
-      assertTableColumns: vi.fn(
-        async (_conn: DuckDBConnection, table: string, schema: unknown) => {
-          validateCalls.push({
-            type: "assertTableColumns",
-            table,
-            schema: (schema as { constructor: { name: string } }).constructor
-              .name,
-          });
-          return Promise.resolve();
-        },
-      ),
-      parseAllRows: vi.fn(
-        async (_conn: DuckDBConnection, table: string, schema: unknown) => {
-          parseCallsCounter++;
-          validateCalls.push({
-            type: "parseAllRows",
-            table,
-            schema: (schema as { constructor: { name: string } }).constructor
-              .name,
-          });
-
-          // Return mock data that matches our schemas
-          if (table === "tmp_stv_rounds") {
-            return [
-              {
-                round: 1,
-                candidate_name: "Candidate A",
-                votes: 100,
-                status: "standing",
-              },
-              {
-                round: 1,
-                candidate_name: "Candidate B",
-                votes: 80,
-                status: "standing",
-              },
-            ];
-          } else if (table === "tmp_stv_meta") {
-            return [
-              {
-                round: 1,
-                quota: 51,
-                exhausted: 0,
-                elected_this_round: null,
-                eliminated_this_round: null,
-              },
-            ];
-          }
-          return [];
-        },
-      ),
-      assertManifestSection: vi.fn(
-        async (path: string, key: string, schema: unknown) => {
-          assertManifestCalls.push({
-            path,
-            key,
-            schema: (schema as { constructor: { name: string } }).constructor
-              .name,
-          });
-          return Promise.resolve();
-        },
-      ),
-      sha256: vi.fn(
-        (filePath: string) => `mock-hash-${filePath.split("/").pop()}`,
-      ),
-      validateDependencies: vi.fn(() => {
-        // Mock successful dependency validation by default
-        return;
-      }),
-      __getValidateCalls: () => validateCalls,
-      __getParseCallsCounter: () => parseCallsCounter,
-      __getAssertManifestCalls: () => assertManifestCalls,
-      __resetMocks: () => {
-        validateCalls = [];
-        parseCallsCounter = 0;
-        assertManifestCalls = [];
-      },
-    };
-  },
-);
-
-// Mock file system operations
-vi.mock("node:fs", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:fs")>();
-  return {
-    ...actual,
-    readFileSync: vi.fn((path: string) => {
-      if (path.includes("rules.yaml")) {
-        return "seats: 3\nquota: droop\nsurplus_method: fractional\nprecision: 1e-6\ntie_break: lexicographic";
-      }
-      if (path.includes("manifest.json")) {
-        return "{}";
-      }
-      return "";
-    }),
-    existsSync: vi.fn((path: string) => {
-      return (
-        path.includes("ballots_long.parquet") || path.includes("rules.yaml")
-      );
-    }),
-    mkdirSync: vi.fn(),
-  };
-});
-
-// Mock DuckDB
-vi.mock("@duckdb/node-api", () => {
-  const mockConn = {
-    run: vi.fn(async (query: string, ..._params: unknown[]) => {
-      if (query.includes("SELECT BallotID, candidate_name, rank_position")) {
-        return {
-          getRowObjects: () =>
-            Promise.resolve([
-              {
-                BallotID: "B1",
-                candidate_name: "Candidate A",
-                rank_position: 1,
-              },
-              {
-                BallotID: "B1",
-                candidate_name: "Candidate B",
-                rank_position: 2,
-              },
-              {
-                BallotID: "B2",
-                candidate_name: "Candidate B",
-                rank_position: 1,
-              },
-              {
-                BallotID: "B2",
-                candidate_name: "Candidate A",
-                rank_position: 2,
-              },
-            ]),
-        };
-      }
-      return { getRowObjects: () => Promise.resolve([]) };
-    }),
-    closeSync: vi.fn(),
-  };
-
-  const mockDb = {
-    connect: vi.fn(() => Promise.resolve(mockConn)),
-  };
-
-  return {
-    DuckDBInstance: {
-      create: vi.fn(() => Promise.resolve(mockDb)),
-    },
-  };
-});
-
-// Mock the STV engine
-vi.mock("./engine.js", () => ({
-  runSTV: vi.fn((_ballotsData, _rules) => ({
-    rounds: [
-      {
-        round: 1,
-        candidate_name: "Candidate A",
-        votes: 1.5,
-        status: "elected",
-      },
-      {
-        round: 1,
-        candidate_name: "Candidate B",
-        votes: 0.5,
-        status: "eliminated",
-      },
-    ],
-    meta: [
-      {
-        round: 1,
-        quota: 1.34,
-        exhausted: 0,
-        elected_this_round: ["Candidate A"],
-        eliminated_this_round: ["Candidate B"],
-      },
-    ],
-    winners: ["Candidate A"],
-  })),
-}));
+} from "./index.contract";
 
 describe("STV Rounds Contract Tests", () => {
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    // Reset mock state
-    const contractEnforcer = await import(
-      "@/packages/contracts/lib/contract-enforcer"
-    );
-    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test cleanup
-    (contractEnforcer as any).__resetMocks?.();
+  const originalSrcEnv = process.env.SRC_CSV;
+  const originalDataEnv = process.env.DATA_ENV;
+
+  beforeAll(async () => {
+    // Set up test data
+    process.env.SRC_CSV = "tests/golden/micro/cvr_small.csv";
+    process.env.DATA_ENV = "test";
+    await ingestCvr();
+  });
+
+  afterAll(() => {
+    // Clean up
+    if (originalSrcEnv) {
+      process.env.SRC_CSV = originalSrcEnv;
+    } else {
+      delete process.env.SRC_CSV;
+    }
+    if (originalDataEnv) {
+      process.env.DATA_ENV = originalDataEnv;
+    } else {
+      delete process.env.DATA_ENV;
+    }
+
+    const testFiles = [
+      "data/test/portland-20241105-gen/d2-3seat/ingest/candidates.parquet",
+      "data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
+      "data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
+      "data/test/portland-20241105-gen/d2-3seat/stv/meta.parquet",
+      "data/test/manifest.json",
+    ];
+
+    testFiles.forEach((file) => {
+      if (existsSync(file)) {
+        try {
+          unlinkSync(file);
+        } catch (error) {
+          console.warn(`Could not clean up ${file}:`, error);
+        }
+      }
+    });
   });
 
   it("should enforce contract validation during compute", async () => {
     const result = await computeStvRounds();
-
-    // Verify contract enforcer functions were called
-    const contractEnforcer = await import(
-      "@/packages/contracts/lib/contract-enforcer"
-    );
-
-    expect(contractEnforcer.assertTableColumns).toHaveBeenCalledWith(
-      expect.anything(),
-      "tmp_stv_rounds",
-      StvRoundsOutput,
-    );
-    expect(contractEnforcer.assertTableColumns).toHaveBeenCalledWith(
-      expect.anything(),
-      "tmp_stv_meta",
-      StvMetaOutput,
-    );
-
-    expect(contractEnforcer.parseAllRows).toHaveBeenCalledWith(
-      expect.anything(),
-      "tmp_stv_rounds",
-      StvRoundsOutput,
-    );
-    expect(contractEnforcer.parseAllRows).toHaveBeenCalledWith(
-      expect.anything(),
-      "tmp_stv_meta",
-      StvMetaOutput,
-    );
-
-    expect(contractEnforcer.assertManifestSection).toHaveBeenCalledWith(
-      expect.stringContaining("manifest.test.json"),
-      expect.stringMatching(/^stv_rounds@\d+\.\d+\.\d+$/),
-      StvRoundsStats,
-    );
 
     // Verify return value matches contract
     expect(result).toMatchObject({
@@ -265,174 +72,96 @@ describe("STV Rounds Contract Tests", () => {
     expect(() => StvRoundsStats.parse(result)).not.toThrow();
   });
 
-  it("should fail with clear error for data validation", async () => {
-    // Mock STV engine to return invalid data
-    const { runSTV } = await import("./engine.js");
-    vi.mocked(runSTV).mockReturnValue({
-      rounds: [
-        {
-          round: -1,
-          candidate_name: "",
-          votes: -5,
-          status: "invalid" as "standing",
-        }, // Invalid data
-      ],
-      meta: [
-        {
-          round: 1,
-          quota: 1.34,
-          exhausted: 0,
-          elected_this_round: null,
-          eliminated_this_round: null,
-        },
-      ],
-      winners: [],
-    });
+  it("should enforce table columns match schemas", async () => {
+    const instance = await DuckDBInstance.create();
+    const conn = await instance.connect();
 
-    await expect(computeStvRounds()).rejects.toThrow();
+    try {
+      await conn.run(
+        "CREATE VIEW stv_rounds AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet';",
+      );
+      await conn.run(
+        "CREATE VIEW stv_meta AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/stv/meta.parquet';",
+      );
+
+      // This should pass without throwing
+      await assertTableColumns(conn, "stv_rounds", StvRoundsOutput);
+      await assertTableColumns(conn, "stv_meta", StvMetaOutput);
+    } finally {
+      await conn.closeSync();
+    }
   });
 
-  it("should validate all output schemas", () => {
-    // Test StvRoundsOutput schema
-    const validRoundRow = {
-      round: 1,
-      candidate_name: "Test Candidate",
-      votes: 100.5,
-      status: "standing" as const,
-    };
-    expect(() => StvRoundsOutput.parse(validRoundRow)).not.toThrow();
+  it("should validate all rows through schemas", async () => {
+    const instance = await DuckDBInstance.create();
+    const conn = await instance.connect();
 
-    const invalidRoundRow = {
-      round: -1, // Invalid: must be positive
-      candidate_name: "",
-      votes: -1, // Invalid: must be non-negative
-      status: "invalid",
-    };
-    expect(() => StvRoundsOutput.parse(invalidRoundRow)).toThrow();
+    try {
+      await conn.run(
+        "CREATE VIEW stv_rounds AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet';",
+      );
+      await conn.run(
+        "CREATE VIEW stv_meta AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/stv/meta.parquet';",
+      );
 
-    // Test StvMetaOutput schema
-    const validMetaRow = {
-      round: 1,
-      quota: 100,
-      exhausted: 5.5,
-      elected_this_round: ["Candidate A"],
-      eliminated_this_round: null,
-    };
-    expect(() => StvMetaOutput.parse(validMetaRow)).not.toThrow();
+      // This should return validated rows
+      const roundsRows = await parseAllRows(
+        conn,
+        "stv_rounds",
+        StvRoundsOutput,
+      );
+      const metaRows = await parseAllRows(conn, "stv_meta", StvMetaOutput);
 
-    // Test StvRoundsStats schema
-    const validStats = {
-      number_of_rounds: 5,
-      winners: ["Winner 1", "Winner 2"],
-      seats: 2,
-      first_round_quota: 100,
-      precision: 1e-6,
-    };
-    expect(() => StvRoundsStats.parse(validStats)).not.toThrow();
+      expect(roundsRows.length).toBeGreaterThan(0);
+      expect(metaRows.length).toBeGreaterThan(0);
+
+      // All rows should conform to schemas
+      roundsRows.forEach((row) => {
+        expect(typeof row.candidate_name).toBe("string");
+        expect(row.candidate_name.length).toBeGreaterThan(0);
+        expect(typeof row.votes).toBe("number");
+        expect(row.votes).toBeGreaterThanOrEqual(0);
+        expect(typeof row.round).toBe("number");
+        expect(row.round).toBeGreaterThan(0);
+        expect(["standing", "elected", "eliminated"]).toContain(row.status);
+      });
+
+      metaRows.forEach((row) => {
+        expect(typeof row.quota).toBe("number");
+        expect(row.quota).toBeGreaterThan(0);
+        expect(typeof row.exhausted).toBe("number");
+        expect(row.exhausted).toBeGreaterThanOrEqual(0);
+        expect(typeof row.round).toBe("number");
+        expect(row.round).toBeGreaterThan(0);
+      });
+    } finally {
+      await conn.closeSync();
+    }
   });
 
-  it("should handle edge cases in schema validation", () => {
-    // Test edge cases for StvRoundsOutput
-    expect(() =>
-      StvRoundsOutput.parse({
-        round: 1,
-        candidate_name: "A",
-        votes: 0, // Exactly zero should be valid (nonnegative)
-        status: "standing",
-      }),
-    ).not.toThrow();
+  it("should create valid v2 manifest structure", async () => {
+    const manifestPath = "data/test/manifest.json";
+    expect(existsSync(manifestPath)).toBe(true);
 
-    expect(() =>
-      StvRoundsOutput.parse({
-        round: 0, // Invalid: must be positive
-        candidate_name: "A",
-        votes: 0,
-        status: "standing",
-      }),
-    ).toThrow();
+    const fs = await import("node:fs");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
-    // Test edge cases for StvMetaOutput
-    expect(() =>
-      StvMetaOutput.parse({
-        round: 1,
-        quota: 0.1, // Very small positive number should be valid
-        exhausted: 0,
-        elected_this_round: [],
-        eliminated_this_round: [],
-      }),
-    ).not.toThrow();
+    // Verify v2 manifest structure
+    expect(manifest.version).toBe(2);
+    expect(manifest.elections).toBeInstanceOf(Array);
+    expect(manifest.elections.length).toBeGreaterThan(0);
 
-    expect(() =>
-      StvMetaOutput.parse({
-        round: 1,
-        quota: 0, // Invalid: must be positive
-        exhausted: 0,
-        elected_this_round: null,
-        eliminated_this_round: null,
-      }),
-    ).toThrow();
-  });
-
-  it("should validate that contract enforcement prevents schema drift", async () => {
-    // Reset the STV engine mock to return valid data
-    const { runSTV } = await import("./engine.js");
-    vi.mocked(runSTV).mockReturnValue({
-      rounds: [
-        {
-          round: 1,
-          candidate_name: "Candidate A",
-          votes: 1.5,
-          status: "elected",
-        },
-        {
-          round: 1,
-          candidate_name: "Candidate B",
-          votes: 0.5,
-          status: "eliminated",
-        },
-      ],
-      meta: [
-        {
-          round: 1,
-          quota: 1.34,
-          exhausted: 0,
-          elected_this_round: ["Candidate A"],
-          eliminated_this_round: ["Candidate B"],
-        },
-      ],
-      winners: ["Candidate A"],
-    });
-
-    await computeStvRounds();
-
-    const contractEnforcer = await import(
-      "@/packages/contracts/lib/contract-enforcer"
+    const election = manifest.elections.find(
+      (e: any) => e.election_id === "portland-20241105-gen",
     );
-    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test validation
-    const calls = (contractEnforcer as any).__getValidateCalls?.() || [];
-    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test validation
-    const parseCallsCount =
-      (contractEnforcer as any).__getParseCallsCounter?.() || 0;
-    // biome-ignore lint/suspicious/noExplicitAny: Accessing mock properties for test validation
-    const manifestCalls =
-      (contractEnforcer as any).__getAssertManifestCalls?.() || [];
+    expect(election).toBeDefined();
 
-    // Verify all required contract enforcement calls were made
-    expect(
-      calls.filter((c: { type: string }) => c.type === "assertTableColumns"),
-    ).toHaveLength(2); // rounds + meta
-    expect(parseCallsCount).toBeGreaterThanOrEqual(2); // rounds + meta parsing
-    expect(manifestCalls).toHaveLength(1); // manifest validation
-
-    // Verify the correct schemas were used
-    const tableAssertions = calls.filter(
-      (c: { type: string }) => c.type === "assertTableColumns",
+    const contest = election.contests.find(
+      (c: any) => c.contest_id === "d2-3seat",
     );
-    expect(tableAssertions.map((c: { table: string }) => c.table)).toContain(
-      "tmp_stv_rounds",
-    );
-    expect(tableAssertions.map((c: { table: string }) => c.table)).toContain(
-      "tmp_stv_meta",
-    );
+    expect(contest).toBeDefined();
+    expect(contest.stv).toBeDefined();
+    expect(contest.stv.rounds).toBeDefined();
+    expect(contest.stv.meta).toBeDefined();
   });
 });

@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import Decimal from "decimal.js";
 

@@ -1,34 +1,82 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { getArtifactPaths } from "../../lib/artifact-paths.js";
 import {
+  type ContestId,
+  createIdentity,
+  type DistrictId,
+  type ElectionId,
+} from "../../../../contracts/ids";
+import { ArtifactRef, type Manifest } from "../../../../contracts/manifest";
+import { getDataEnv } from "../../../../lib/env";
+import {
+  assertManifestSection,
+  assertTableColumns,
+  parseAllRows,
+  preprocessDuckDBRow,
+  sha256,
+} from "../../lib/contract-enforcer";
+import {
+  BallotsLongOutput,
+  CandidatesOutput,
   CONTRACT_VERSION,
   type IngestCvrOutput,
   IngestCvrOutputSchema,
   SQL_QUERIES,
-} from "./index.contract.js";
+} from "./index.contract";
 
-interface ManifestEntry {
-  files: string[];
-  hashes: Record<string, string>;
-  rows: number;
-  min_rank: number;
-  max_rank: number;
-  duplicate_ballots: number;
-  datasetVersion: string;
+interface IngestCvrOptions {
+  electionId: ElectionId;
+  contestId: ContestId;
+  districtId: DistrictId;
+  seatCount: number;
+  srcCsv: string;
 }
 
-export async function ingestCvr(): Promise<IngestCvrOutput> {
-  const srcCsv = process.env.SRC_CSV;
+function getOutputPath(
+  env: string,
+  electionId: ElectionId,
+  contestId: ContestId,
+): string {
+  return `data/${env}/${electionId}/${contestId}/ingest`;
+}
+
+function getManifestPath(env: string): string {
+  return `data/${env}/manifest.json`;
+}
+
+export async function ingestCvr(
+  options?: IngestCvrOptions,
+): Promise<IngestCvrOutput> {
+  // Support both new parameterized call and legacy environment-based call
+  const electionId =
+    options?.electionId || ("portland-20241105-gen" as ElectionId);
+  const contestId = options?.contestId || ("d2-3seat" as ContestId);
+  const districtId = options?.districtId || ("d2" as DistrictId);
+  const seatCount = options?.seatCount || 3;
+  const srcCsv = options?.srcCsv || process.env.SRC_CSV;
+
   if (!srcCsv) {
-    throw new Error("SRC_CSV environment variable is required");
+    throw new Error(
+      "SRC_CSV must be provided via options or environment variable",
+    );
   }
 
-  const paths = getArtifactPaths();
+  const env = getDataEnv();
+  const outputPath = getOutputPath(env, electionId, contestId);
+  const manifestPath = getManifestPath(env);
   const dbPath = "data/working/election.duckdb";
 
-  // Ensure database directory exists
+  // Create identity for this contest
+  const identity = createIdentity(electionId, contestId, districtId, seatCount);
+
+  console.log(`Processing CVR for ${electionId}/${contestId}`);
+  console.log(`Source CSV: ${srcCsv}`);
+  console.log(`Output path: ${outputPath}`);
+
+  // Ensure directories exist
+  mkdirSync(outputPath, { recursive: true });
   mkdirSync(dirname(dbPath), { recursive: true });
 
   // Create database instance
@@ -76,70 +124,266 @@ export async function ingestCvr(): Promise<IngestCvrOutput> {
     console.log("Creating ballots_long table...");
     await conn.run(finalBallotsLongQuery);
 
-    // Step 6: Export to Arrow format
-    console.log(`Exporting candidates to ${paths.ingest.candidates}...`);
-    mkdirSync(dirname(paths.ingest.candidates), { recursive: true });
-    await conn.run(
-      `COPY candidates TO '${paths.ingest.candidates}' (FORMAT PARQUET)`,
+    // Step 6: Add identity columns to output tables
+    console.log("Adding identity columns...");
+
+    // Create candidates with identity
+    await conn.run(`
+      CREATE OR REPLACE TABLE candidates_with_identity AS
+      SELECT
+        '${identity.election_id}' AS election_id,
+        '${identity.contest_id}' AS contest_id,
+        '${identity.district_id}' AS district_id,
+        ${identity.seat_count} AS seat_count,
+        candidate_id,
+        candidate_name
+      FROM candidates;
+    `);
+
+    // Create ballots_long with identity
+    await conn.run(`
+      CREATE OR REPLACE TABLE ballots_long_with_identity AS
+      SELECT
+        '${identity.election_id}' AS election_id,
+        '${identity.contest_id}' AS contest_id,
+        '${identity.district_id}' AS district_id,
+        ${identity.seat_count} AS seat_count,
+        BallotID,
+        PrecinctID,
+        BallotStyleID,
+        candidate_id,
+        candidate_name,
+        rank_position,
+        has_vote
+      FROM ballots_long;
+    `);
+
+    // Step 7: Validate schemas before export
+    console.log("Validating schemas...");
+    await assertTableColumns(
+      conn,
+      "candidates_with_identity",
+      CandidatesOutput,
+    );
+    await assertTableColumns(
+      conn,
+      "ballots_long_with_identity",
+      BallotsLongOutput,
     );
 
-    console.log(`Exporting ballots_long to ${paths.ingest.ballotsLong}...`);
-    mkdirSync(dirname(paths.ingest.ballotsLong), { recursive: true });
-    await conn.run(
-      `COPY ballots_long TO '${paths.ingest.ballotsLong}' (FORMAT PARQUET)`,
+    // For large datasets, validate a sample and calculate stats via SQL
+    console.log("Validating sample data...");
+    const sampleSize = 1000;
+
+    // Validate a sample of candidates data
+    const candidatesSample = await conn.run(
+      `SELECT * FROM candidates_with_identity LIMIT ${sampleSize}`,
     );
+    const candidatesSampleRows = await candidatesSample.getRowObjects();
+    candidatesSampleRows.forEach((row, index) => {
+      try {
+        const processedRow = preprocessDuckDBRow(row);
+        CandidatesOutput.parse(processedRow);
+      } catch (error) {
+        throw new Error(
+          `Candidates row ${index} failed validation: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    });
 
-    // Step 7: Get statistics
-    console.log("Computing statistics...");
-    const statsResult = await conn.run(SQL_QUERIES.getCompleteStats);
-    const statsArray = await statsResult.getRowObjects();
-    const rawResult = statsArray[0];
+    // Validate a sample of ballots data
+    const ballotsSample = await conn.run(
+      `SELECT * FROM ballots_long_with_identity LIMIT ${sampleSize}`,
+    );
+    const ballotsSampleRows = await ballotsSample.getRowObjects();
+    ballotsSampleRows.forEach((row, index) => {
+      try {
+        const processedRow = preprocessDuckDBRow(row);
+        BallotsLongOutput.parse(processedRow);
+      } catch (error) {
+        throw new Error(
+          `Ballots row ${index} failed validation: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    });
 
-    // Parse the JSON result from DuckDB
-    const resultValue = rawResult.result as unknown;
-    if (resultValue == null) {
-      throw new Error("getCompleteStats returned null result");
-    }
-    const resultObject =
-      typeof resultValue === "string" ? JSON.parse(resultValue) : resultValue;
-    const parsedResult = IngestCvrOutputSchema.parse(resultObject);
+    // Step 8: Export to Parquet files
+    console.log(`Exporting candidates to ${outputPath}/candidates.parquet...`);
+    await conn.run(SQL_QUERIES.exportCandidates(outputPath));
+
+    console.log(
+      `Exporting ballots_long to ${outputPath}/ballots_long.parquet...`,
+    );
+    await conn.run(SQL_QUERIES.exportBallotsLong(outputPath));
 
     await conn.run("COMMIT");
 
-    // Validate max rank
-    if (parsedResult.ballots_long.max_rank > 10) {
-      console.warn(
-        `Warning: Maximum rank ${parsedResult.ballots_long.max_rank} exceeds 10`,
-      );
-    }
+    // Step 9: Calculate stats via SQL (efficient for large datasets)
+    console.log("Calculating stats via SQL...");
+    const statsQuery = `
+      WITH ballots_stats AS (
+        SELECT
+          COUNT(*) AS rows,
+          COUNT(DISTINCT BallotID) AS ballots,
+          COUNT(DISTINCT candidate_id) AS candidates,
+          MIN(rank_position) AS min_rank,
+          MAX(rank_position) AS max_rank
+        FROM ballots_long_with_identity
+      ),
+      candidates_stats AS (
+        SELECT COUNT(*) AS rows FROM candidates_with_identity
+      )
+      SELECT 
+        candidates_stats.rows AS candidate_rows,
+        ballots_stats.rows AS ballot_rows,
+        ballots_stats.ballots,
+        ballots_stats.candidates,
+        ballots_stats.min_rank,
+        ballots_stats.max_rank
+      FROM ballots_stats, candidates_stats;
+    `;
 
-    // Step 8: Update manifest.json
-    let manifest: Record<string, ManifestEntry> = {};
+    const statsResult = await conn.run(statsQuery);
+    const statsData = await statsResult.getRowObjects();
+    const rawStats = statsData[0];
 
-    if (existsSync(paths.manifest)) {
-      try {
-        manifest = JSON.parse(readFileSync(paths.manifest, "utf8"));
-      } catch (_error) {
-        console.warn(
-          `Could not parse existing ${paths.manifest}, creating new one`,
-        );
-      }
-    }
-
-    manifest[`ingest_cvr@${CONTRACT_VERSION}`] = {
-      files: [paths.ingest.candidates, paths.ingest.ballotsLong],
-      hashes: {}, // TODO: Implement file hashing if needed
-      rows: parsedResult.ballots_long.rows,
-      min_rank: parsedResult.ballots_long.min_rank,
-      max_rank: parsedResult.ballots_long.max_rank,
-      duplicate_ballots: parsedResult.ballots_long.duplicate_ballots,
-      datasetVersion: CONTRACT_VERSION,
+    const stats = {
+      candidates: {
+        rows: Number(rawStats.candidate_rows),
+      },
+      ballots_long: {
+        rows: Number(rawStats.ballot_rows),
+        ballots: Number(rawStats.ballots),
+        candidates: Number(rawStats.candidates),
+        min_rank: Number(rawStats.min_rank),
+        max_rank: Number(rawStats.max_rank),
+        duplicate_ballots: 0, // TODO: Calculate from ballot ID counts
+      },
     };
 
-    writeFileSync(paths.manifest, JSON.stringify(manifest, null, 2));
+    // Step 10: Update manifest
+    console.log("Updating manifest...");
 
-    // Return validated output - this should now match the Zod schema exactly
-    return IngestCvrOutputSchema.parse(parsedResult);
+    const candidatesPath = `${outputPath}/candidates.parquet`;
+    const ballotsLongPath = `${outputPath}/ballots_long.parquet`;
+
+    // Calculate file hashes
+    const candidatesHash = sha256(candidatesPath);
+    const ballotsLongHash = sha256(ballotsLongPath);
+
+    // Load or create manifest
+    let manifest: Manifest;
+    if (existsSync(manifestPath)) {
+      try {
+        const manifestData = JSON.parse(readFileSync(manifestPath, "utf8"));
+        manifest = manifestData as Manifest; // TODO: Add validation
+      } catch (error) {
+        console.warn(
+          "Could not parse existing manifest, creating new one:",
+          error,
+        );
+        manifest = {
+          env: env as any,
+          version: 2,
+          generated_at: new Date().toISOString(),
+          inputs: {},
+          elections: [],
+        };
+      }
+    } else {
+      manifest = {
+        env: env as any,
+        version: 2,
+        generated_at: new Date().toISOString(),
+        inputs: {},
+        elections: [],
+      };
+    }
+
+    // Find or create election
+    let election = manifest.elections.find(
+      (e: any) => e.election_id === electionId,
+    );
+    if (!election) {
+      election = {
+        election_id: electionId,
+        date: "2024-11-05", // TODO: Extract from electionId
+        jurisdiction: "portland", // TODO: Extract from electionId
+        title: "Portland General Election 2024",
+        contests: [],
+      };
+      manifest.elections.push(election);
+    }
+
+    // Find or create contest
+    let contest = election.contests.find(
+      (c: any) => c.contest_id === contestId,
+    );
+    if (!contest) {
+      contest = {
+        contest_id: contestId,
+        district_id: districtId,
+        seat_count: seatCount,
+        title: `City Council District ${districtId.slice(1)} (${seatCount} seats)`,
+        cvr: {
+          candidates: {
+            uri: candidatesPath,
+            sha256: candidatesHash,
+            rows: stats.candidates.rows,
+          },
+          ballots_long: {
+            uri: ballotsLongPath,
+            sha256: ballotsLongHash,
+            rows: stats.ballots_long.rows,
+          },
+        },
+        stv: {},
+        rules: {
+          method: "meek",
+          quota: "droop",
+          precision: 1e-6,
+          tie_break: "lexicographic",
+          seats: seatCount,
+        },
+      };
+      election.contests.push(contest);
+    } else {
+      // Update existing contest CVR data
+      contest.cvr.candidates = {
+        uri: candidatesPath,
+        sha256: candidatesHash,
+        rows: stats.candidates.rows,
+      };
+      contest.cvr.ballots_long = {
+        uri: ballotsLongPath,
+        sha256: ballotsLongHash,
+        rows: stats.ballots_long.rows,
+      };
+    }
+
+    // Update manifest generated timestamp and input hashes
+    manifest.generated_at = new Date().toISOString();
+    manifest.inputs[`${electionId}/${contestId}`] = {
+      cvr_files: [
+        {
+          path: srcCsv,
+          sha256: sha256(srcCsv),
+        },
+      ],
+    };
+
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+    console.log("✅ CVR ingestion completed successfully!");
+    console.log(`📊 Statistics:`);
+    console.log(`  - Candidates: ${stats.candidates.rows}`);
+    console.log(`  - Ballots: ${stats.ballots_long.ballots}`);
+    console.log(`  - Total vote records: ${stats.ballots_long.rows}`);
+    console.log(
+      `  - Rank range: ${stats.ballots_long.min_rank}-${stats.ballots_long.max_rank}`,
+    );
+
+    return IngestCvrOutputSchema.parse(stats);
   } catch (error) {
     try {
       await conn.run("ROLLBACK");
