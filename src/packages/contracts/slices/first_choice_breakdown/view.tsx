@@ -107,7 +107,7 @@ export function FirstChoiceBreakdownView({
           Candidate preferences in first round ({totalVotes.toLocaleString()}{" "}
           total ballots)
         </CardDescription>
-        <div className="text-sm text-muted-foreground mt-2 p-3 bg-muted/50 rounded-lg">
+        <div className="text-sm -foreground mt-2 p-3 bg-muted/50 rounded-lg">
           <p className="font-medium mb-1">About this chart:</p>
           <p>
             This shows how many voters selected each candidate as their first
@@ -179,7 +179,7 @@ export function FirstChoiceBreakdownView({
             {topCandidate.pct.toFixed(1)}%
             <TrendingUp className="h-4 w-4" />
           </div>
-          <div className="text-muted-foreground leading-none">
+          <div className="-foreground leading-none">
             {leadPercentage > 0 &&
               sortedData.length > 1 &&
               `${leadPercentage.toFixed(1)} percentage point lead over second place`}

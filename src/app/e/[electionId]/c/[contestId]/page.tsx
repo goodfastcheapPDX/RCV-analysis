@@ -8,23 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { loadManifestFromFs } from "@/packages/contracts/lib/manifest";
-
-export async function generateStaticParams() {
-  const manifest = await loadManifestFromFs();
-  const params = [];
-
-  for (const election of manifest.elections) {
-    for (const contest of election.contests) {
-      params.push({
-        electionId: election.id,
-        contestId: contest.id,
-      });
-    }
-  }
-
-  return params;
-}
+import { Manifest } from "@/contracts/manifest";
+import { loadManifest } from "@/lib/manifest";
 
 interface ContestPageProps {
   params: Promise<{ electionId: string; contestId: string }>;
@@ -33,14 +18,14 @@ interface ContestPageProps {
 
 export default async function ContestPage({ params }: ContestPageProps) {
   const { electionId, contestId } = await params;
-  const manifest = await loadManifestFromFs();
+  const manifest = Manifest.parse(await loadManifest());
 
-  const election = manifest.elections.find((e) => e.id === electionId);
+  const election = manifest.elections.find((e) => e.election_id === electionId);
   if (!election) {
     notFound();
   }
 
-  const contest = election.contests.find((c) => c.id === contestId);
+  const contest = election.contests.find((c) => c.contest_id === contestId);
   if (!contest) {
     notFound();
   }
@@ -48,8 +33,8 @@ export default async function ContestPage({ params }: ContestPageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{contest.name}</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-3xl font-bold">{contest.title}</h1>
+        <p className="-foreground mt-2">
           Analysis and visualization for this contest
         </p>
       </div>
@@ -64,16 +49,14 @@ export default async function ContestPage({ params }: ContestPageProps) {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="font-medium text-sm text-muted-foreground">
-                Election
-              </h3>
-              <p className="text-base">{election.name}</p>
+              <h3 className="font-medium text-sm -foreground">Election</h3>
+              <p className="text-base">{election.title}</p>
             </div>
             <div>
-              <h3 className="font-medium text-sm text-muted-foreground">
+              <h3 className="font-medium text-sm -foreground">
                 Available Seats
               </h3>
-              <Badge variant="outline">{contest.seats}</Badge>
+              <Badge variant="outline">{contest.seat_count}</Badge>
             </div>
           </div>
         </CardContent>

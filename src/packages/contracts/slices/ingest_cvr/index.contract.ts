@@ -1,16 +1,17 @@
 import { z } from "zod";
+import { IdentitySchema } from "../../../../contracts/ids";
 
 // Candidates output schema - defines structure of candidates.parquet
-export const CandidatesOutput = z.object({
+export const CandidatesOutput = IdentitySchema.extend({
   candidate_id: z.number().int().positive(),
   candidate_name: z.string().min(1),
 });
 
 // Ballots long output schema - defines structure of ballots_long.parquet
-export const BallotsLongOutput = z.object({
+export const BallotsLongOutput = IdentitySchema.extend({
   BallotID: z.string().min(1),
-  PrecinctID: z.string().min(1),
-  BallotStyleID: z.string().min(1),
+  PrecinctID: z.union([z.string().min(1), z.number().int().positive()]),
+  BallotStyleID: z.union([z.string().min(1), z.number().int().positive()]),
   candidate_id: z.number().int().positive(),
   candidate_name: z.string().min(1),
   rank_position: z.number().int().min(1).max(10), // Portland allows up to 6 ranks, but be flexible
@@ -150,7 +151,9 @@ export const SQL_QUERIES = {
     FROM ballots_stats, candidates_stats;
   `,
 
-  exportCandidates: `COPY candidates TO 'data/ingest/candidates.parquet' (FORMAT 'parquet');`,
+  exportCandidates: (outputPath: string) =>
+    `COPY candidates_with_identity TO '${outputPath}/candidates.parquet' (FORMAT 'parquet');`,
 
-  exportBallotsLong: `COPY ballots_long TO 'data/ingest/ballots_long.parquet' (FORMAT 'parquet');`,
+  exportBallotsLong: (outputPath: string) =>
+    `COPY ballots_long_with_identity TO '${outputPath}/ballots_long.parquet' (FORMAT 'parquet');`,
 } as const;

@@ -1,0 +1,88 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Contest Page > should match snapshot for valid contest with test data 1`] = `
+<div
+  class="space-y-6"
+>
+  <div>
+    <h1
+      class="text-3xl font-bold"
+    >
+      City Council District 2 (3 seats)
+    </h1>
+    <p
+      class="-foreground mt-2"
+    >
+      Analysis and visualization for this contest
+    </p>
+  </div>
+  <div
+    class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+    data-slot="card"
+  >
+    <div
+      class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+      data-slot="card-header"
+    >
+      <div
+        class="leading-none font-semibold"
+        data-slot="card-title"
+      >
+        Contest Details
+      </div>
+      <div
+        class="-foreground text-sm"
+        data-slot="card-description"
+      >
+        Information about this ranked-choice voting contest
+      </div>
+    </div>
+    <div
+      class="px-6 space-y-4"
+      data-slot="card-content"
+    >
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
+        <div>
+          <h3
+            class="font-medium text-sm -foreground"
+          >
+            Election
+          </h3>
+          <p
+            class="text-base"
+          >
+            Portland General Election 2024
+          </p>
+        </div>
+        <div>
+          <h3
+            class="font-medium text-sm -foreground"
+          >
+            Available Seats
+          </h3>
+          <span
+            class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground"
+            data-slot="badge"
+          >
+            3
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="relative w-full rounded-lg border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current bg-card text-card-foreground"
+    data-slot="alert"
+    role="alert"
+  >
+    <div
+      class="-foreground col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed"
+      data-slot="alert-description"
+    >
+      Contest analysis and visualization will be implemented in later stages. This placeholder shows the contest structure from the manifest.
+    </div>
+  </div>
+</div>
+`;

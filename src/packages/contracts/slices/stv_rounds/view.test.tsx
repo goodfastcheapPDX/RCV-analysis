@@ -1,35 +1,44 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type {
-  StvMetaOutput,
-  StvRoundsOutput,
-  StvRoundsStats,
+import {
+  createStvMetaOutputFixture,
+  createStvRoundsOutputFixture,
+  createStvRoundsStatsFixture,
+  type StvMetaOutput,
+  type StvRoundsOutput,
+  type StvRoundsStats,
 } from "./index.contract";
 import { StvRoundsView } from "./view";
 
 describe("StvRoundsView", () => {
   const sampleRoundsData: StvRoundsOutput[] = [
-    { round: 1, candidate_name: "TestAlice", votes: 4, status: "standing" },
-    { round: 1, candidate_name: "TestBob", votes: 3, status: "elected" },
+    createStvRoundsOutputFixture({
+      candidate_name: "TestAlice",
+      votes: 4,
+      status: "standing",
+    }),
+    createStvRoundsOutputFixture({
+      candidate_name: "TestBob",
+      votes: 3,
+      status: "elected",
+    }),
   ];
 
   const sampleMetaData: StvMetaOutput[] = [
-    {
-      round: 1,
+    createStvMetaOutputFixture({
       quota: 3,
       exhausted: 0,
       elected_this_round: ["TestBob"],
       eliminated_this_round: null,
-    },
+    }),
   ];
 
-  const sampleStats: StvRoundsStats = {
+  const sampleStats: StvRoundsStats = createStvRoundsStatsFixture({
     number_of_rounds: 1,
     winners: ["TestBob"],
     seats: 1,
     first_round_quota: 3,
-    precision: 0.000001,
-  };
+  });
 
   it("renders component without crashing", () => {
     const { container } = render(
@@ -47,25 +56,23 @@ describe("StvRoundsView", () => {
   });
 
   it("handles empty data", () => {
-    const emptyStats: StvRoundsStats = {
+    const emptyStats: StvRoundsStats = createStvRoundsStatsFixture({
       number_of_rounds: 1,
       winners: [],
       seats: 1,
       first_round_quota: 1,
-      precision: 0.000001,
-    };
+    });
 
     const { container } = render(
       <StvRoundsView
         roundsData={[]}
         metaData={[
-          {
-            round: 1,
+          createStvMetaOutputFixture({
             quota: 1,
             exhausted: 0,
             elected_this_round: null,
             eliminated_this_round: null,
-          },
+          }),
         ]}
         stats={emptyStats}
       />,
@@ -75,13 +82,12 @@ describe("StvRoundsView", () => {
   });
 
   it("handles keyboard navigation", () => {
-    const multiRoundStats: StvRoundsStats = {
+    const multiRoundStats: StvRoundsStats = createStvRoundsStatsFixture({
       number_of_rounds: 3,
       winners: ["TestBob"],
       seats: 1,
       first_round_quota: 3,
-      precision: 0.000001,
-    };
+    });
 
     render(
       <StvRoundsView
@@ -113,13 +119,12 @@ describe("StvRoundsView", () => {
   });
 
   it("handles autoplay functionality", () => {
-    const multiRoundStats: StvRoundsStats = {
+    const multiRoundStats: StvRoundsStats = createStvRoundsStatsFixture({
       number_of_rounds: 2,
       winners: ["TestBob"],
       seats: 1,
       first_round_quota: 3,
-      precision: 0.000001,
-    };
+    });
 
     render(
       <StvRoundsView
@@ -136,13 +141,12 @@ describe("StvRoundsView", () => {
 
   it("handles elected and eliminated candidates display", () => {
     const metaWithElectedAndEliminated: StvMetaOutput[] = [
-      {
-        round: 1,
+      createStvMetaOutputFixture({
         quota: 3,
         exhausted: 0,
         elected_this_round: ["TestBob"],
         eliminated_this_round: ["TestCharlie"],
-      },
+      }),
     ];
 
     const { container } = render(
@@ -158,8 +162,16 @@ describe("StvRoundsView", () => {
 
   it("handles candidates with zero votes", () => {
     const roundsWithZeroVotes: StvRoundsOutput[] = [
-      { round: 1, candidate_name: "TestAlice", votes: 0, status: "standing" },
-      { round: 1, candidate_name: "TestBob", votes: 3, status: "elected" },
+      createStvRoundsOutputFixture({
+        candidate_name: "TestAlice",
+        votes: 0,
+        status: "standing",
+      }),
+      createStvRoundsOutputFixture({
+        candidate_name: "TestBob",
+        votes: 3,
+        status: "elected",
+      }),
     ];
 
     const { container } = render(
@@ -175,13 +187,12 @@ describe("StvRoundsView", () => {
 
   it("handles candidates without quota percentage", () => {
     const metaWithZeroQuota: StvMetaOutput[] = [
-      {
-        round: 1,
+      createStvMetaOutputFixture({
         quota: 0,
         exhausted: 0,
         elected_this_round: ["TestBob"],
         eliminated_this_round: null,
-      },
+      }),
     ];
 
     const { container } = render(

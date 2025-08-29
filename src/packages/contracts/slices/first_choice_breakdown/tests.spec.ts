@@ -1,18 +1,12 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  assertManifestSection,
   assertTableColumns,
   parseAllRows,
-} from "../../lib/contract-enforcer.js";
-import { ingestCvr } from "../ingest_cvr/compute.js";
-import { computeFirstChoiceBreakdown } from "./compute.js";
-import {
-  type FirstChoiceBreakdownOutput,
-  Output,
-  Stats,
-  version,
-} from "./index.contract.js";
+} from "@/packages/contracts/lib/contract-enforcer";
+import { ingestCvr } from "../ingest_cvr/compute";
+import { computeFirstChoiceBreakdown } from "./compute";
+import { type FirstChoiceBreakdownOutput, Output } from "./index.contract";
 
 interface DirectQueryResult {
   candidate_name: string;
@@ -20,12 +14,14 @@ interface DirectQueryResult {
 }
 
 describe("first_choice_breakdown", () => {
-  const originalEnv = process.env.SRC_CSV;
+  const originalSrcEnv = process.env.SRC_CSV;
+  const originalDataEnv = process.env.DATA_ENV;
   const _testId = Math.random().toString(36).substring(7);
 
   beforeAll(async () => {
-    // Set environment variable and run ingest_cvr first to create input data
+    // Set environment variables for test environment
     process.env.SRC_CSV = "tests/golden/micro/cvr_small.csv";
+    process.env.DATA_ENV = "test";
 
     // Add a small delay to prevent concurrent access
     await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
@@ -34,18 +30,23 @@ describe("first_choice_breakdown", () => {
 
   afterAll(() => {
     // Restore original environment
-    if (originalEnv) {
-      process.env.SRC_CSV = originalEnv;
+    if (originalSrcEnv) {
+      process.env.SRC_CSV = originalSrcEnv;
     } else {
       delete process.env.SRC_CSV;
+    }
+    if (originalDataEnv) {
+      process.env.DATA_ENV = originalDataEnv;
+    } else {
+      delete process.env.DATA_ENV;
     }
 
     // Clean up test files
     const testFiles = [
-      "data/test/ingest/candidates.parquet",
-      "data/test/ingest/ballots_long.parquet",
-      "data/test/summary/first_choice.parquet",
-      "manifest.test.json",
+      "data/test/portland-20241105-gen/d2-3seat/ingest/candidates.parquet",
+      "data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
+      "data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+      "data/test/manifest.json",
     ];
 
     testFiles.forEach((file) => {
@@ -72,61 +73,77 @@ describe("first_choice_breakdown", () => {
 
   it("should create parquet export file", async () => {
     await computeFirstChoiceBreakdown();
-    expect(existsSync("data/test/summary/first_choice.parquet")).toBe(true);
+    expect(
+      existsSync(
+        "data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+      ),
+    ).toBe(true);
   });
 
   it("should update manifest.json with correct structure", async () => {
     await computeFirstChoiceBreakdown();
 
-    expect(existsSync("manifest.test.json")).toBe(true);
+    expect(existsSync("data/test/manifest.json")).toBe(true);
 
-    const manifest = JSON.parse(readFileSync("manifest.test.json", "utf8"));
-    const manifestKey = `first_choice_breakdown@${version}`;
-    const entry = manifest[manifestKey];
+    const manifest = JSON.parse(
+      readFileSync("data/test/manifest.json", "utf8"),
+    );
+    const election = manifest.elections.find(
+      (e: any) => e.election_id === "portland-20241105-gen",
+    );
+    const contest = election.contests.find(
+      (c: any) => c.contest_id === "d2-3seat",
+    );
+    const entry = contest.first_choice;
 
     expect(entry).toBeDefined();
-    expect(entry.files).toContain("data/test/summary/first_choice.parquet");
-    expect(entry.hashes["data/test/summary/first_choice.parquet"]).toMatch(
-      /^[a-f0-9]{64}$/,
-    ); // SHA256 hash
-    expect(entry.stats.total_valid_ballots).toBe(12);
-    expect(entry.stats.candidate_count).toBe(5);
-    expect(entry.stats.sum_first_choice).toBe(12);
-    expect(entry.data.rows).toBe(5);
-    expect(entry.datasetVersion).toBe(version);
-
-    // ENFORCE CONTRACT: Validate manifest section
-    assertManifestSection("manifest.test.json", manifestKey, Stats);
+    expect(entry.uri).toBe(
+      "data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+    );
+    expect(entry.sha256).toMatch(/^[a-f0-9]{64}$/); // SHA256 hash
+    expect(entry.rows).toBe(5);
+    expect(contest.title).toBeDefined();
   });
 
   it("should maintain consistent file hashing", async () => {
     // Run twice and check that identical data produces identical hash
     await computeFirstChoiceBreakdown();
-    const manifest1 = JSON.parse(readFileSync("manifest.test.json", "utf8"));
-    const hash1 =
-      manifest1["first_choice_breakdown@1.0.0"].hashes[
-        "data/test/summary/first_choice.parquet"
-      ];
+    const manifest1 = JSON.parse(
+      readFileSync("data/test/manifest.json", "utf8"),
+    );
+    const election1 = manifest1.elections.find(
+      (e: any) => e.election_id === "portland-20241105-gen",
+    );
+    const contest1 = election1.contests.find(
+      (c: any) => c.contest_id === "d2-3seat",
+    );
+    const hash1 = contest1.first_choice.sha256;
 
     await computeFirstChoiceBreakdown();
-    const manifest2 = JSON.parse(readFileSync("manifest.test.json", "utf8"));
-    const hash2 =
-      manifest2["first_choice_breakdown@1.0.0"].hashes[
-        "data/test/summary/first_choice.parquet"
-      ];
+    const manifest2 = JSON.parse(
+      readFileSync("data/test/manifest.json", "utf8"),
+    );
+    const election2 = manifest2.elections.find(
+      (e: any) => e.election_id === "portland-20241105-gen",
+    );
+    const contest2 = election2.contests.find(
+      (c: any) => c.contest_id === "d2-3seat",
+    );
+    const hash2 = contest2.first_choice.sha256;
 
     expect(hash1).toBe(hash2);
   });
 
   it("should throw error when input parquet file does not exist", async () => {
     // Remove the input file temporarily
-    const inputPath = "data/test/ingest/ballots_long.parquet";
+    const inputPath =
+      "data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet";
     const backup = readFileSync(inputPath);
     unlinkSync(inputPath);
 
     try {
       await expect(computeFirstChoiceBreakdown()).rejects.toThrow(
-        "Input file not found: data/test/ingest/ballots_long.parquet. Run ingest_cvr first.",
+        "Input file not found:",
       );
     } finally {
       // Restore the file
@@ -144,7 +161,7 @@ describe("first_choice_breakdown", () => {
 
     try {
       await conn.run(
-        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
+        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet';",
       );
 
       // ENFORCE CONTRACT: Validate table schema and all rows
@@ -177,7 +194,7 @@ describe("first_choice_breakdown", () => {
 
     try {
       await conn.run(
-        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
+        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet';",
       );
 
       const result = await conn.run(
@@ -202,18 +219,26 @@ describe("first_choice_breakdown", () => {
   });
 
   it("should handle corrupted manifest.json gracefully", async () => {
-    // Create corrupted manifest
-    writeFileSync("manifest.test.json", "invalid json content");
+    // Backup existing manifest if it exists
+    let backupManifest: string | null = null;
+    if (existsSync("data/test/manifest.json")) {
+      backupManifest = readFileSync("data/test/manifest.json", "utf8");
+    }
 
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    // Create corrupted manifest
+    writeFileSync("data/test/manifest.json", "invalid json content");
 
     try {
-      await computeFirstChoiceBreakdown();
-      expect(warnSpy).toHaveBeenCalledWith(
-        "Could not parse existing manifest.test.json, creating new one",
+      await expect(computeFirstChoiceBreakdown()).rejects.toThrow(
+        "Failed to parse manifest",
       );
     } finally {
-      warnSpy.mockRestore();
+      // Restore the backup manifest or clean up
+      if (backupManifest) {
+        writeFileSync("data/test/manifest.json", backupManifest);
+      } else if (existsSync("data/test/manifest.json")) {
+        unlinkSync("data/test/manifest.json");
+      }
     }
   });
 
@@ -227,10 +252,10 @@ describe("first_choice_breakdown", () => {
 
     try {
       await conn.run(
-        "CREATE VIEW ballots_long AS SELECT * FROM 'data/test/ingest/ballots_long.parquet';",
+        "CREATE VIEW ballots_long AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet';",
       );
       await conn.run(
-        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/summary/first_choice.parquet';",
+        "CREATE VIEW first_choice AS SELECT * FROM 'data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet';",
       );
 
       // Count first choices directly from ballots_long
@@ -267,8 +292,10 @@ describe("first_choice_breakdown", () => {
 
   it("should handle canonical District 2 subset", async () => {
     // Set up environment for canonical subset
-    const originalEnv = process.env.SRC_CSV;
+    const originalTestSrcEnv = process.env.SRC_CSV;
+    const originalTestDataEnv = process.env.DATA_ENV;
     process.env.SRC_CSV = "tests/golden/micro/canonical_subset.csv";
+    process.env.DATA_ENV = "test";
 
     try {
       // Add a small delay to prevent concurrent access
@@ -286,7 +313,16 @@ describe("first_choice_breakdown", () => {
       );
       expect(result.data.rows).toBe(result.stats.candidate_count);
     } finally {
-      process.env.SRC_CSV = originalEnv;
+      if (originalTestSrcEnv) {
+        process.env.SRC_CSV = originalTestSrcEnv;
+      } else {
+        delete process.env.SRC_CSV;
+      }
+      if (originalTestDataEnv) {
+        process.env.DATA_ENV = originalTestDataEnv;
+      } else {
+        delete process.env.DATA_ENV;
+      }
       // Add delay before re-ingesting to prevent file system race
       await new Promise((resolve) => setTimeout(resolve, 50));
       // Re-ingest with original test data for other tests

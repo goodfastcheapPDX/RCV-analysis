@@ -2,13 +2,12 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { withPreservedQuerySSR } from "@/lib/url-preserve";
-import { loadManifestFromFs } from "@/packages/contracts/lib/manifest";
+import { Manifest } from "@/contracts/manifest";
+import { loadManifest } from "@/lib/manifest";
 
 interface ElectionsIndexPageProps {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -17,38 +16,30 @@ interface ElectionsIndexPageProps {
 export default async function ElectionsIndexPage({
   searchParams,
 }: ElectionsIndexPageProps) {
-  const manifest = await loadManifestFromFs();
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-  const urlSearchParams = new URLSearchParams();
-
-  Object.entries(resolvedSearchParams).forEach(([key, value]) => {
-    if (typeof value === "string") {
-      urlSearchParams.set(key, value);
-    }
-  });
+  const manifest = Manifest.parse(await loadManifest());
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Elections</h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="-foreground mt-2">
           Browse available elections and their contests
         </p>
       </div>
 
       <div className="grid gap-4">
         {manifest.elections.map((election) => (
-          <Card key={election.id} className="hover:shadow-md transition-shadow">
+          <Card
+            key={election.election_id}
+            className="hover:shadow-md transition-shadow"
+          >
             <CardHeader>
               <CardTitle>
                 <Link
-                  href={withPreservedQuerySSR(
-                    `/e/${election.id}`,
-                    urlSearchParams,
-                  )}
+                  href={`/e/${election.election_id}`}
                   className="hover:underline"
                 >
-                  {election.name}
+                  {election.title}
                 </Link>
               </CardTitle>
               <CardDescription>

@@ -4,6 +4,12 @@ A comprehensive analysis platform for ranked-choice voting elections, featuring 
 
 ## Development Rules
 
+- when creating tests, do not write mocks. always exercise the code fully and naturally. if there are external dependencies within our control, build test versions of them as part of the test setup. if there are dependencies out of our control, flag this explicitly before proceeding.
+- never proceed with development outside the scope of `CURRENT_TASK.md`.
+- never change the contents of `CURRENT_TASK.md` without first making a commit that passes all commit hooks.
+- aim for commits to be no more than 500 lines of code, no more than 5 files. exceeding that indicates too much work to safely go without running the commit hooks
+- always use absolute imports using the @ directive. for example: `import X from '../../../module'` = bad. `import X from '@/lib/module'` = good.
+- don't use file extensions in import statements. for example: `import X from 'module.js'` = bad. `import X from 'module'` = good.
 - the vercel build environment does not have the necessary c++ bindings for duckdb. therefore any usage of duckdb in the app/ directory must be in a route.js file with the necessary configuration exports to prevent nextjs from attempting to run the files at build time. see /api/stv-rounds and /demo/stv-rounds for an example of the correct pattern
 - src\packages\contracts\lib\contract-enforcer.ts is always the single source of truth for any downstream code that interacts with data structures
 - your current task is always described in CURRENT_TASK.md. if it is empty it means we must define the task together before proceeding.

@@ -3,52 +3,34 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { withPreservedQuerySSR } from "@/lib/url-preserve";
-import { loadManifestFromFs } from "@/packages/contracts/lib/manifest";
-
-export async function generateStaticParams() {
-  const manifest = await loadManifestFromFs();
-  return manifest.elections.map((election) => ({
-    electionId: election.id,
-  }));
-}
+import { Manifest } from "@/contracts/manifest";
+import { loadManifest } from "@/lib/manifest";
 
 interface ElectionPageProps {
   params: Promise<{ electionId: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
-
 export default async function ElectionPage({
   params,
   searchParams,
 }: ElectionPageProps) {
   const { electionId } = await params;
-  const manifest = await loadManifestFromFs();
+  const manifest = Manifest.parse(await loadManifest());
 
-  const election = manifest.elections.find((e) => e.id === electionId);
+  const election = manifest.elections.find((e) => e.election_id === electionId);
   if (!election) {
     notFound();
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-  const urlSearchParams = new URLSearchParams();
-
-  Object.entries(resolvedSearchParams).forEach(([key, value]) => {
-    if (typeof value === "string") {
-      urlSearchParams.set(key, value);
-    }
-  });
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{election.name}</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-3xl font-bold">{election.title}</h1>
+        <p className="-foreground mt-2">
           Analyze contests within this election
         </p>
       </div>
@@ -56,22 +38,22 @@ export default async function ElectionPage({
       <div className="grid gap-4">
         <h2 className="text-xl font-semibold">Contests</h2>
         {election.contests.map((contest) => (
-          <Card key={contest.id} className="hover:shadow-md transition-shadow">
+          <Card
+            key={contest.contest_id}
+            className="hover:shadow-md transition-shadow"
+          >
             <CardHeader>
               <CardTitle>
                 <Link
-                  href={withPreservedQuerySSR(
-                    `/e/${electionId}/c/${contest.id}`,
-                    urlSearchParams,
-                  )}
+                  href={`/e/${electionId}/c/${contest.contest_id}`}
                   className="hover:underline"
                 >
-                  {contest.name}
+                  {contest.title}
                 </Link>
               </CardTitle>
               <CardDescription>
                 <Badge variant="outline">
-                  {contest.seats} seat{contest.seats !== 1 ? "s" : ""}
+                  {contest.seat_count} seat{contest.seat_count !== 1 ? "s" : ""}
                 </Badge>
               </CardDescription>
             </CardHeader>

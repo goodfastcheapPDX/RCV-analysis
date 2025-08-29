@@ -1,0 +1,164 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Learn Page > should match snapshot 1`] = `
+<div
+  class="space-y-6"
+>
+  <div>
+    <h1
+      class="text-3xl font-bold"
+    >
+      Learn
+    </h1>
+    <p
+      class="-foreground mt-2"
+    >
+      Educational resources about ranked-choice voting
+    </p>
+  </div>
+  <div
+    class="relative w-full rounded-lg border px-4 py-3 text-sm grid has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] grid-cols-[0_1fr] has-[>svg]:gap-x-3 gap-y-0.5 items-start [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current bg-card text-card-foreground"
+    data-slot="alert"
+    role="alert"
+  >
+    <div
+      class="-foreground col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed"
+      data-slot="alert-description"
+    >
+      Educational content and tutorials will be added in future stages.
+    </div>
+  </div>
+  <div
+    class="grid gap-6 md:grid-cols-2"
+  >
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+        data-slot="card-header"
+      >
+        <div
+          class="leading-none font-semibold"
+          data-slot="card-title"
+        >
+          Ranked-Choice Voting Basics
+        </div>
+        <div
+          class="-foreground text-sm"
+          data-slot="card-description"
+        >
+          Understanding how RCV works
+        </div>
+      </div>
+      <div
+        class="px-6"
+        data-slot="card-content"
+      >
+        <p
+          class="-foreground"
+        >
+          Interactive guides and examples coming soon.
+        </p>
+      </div>
+    </div>
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+        data-slot="card-header"
+      >
+        <div
+          class="leading-none font-semibold"
+          data-slot="card-title"
+        >
+          Single Transferable Vote
+        </div>
+        <div
+          class="-foreground text-sm"
+          data-slot="card-description"
+        >
+          Multi-winner election systems
+        </div>
+      </div>
+      <div
+        class="px-6"
+        data-slot="card-content"
+      >
+        <p
+          class="-foreground"
+        >
+          STV tabulation and analysis tutorials coming soon.
+        </p>
+      </div>
+    </div>
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+        data-slot="card-header"
+      >
+        <div
+          class="leading-none font-semibold"
+          data-slot="card-title"
+        >
+          Data Analysis
+        </div>
+        <div
+          class="-foreground text-sm"
+          data-slot="card-description"
+        >
+          Interpreting election results
+        </div>
+      </div>
+      <div
+        class="px-6"
+        data-slot="card-content"
+      >
+        <p
+          class="-foreground"
+        >
+          Coalition analysis and visualization guides coming soon.
+        </p>
+      </div>
+    </div>
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+        data-slot="card-header"
+      >
+        <div
+          class="leading-none font-semibold"
+          data-slot="card-title"
+        >
+          Technical Reference
+        </div>
+        <div
+          class="-foreground text-sm"
+          data-slot="card-description"
+        >
+          API documentation and schemas
+        </div>
+      </div>
+      <div
+        class="px-6"
+        data-slot="card-content"
+      >
+        <p
+          class="-foreground"
+        >
+          Technical documentation and examples coming soon.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+`;

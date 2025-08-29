@@ -5,19 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { withPreservedQuery } from "@/lib/url-preserve";
-
-function CTALink({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
-  const preservedHref =
-    typeof window !== "undefined" ? withPreservedQuery(href) : href;
-  return <Link href={preservedHref}>{children}</Link>;
-}
 
 export function generateMetadata(): Metadata {
   return {
@@ -40,7 +27,7 @@ export default function Home() {
             alpha
           </Badge>
         </div>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-xl -foreground max-w-2xl mx-auto">
           Represent who? Understanding proportional representation in
           ranked-choice elections.
         </p>
@@ -53,11 +40,11 @@ export default function Home() {
             <CardTitle>Explore Elections</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">
+            <p className="-foreground mb-4">
               Browse available election data and start your analysis journey.
             </p>
-            <Button asChild className="w-full">
-              <CTALink href="/e">Explore Elections</CTALink>
+            <Button variant="link" asChild className="w-full text-white">
+              <Link href="/e">Explore Elections</Link>
             </Button>
           </CardContent>
         </Card>
@@ -67,14 +54,12 @@ export default function Home() {
             <CardTitle>Jump to Demo</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4">
+            <p className="-foreground mb-4">
               See the platform in action with Portland's 2024 City Council
               District 2 election.
             </p>
-            <Button asChild className="w-full">
-              <CTALink href="/e/portland-2024-general/c/council-district-2">
-                View Demo
-              </CTALink>
+            <Button variant="link" asChild className="w-full text-white">
+              <Link href="/demos">View Demo</Link>
             </Button>
           </CardContent>
         </Card>
