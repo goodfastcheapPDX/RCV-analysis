@@ -1,23 +1,52 @@
 #!/usr/bin/env tsx
 
-import { getArtifactPaths } from "../src/packages/contracts/lib/artifact-paths";
+import { contestIdFrom, electionIdFrom } from "../src/contracts/ids";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 
 async function main() {
   try {
-    console.log("Starting CVR data ingestion...");
+    console.log("Starting multi-election CVR data ingestion...");
 
-    // Set default CSV path if not provided
-    if (!process.env.SRC_CSV) {
-      process.env.SRC_CSV =
-        "data/2024-11/canonical/district-2-cast-vote-record.csv";
-    }
+    // Parse command line arguments
+    const args = process.argv.slice(2);
+    const electionArg = args
+      .find((arg) => arg.startsWith("--election="))
+      ?.split("=")[1];
+    const contestArg = args
+      .find((arg) => arg.startsWith("--contest="))
+      ?.split("=")[1];
+    const srcCsvArg = args
+      .find((arg) => arg.startsWith("--src-csv="))
+      ?.split("=")[1];
 
-    console.log(`Processing CSV: ${process.env.SRC_CSV}`);
+    // Set defaults for District 2
+    const srcCsv =
+      srcCsvArg ||
+      process.env.SRC_CSV ||
+      "data/2024-11/canonical/district-2-cast-vote-record.csv";
+    const electionId = (electionArg ||
+      electionIdFrom({
+        jurisdiction: "portland",
+        date: "2024-11-05",
+        kind: "gen",
+      })) as any;
+    const contestId = (contestArg ||
+      contestIdFrom({
+        districtId: "d2",
+        seatCount: 3,
+      })) as any;
 
-    const result = await ingestCvr();
+    console.log(`Election: ${electionId}`);
+    console.log(`Contest: ${contestId}`);
+    console.log(`Source CSV: ${srcCsv}`);
 
-    const paths = getArtifactPaths();
+    const result = await ingestCvr({
+      electionId,
+      contestId,
+      districtId: "d2",
+      seatCount: 3,
+      srcCsv,
+    });
 
     console.log("✅ Data ingestion completed successfully!");
     console.log(`📊 Statistics:`);
@@ -27,14 +56,6 @@ async function main() {
     console.log(
       `  - Rank range: ${result.ballots_long.min_rank}-${result.ballots_long.max_rank}`,
     );
-    console.log(
-      `  - Duplicate ballots: ${result.ballots_long.duplicate_ballots}`,
-    );
-
-    console.log("\n📁 Files created:");
-    console.log(`  - ${paths.ingest.candidates}`);
-    console.log(`  - ${paths.ingest.ballotsLong}`);
-    console.log(`  - ${paths.manifest} (updated)`);
   } catch (error) {
     console.error("❌ Data ingestion failed:");
     console.error(error);

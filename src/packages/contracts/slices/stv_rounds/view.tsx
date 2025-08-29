@@ -155,30 +155,30 @@ export function StvRoundsView({
               <div className="text-2xl font-bold text-green-600">
                 {stats.winners.length}
               </div>
-              <div className="text-sm text-muted-foreground">Winners</div>
+              <div className="text-sm -foreground">Winners</div>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-blue-600">
                 {stats.number_of_rounds}
               </div>
-              <div className="text-sm text-muted-foreground">Rounds</div>
+              <div className="text-sm -foreground">Rounds</div>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-amber-600">
                 {stats.first_round_quota}
               </div>
-              <div className="text-sm text-muted-foreground">Quota</div>
+              <div className="text-sm -foreground">Quota</div>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-purple-600">
                 {candidateData.length}
               </div>
-              <div className="text-sm text-muted-foreground">Candidates</div>
+              <div className="text-sm -foreground">Candidates</div>
             </div>
           </div>
 
           <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm -foreground">
               <strong>Winners:</strong> {stats.winners.join(", ")}
             </p>
           </div>
@@ -279,7 +279,7 @@ export function StvRoundsView({
                       <span className="font-medium truncate">
                         {candidate.candidate_name}
                       </span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm -foreground">
                         ({getStatusText(roundData.status)})
                       </span>
                     </div>
@@ -287,7 +287,7 @@ export function StvRoundsView({
                       <span className="font-mono text-sm font-medium">
                         {roundData.votes.toLocaleString()}
                       </span>
-                      <span className="text-xs text-muted-foreground w-16 text-right">
+                      <span className="text-xs -foreground w-16 text-right">
                         {roundData.votes > 0
                           ? `${(
                               (roundData.votes / (currentMeta?.quota || 1)) *
@@ -334,7 +334,7 @@ export function StvRoundsView({
           </div>
 
           {/* Legend */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs text-muted-foreground">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs -foreground">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded-full bg-blue-500" />
               <span>Standing</span>
@@ -359,7 +359,7 @@ export function StvRoundsView({
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground space-y-2">
+            <div className="text-sm -foreground space-y-2">
               <p className="font-medium">
                 About Single Transferable Vote (STV):
               </p>
@@ -376,7 +376,7 @@ export function StvRoundsView({
 
         <Card>
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground space-y-2">
+            <div className="text-sm -foreground space-y-2">
               <p className="font-medium">Keyboard Controls:</p>
               <div className="space-y-1">
                 <div className="flex justify-between">

@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { loadManifestFromFs } from "@/packages/contracts/lib/manifest";
+import { handleManifestRequest } from "./handler";
 
 export async function GET() {
-  try {
-    const manifest = await loadManifestFromFs();
-    return NextResponse.json(manifest);
-  } catch (error) {
-    console.error("Failed to load manifest:", error);
+  const result = await handleManifestRequest();
+
+  if (result.success) {
+    return NextResponse.json(result.data);
+  } else {
     return NextResponse.json(
-      { error: "Failed to load manifest" },
-      { status: 500 },
+      { error: result.error },
+      { status: result.status },
     );
   }
 }

@@ -1,5 +1,18 @@
 // Test setup for Vitest
 import "@testing-library/jest-dom";
+import { vi } from "vitest";
+
+// Mock Next.js fonts globally for all tests
+vi.mock("next/font/google", () => ({
+  Geist: () => ({
+    variable: "--font-geist-sans",
+    className: "geist-sans",
+  }),
+  Geist_Mono: () => ({
+    variable: "--font-geist-mono",
+    className: "geist-mono",
+  }),
+}));
 
 // Mock ResizeObserver for chart components
 global.ResizeObserver = class ResizeObserver {
@@ -21,3 +34,18 @@ global.ResizeObserver = class ResizeObserver {
     // Mock implementation
   }
 };
+
+// Mock window.matchMedia for components that check for dark/light mode
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: vi.fn().mockImplementation((query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});

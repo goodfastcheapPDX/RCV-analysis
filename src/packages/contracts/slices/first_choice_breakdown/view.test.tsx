@@ -1,52 +1,52 @@
 import { render, screen } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it } from "vitest";
-import type { Output } from "./index.contract";
+import { createOutputFixture, type Output } from "./index.contract";
 import { FirstChoiceBreakdownView } from "./view";
 
 const mockData: Output[] = [
-  {
+  createOutputFixture({
     candidate_name: "John Smith",
     first_choice_votes: 1500,
     pct: 35.7,
-  },
-  {
+  }),
+  createOutputFixture({
     candidate_name: "Jane Doe",
     first_choice_votes: 1200,
     pct: 28.6,
-  },
-  {
+  }),
+  createOutputFixture({
     candidate_name: "Bob Johnson",
     first_choice_votes: 800,
     pct: 19.0,
-  },
-  {
+  }),
+  createOutputFixture({
     candidate_name: "Alice Williams",
     first_choice_votes: 700,
     pct: 16.7,
-  },
+  }),
 ];
 
 const mockSingleCandidate: Output[] = [
-  {
+  createOutputFixture({
     candidate_name: "Only Candidate",
     first_choice_votes: 2000,
     pct: 100.0,
-  },
+  }),
 ];
 
 const mockLongCandidateName: Output[] = [
-  {
+  createOutputFixture({
     candidate_name:
       "This is a very long candidate name that should be truncated",
     first_choice_votes: 1000,
     pct: 50.0,
-  },
-  {
+  }),
+  createOutputFixture({
     candidate_name: "Short Name",
     first_choice_votes: 1000,
     pct: 50.0,
-  },
+  }),
 ];
 
 describe("FirstChoiceBreakdownView", () => {
@@ -111,8 +111,16 @@ describe("FirstChoiceBreakdownView", () => {
 
   it("sorts data by first_choice_votes in descending order", () => {
     const unsortedData: Output[] = [
-      { candidate_name: "Low Vote", first_choice_votes: 100, pct: 10.0 },
-      { candidate_name: "High Vote", first_choice_votes: 900, pct: 90.0 },
+      createOutputFixture({
+        candidate_name: "Low Vote",
+        first_choice_votes: 100,
+        pct: 10.0,
+      }),
+      createOutputFixture({
+        candidate_name: "High Vote",
+        first_choice_votes: 900,
+        pct: 90.0,
+      }),
     ];
 
     render(<FirstChoiceBreakdownView data={unsortedData} />);
@@ -147,8 +155,16 @@ describe("FirstChoiceBreakdownView", () => {
 
   it("calculates percentage lead correctly with tied candidates", () => {
     const tiedData: Output[] = [
-      { candidate_name: "Candidate A", first_choice_votes: 500, pct: 50.0 },
-      { candidate_name: "Candidate B", first_choice_votes: 500, pct: 50.0 },
+      createOutputFixture({
+        candidate_name: "Candidate A",
+        first_choice_votes: 500,
+        pct: 50.0,
+      }),
+      createOutputFixture({
+        candidate_name: "Candidate B",
+        first_choice_votes: 500,
+        pct: 50.0,
+      }),
     ];
 
     render(<FirstChoiceBreakdownView data={tiedData} />);
@@ -175,11 +191,11 @@ describe("FirstChoiceBreakdownView", () => {
 
   it("formats vote numbers with locale string", () => {
     const largeNumberData: Output[] = [
-      {
+      createOutputFixture({
         candidate_name: "Popular Candidate",
         first_choice_votes: 15000,
         pct: 100.0,
-      },
+      }),
     ];
 
     render(<FirstChoiceBreakdownView data={largeNumberData} />);
@@ -201,8 +217,16 @@ describe("FirstChoiceBreakdownView", () => {
 
   it("handles candidates with zero votes", () => {
     const dataWithZeroVotes: Output[] = [
-      { candidate_name: "Winner", first_choice_votes: 1000, pct: 100.0 },
-      { candidate_name: "No Votes", first_choice_votes: 0, pct: 0.0 },
+      createOutputFixture({
+        candidate_name: "Winner",
+        first_choice_votes: 1000,
+        pct: 100.0,
+      }),
+      createOutputFixture({
+        candidate_name: "No Votes",
+        first_choice_votes: 0,
+        pct: 0.0,
+      }),
     ];
 
     render(<FirstChoiceBreakdownView data={dataWithZeroVotes} />);
@@ -218,11 +242,13 @@ describe("FirstChoiceBreakdownView", () => {
 
   it("maintains consistent color assignment through chart colors array", () => {
     // Test with more candidates than available colors to ensure modulo wrapping
-    const manyCandidate: Output[] = Array.from({ length: 8 }, (_, i) => ({
-      candidate_name: `Candidate ${i + 1}`,
-      first_choice_votes: 100 - i * 10,
-      pct: (100 - i * 10) / 10,
-    }));
+    const manyCandidate: Output[] = Array.from({ length: 8 }, (_, i) =>
+      createOutputFixture({
+        candidate_name: `Candidate ${i + 1}`,
+        first_choice_votes: 100 - i * 10,
+        pct: (100 - i * 10) / 10,
+      }),
+    );
 
     render(<FirstChoiceBreakdownView data={manyCandidate} />);
 

@@ -2,11 +2,12 @@ import Decimal from "decimal.js";
 
 type DecimalType = InstanceType<typeof Decimal>;
 
+import type { Identity } from "@/contracts/ids";
 import type {
   RulesSchema,
   StvMetaOutput,
   StvRoundsOutput,
-} from "./index.contract.js";
+} from "./index.contract";
 
 // Configure Decimal.js for high precision
 Decimal.config({ precision: 40, rounding: 4 }); // ROUND_HALF_UP
@@ -51,6 +52,7 @@ interface RoundState {
 export function runSTV(
   ballotsData: BallotData[],
   rules: RulesSchema,
+  identity: Identity,
 ): StvResult {
   // Convert ballot data to internal format
   const ballots = prepareBallots(ballotsData);
@@ -109,7 +111,7 @@ export function runSTV(
     }
 
     // Record current round state after all changes
-    recordRoundResults(currentState, roundNumber, rounds, meta);
+    recordRoundResults(currentState, roundNumber, rounds, meta, identity);
 
     // Break if we have enough winners
     if (winners.length >= rules.seats) {
@@ -250,10 +252,15 @@ function recordRoundResults(
   roundNumber: number,
   rounds: StvRoundsOutput[],
   meta: StvMetaOutput[],
+  identity: Identity,
 ): void {
   // Record candidate results
   for (const candidate of state.candidates.values()) {
     rounds.push({
+      election_id: identity.election_id,
+      contest_id: identity.contest_id,
+      district_id: identity.district_id,
+      seat_count: identity.seat_count,
       round: roundNumber,
       candidate_name: candidate.candidate,
       votes: candidate.votes.toNumber(),
@@ -263,6 +270,10 @@ function recordRoundResults(
 
   // Record round metadata
   meta.push({
+    election_id: identity.election_id,
+    contest_id: identity.contest_id,
+    district_id: identity.district_id,
+    seat_count: identity.seat_count,
     round: roundNumber,
     quota: state.quota.toNumber(),
     exhausted: state.exhausted.toNumber(),

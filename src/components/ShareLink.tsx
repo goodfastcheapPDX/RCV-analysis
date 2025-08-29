@@ -30,7 +30,7 @@ export function ShareLink() {
       variant="ghost"
       size="sm"
       onClick={handleShare}
-      className="gap-2 text-muted-foreground hover:text-primary"
+      className="gap-2 -foreground hover:text-primary"
       aria-label="Share current page"
     >
       {copied ? (

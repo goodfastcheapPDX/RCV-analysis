@@ -38,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const election of manifest.elections) {
       // Election pages
       dynamicRoutes.push({
-        url: `${baseUrl}/e/${election.id}`,
+        url: `${baseUrl}/e/${election.election_id}`,
         lastModified: new Date(),
         changeFrequency: "weekly",
         priority: 0.7,
@@ -47,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Contest pages
       for (const contest of election.contests) {
         dynamicRoutes.push({
-          url: `${baseUrl}/e/${election.id}/c/${contest.id}`,
+          url: `${baseUrl}/e/${election.election_id}/c/${contest.contest_id}`,
           lastModified: new Date(),
           changeFrequency: "weekly",
           priority: 0.9,

@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Elections Index Page > should match snapshot with test data 1`] = `
+<div
+  class="space-y-6"
+>
+  <div>
+    <h1
+      class="text-3xl font-bold"
+    >
+      Elections
+    </h1>
+    <p
+      class="-foreground mt-2"
+    >
+      Browse available elections and their contests
+    </p>
+  </div>
+  <div
+    class="grid gap-4"
+  >
+    <div
+      class="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm hover:shadow-md transition-shadow"
+      data-slot="card"
+    >
+      <div
+        class="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+        data-slot="card-header"
+      >
+        <div
+          class="leading-none font-semibold"
+          data-slot="card-title"
+        >
+          <a
+            class="hover:underline"
+            href="/e/portland-20241105-gen"
+          >
+            Portland General Election 2024
+          </a>
+        </div>
+        <div
+          class="-foreground text-sm"
+          data-slot="card-description"
+        >
+          <span
+            class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+            data-slot="badge"
+          >
+            1
+             contest
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

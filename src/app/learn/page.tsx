@@ -12,7 +12,7 @@ export default function LearnPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Learn</h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="-foreground mt-2">
           Educational resources about ranked-choice voting
         </p>
       </div>
@@ -30,7 +30,7 @@ export default function LearnPage() {
             <CardDescription>Understanding how RCV works</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
+            <p className="-foreground">
               Interactive guides and examples coming soon.
             </p>
           </CardContent>
@@ -42,7 +42,7 @@ export default function LearnPage() {
             <CardDescription>Multi-winner election systems</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
+            <p className="-foreground">
               STV tabulation and analysis tutorials coming soon.
             </p>
           </CardContent>
@@ -54,7 +54,7 @@ export default function LearnPage() {
             <CardDescription>Interpreting election results</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
+            <p className="-foreground">
               Coalition analysis and visualization guides coming soon.
             </p>
           </CardContent>
@@ -66,7 +66,7 @@ export default function LearnPage() {
             <CardDescription>API documentation and schemas</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
+            <p className="-foreground">
               Technical documentation and examples coming soon.
             </p>
           </CardContent>

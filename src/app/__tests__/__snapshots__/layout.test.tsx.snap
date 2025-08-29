@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Root Layout > should match snapshot 1`] = `
+<div
+  data-testid="app-shell"
+>
+  <div>
+    Test content
+  </div>
+</div>
+`;
