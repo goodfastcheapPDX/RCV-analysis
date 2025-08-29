@@ -1,6 +1,13 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createLinkWithVersion } from "@/lib/link-utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { loadManifestFromFs } from "@/packages/contracts/lib/manifest";
 
 export async function generateStaticParams() {
@@ -24,10 +31,7 @@ interface ContestPageProps {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function ContestPage({
-  params,
-  searchParams,
-}: ContestPageProps) {
+export default async function ContestPage({ params }: ContestPageProps) {
   const { electionId, contestId } = await params;
   const manifest = await loadManifestFromFs();
 
@@ -41,49 +45,47 @@ export default async function ContestPage({
     notFound();
   }
 
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-  const urlSearchParams = new URLSearchParams();
-
-  Object.entries(resolvedSearchParams).forEach(([key, value]) => {
-    if (typeof value === "string") {
-      urlSearchParams.set(key, value);
-    }
-  });
-
   return (
-    <div className="container mx-auto p-6">
-      <nav className="mb-4 space-x-2">
-        <Link
-          href={createLinkWithVersion("/e", urlSearchParams)}
-          className="text-blue-600 hover:text-blue-800 hover:underline"
-        >
-          Elections
-        </Link>
-        <span className="text-gray-400">→</span>
-        <Link
-          href={createLinkWithVersion(`/e/${electionId}`, urlSearchParams)}
-          className="text-blue-600 hover:text-blue-800 hover:underline"
-        >
-          {election.name}
-        </Link>
-      </nav>
-
-      <h1 className="text-2xl font-bold mb-4">{contest.name}</h1>
-      <div className="space-y-2 mb-6">
-        <p className="text-gray-600">
-          <span className="font-medium">Election:</span> {election.name}
-        </p>
-        <p className="text-gray-600">
-          <span className="font-medium">Seats:</span> {contest.seats}
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">{contest.name}</h1>
+        <p className="text-muted-foreground mt-2">
+          Analysis and visualization for this contest
         </p>
       </div>
 
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <p className="text-gray-700">
+      <Card>
+        <CardHeader>
+          <CardTitle>Contest Details</CardTitle>
+          <CardDescription>
+            Information about this ranked-choice voting contest
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-medium text-sm text-muted-foreground">
+                Election
+              </h3>
+              <p className="text-base">{election.name}</p>
+            </div>
+            <div>
+              <h3 className="font-medium text-sm text-muted-foreground">
+                Available Seats
+              </h3>
+              <Badge variant="outline">{contest.seats}</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Alert>
+        <AlertDescription>
           Contest analysis and visualization will be implemented in later
-          stages.
-        </p>
-      </div>
+          stages. This placeholder shows the contest structure from the
+          manifest.
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }
