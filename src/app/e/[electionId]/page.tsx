@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createLinkWithVersion } from "@/lib/link-utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { withPreservedQuerySSR } from "@/lib/url-preserve";
 import { loadManifestFromFs } from "@/packages/contracts/lib/manifest";
 
 export async function generateStaticParams() {
@@ -37,37 +45,37 @@ export default async function ElectionPage({
   });
 
   return (
-    <div className="container mx-auto p-6">
-      <nav className="mb-4">
-        <Link
-          href={createLinkWithVersion("/e", urlSearchParams)}
-          className="text-blue-600 hover:text-blue-800 hover:underline"
-        >
-          ← Back to Elections
-        </Link>
-      </nav>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">{election.name}</h1>
+        <p className="text-muted-foreground mt-2">
+          Analyze contests within this election
+        </p>
+      </div>
 
-      <h1 className="text-2xl font-bold mb-6">{election.name}</h1>
-
-      <div className="space-y-4">
+      <div className="grid gap-4">
         <h2 className="text-xl font-semibold">Contests</h2>
         {election.contests.map((contest) => (
-          <div key={contest.id} className="border rounded-lg p-4">
-            <h3 className="text-lg font-medium mb-2">
-              <Link
-                href={createLinkWithVersion(
-                  `/e/${electionId}/c/${contest.id}`,
-                  urlSearchParams,
-                )}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                {contest.name}
-              </Link>
-            </h3>
-            <p className="text-gray-600">
-              {contest.seats} seat{contest.seats !== 1 ? "s" : ""}
-            </p>
-          </div>
+          <Card key={contest.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle>
+                <Link
+                  href={withPreservedQuerySSR(
+                    `/e/${electionId}/c/${contest.id}`,
+                    urlSearchParams,
+                  )}
+                  className="hover:underline"
+                >
+                  {contest.name}
+                </Link>
+              </CardTitle>
+              <CardDescription>
+                <Badge variant="outline">
+                  {contest.seats} seat{contest.seats !== 1 ? "s" : ""}
+                </Badge>
+              </CardDescription>
+            </CardHeader>
+          </Card>
         ))}
       </div>
     </div>

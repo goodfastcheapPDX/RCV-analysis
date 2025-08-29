@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { createLinkWithVersion } from "@/lib/link-utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { withPreservedQuerySSR } from "@/lib/url-preserve";
 import { loadManifestFromFs } from "@/packages/contracts/lib/manifest";
 
 interface ElectionsIndexPageProps {
@@ -20,27 +28,37 @@ export default async function ElectionsIndexPage({
   });
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Elections</h1>
-      <div className="space-y-4">
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Elections</h1>
+        <p className="text-muted-foreground mt-2">
+          Browse available elections and their contests
+        </p>
+      </div>
+
+      <div className="grid gap-4">
         {manifest.elections.map((election) => (
-          <div key={election.id} className="border rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-2">
-              <Link
-                href={createLinkWithVersion(
-                  `/e/${election.id}`,
-                  urlSearchParams,
-                )}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                {election.name}
-              </Link>
-            </h2>
-            <p className="text-gray-600">
-              {election.contests.length} contest
-              {election.contests.length !== 1 ? "s" : ""}
-            </p>
-          </div>
+          <Card key={election.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle>
+                <Link
+                  href={withPreservedQuerySSR(
+                    `/e/${election.id}`,
+                    urlSearchParams,
+                  )}
+                  className="hover:underline"
+                >
+                  {election.name}
+                </Link>
+              </CardTitle>
+              <CardDescription>
+                <Badge variant="secondary">
+                  {election.contests.length} contest
+                  {election.contests.length !== 1 ? "s" : ""}
+                </Badge>
+              </CardDescription>
+            </CardHeader>
+          </Card>
         ))}
       </div>
     </div>
