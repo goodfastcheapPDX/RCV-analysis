@@ -7,6 +7,7 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "build:data": "npx tsx scripts/build-data.ts",
+    "build:data:all": "npx tsx scripts/build-all-districts.ts",
     "build:data:firstchoice": "npx tsx scripts/build-first-choice.ts",
     "build:data:stv": "npx tsx src/packages/contracts/slices/stv_rounds/compute.ts",
     "validate:firstchoice": " npx tsx scripts/validateFirstChoice.ts",

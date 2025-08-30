@@ -111,7 +111,9 @@ export async function ingestCvr(
 
     const unionQueries = candidateColumns.map((row) => {
       const columnName = row.column_name as string;
-      return `SELECT BallotID, PrecinctID, BallotStyleID, '${columnName}' AS column_name, CAST("${columnName}" AS INTEGER) AS has_vote FROM rcv_raw WHERE Status=0 AND "${columnName}"=1`;
+      // Escape single quotes in column name for SQL string literal
+      const escapedColumnName = columnName.replace(/'/g, "''");
+      return `SELECT BallotID, PrecinctID, BallotStyleID, '${escapedColumnName}' AS column_name, CAST("${columnName}" AS INTEGER) AS has_vote FROM rcv_raw WHERE Status=0 AND "${columnName}"=1`;
     });
 
     const unionAllQuery = unionQueries.join(" UNION ALL ");
