@@ -1,58 +1,41 @@
-Landing Page (Marketing) using shadcn
+API Route Testing
 
 Context
-0a–0c gave us manifest, routes, and AppShell. 0d adds a simple, credible homepage that funnels users into a specific election/contest and works well when shared.
+The project has two API routes that need comprehensive test coverage to ensure reliability and proper error handling.
 
 Scope
 
-app/(marketing)/page.tsx
+Create tests for existing API routes:
+- `/api/manifest` - Returns manifest data
+- `/api/first-choice-data` - Returns first choice breakdown data with election/contest params
 
-Hero: app name + one-sentence mission
+Test Structure
+- Use existing vitest setup and patterns
+- Place tests in `src/app/api/[route]/__tests__/route.test.ts`
+- Test successful responses, error cases, and edge conditions
+- Mock filesystem and DuckDB where needed for isolation
 
-Two CTA cards:
+Test Cases for /api/manifest:
+- Successful manifest loading
+- Error handling when manifest fails to load
+- Response format validation
 
-“Explore Elections” → /e
-
-“Jump to Demo” → /e/{electionId}/c/{contestId} (from manifest)
-
-“How it works” blurb (CSV → static artifacts → interactive UI)
-
-shadcn primitives only:
-
-Card, Button, Separator, Alert, Tooltip (optional), Badge for “alpha”
-
-Metadata & SEO
-
-generateMetadata() with title/description
-
-OG image placeholder (re-use public/og.png)
-
-app/sitemap.ts include / (plus existing /e and children)
-
-URL pin preservation
-
-If ?v exists, preserve it in CTAs (use your withPreservedQuery() util)
-
-No data reads beyond the contracts manifest
+Test Cases for /api/first-choice-data:
+- Successful data retrieval with default params
+- Successful data retrieval with custom electionId/contestId
+- 404 when parquet file doesn't exist
+- Error handling for invalid election/contest combinations
+- Database connection error handling
+- Response format validation
 
 Guardrails
-
-No charts or data fetches
-
-Only shadcn primitives (keep visual language consistent)
-
-Absolute imports; keep changes additive
+- Follow existing test patterns in the codebase
+- Use absolute imports
+- Ensure tests are isolated and don't depend on external state
+- Mock external dependencies (filesystem, database)
 
 Done When
-
-/ renders hero + 2 CTAs styled with shadcn
-
-CTAs preserve ?v when present
-
-OG unfurl looks correct
-
-Sitemap includes /
-
-Output
-
-PR adding/updating: (marketing)/page.tsx, metadata, sitemap tweak, OG image (if needed), small copy
+- Both API routes have comprehensive test coverage
+- All tests pass
+- Tests cover success cases, error cases, and edge conditions
+- Tests follow project conventions

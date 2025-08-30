@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { coverageConfigDefaults, defineConfig } from "vitest/config";
+import { loadEnv } from 'vite';
 
 const dirname =
   typeof __dirname !== "undefined"
@@ -19,6 +20,7 @@ export default defineConfig({
     },
   },
   test: {
+    env: loadEnv('test', process.cwd(), ''),
     // Run tests sequentially to avoid DuckDB file locking issues
     pool: "forks",
     poolOptions: {
@@ -33,11 +35,12 @@ export default defineConfig({
     testTimeout: 30000,
     coverage: {
       exclude: [
-        "**/src/**/*.stories.tsx", 
-        "**/src/app/e/**", // Next.js route pages tested via build process
+        "**/src/**/*.stories.tsx",
+        "**/src/components/**",
+        "**/src/hooks/**",
         ...coverageConfigDefaults.exclude
       ],
-      include: ["**/src/packages/**", "**/src/app/api/**", "**/src/lib/**"],
+      include: ["**/src/**"],
       thresholds: {
         statements: 80,
         branches: 80,

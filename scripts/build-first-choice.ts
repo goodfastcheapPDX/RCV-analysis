@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 
-import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute.js";
+import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
 
 async function main() {
   try {

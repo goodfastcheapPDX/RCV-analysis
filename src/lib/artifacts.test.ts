@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { type ArtifactPaths, getArtifacts } from "./artifacts";
 import type { DataEnv } from "./env";
 
-const CANON_ELECTION = "portland-2024-general";
-const CANON_CONTEST = "council-district-2";
+const CANON_ELECTION = "portland-20241105-gen";
+const CANON_CONTEST = "d2-3seat";
 
 describe("getArtifacts", () => {
   describe("valid canonical election and contest", () => {
@@ -11,9 +11,12 @@ describe("getArtifacts", () => {
       const result = getArtifacts(CANON_ELECTION, CANON_CONTEST, "dev");
 
       expect(result).toEqual({
-        firstChoiceParquet: "/data/dev/summary/first_choice.parquet",
-        stvTabulationParquet: "/data/dev/stv/stv_rounds.parquet",
-        stvMetaParquet: "/data/dev/stv/stv_meta.parquet",
+        firstChoiceParquet:
+          "/data/dev/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+        stvTabulationParquet:
+          "/data/dev/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
+        stvMetaParquet:
+          "/data/dev/portland-20241105-gen/d2-3seat/stv/meta.parquet",
       });
     });
 
@@ -21,9 +24,12 @@ describe("getArtifacts", () => {
       const result = getArtifacts(CANON_ELECTION, CANON_CONTEST, "test");
 
       expect(result).toEqual({
-        firstChoiceParquet: "/data/test/summary/first_choice.parquet",
-        stvTabulationParquet: "/data/test/stv/stv_rounds.parquet",
-        stvMetaParquet: "/data/test/stv/stv_meta.parquet",
+        firstChoiceParquet:
+          "/data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+        stvTabulationParquet:
+          "/data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
+        stvMetaParquet:
+          "/data/test/portland-20241105-gen/d2-3seat/stv/meta.parquet",
       });
     });
 
@@ -31,9 +37,12 @@ describe("getArtifacts", () => {
       const result = getArtifacts(CANON_ELECTION, CANON_CONTEST, "prod");
 
       expect(result).toEqual({
-        firstChoiceParquet: "/data/prod/summary/first_choice.parquet",
-        stvTabulationParquet: "/data/prod/stv/stv_rounds.parquet",
-        stvMetaParquet: "/data/prod/stv/stv_meta.parquet",
+        firstChoiceParquet:
+          "/data/prod/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+        stvTabulationParquet:
+          "/data/prod/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
+        stvMetaParquet:
+          "/data/prod/portland-20241105-gen/d2-3seat/stv/meta.parquet",
       });
     });
 
@@ -156,7 +165,7 @@ describe("getArtifacts", () => {
     it("should generate paths with expected directory structure", () => {
       const result = getArtifacts(CANON_ELECTION, CANON_CONTEST, "dev");
 
-      expect(result.firstChoiceParquet?.includes("/summary/")).toBe(true);
+      expect(result.firstChoiceParquet?.includes("/first_choice/")).toBe(true);
       expect(result.stvTabulationParquet.includes("/stv/")).toBe(true);
       expect(result.stvMetaParquet.includes("/stv/")).toBe(true);
     });

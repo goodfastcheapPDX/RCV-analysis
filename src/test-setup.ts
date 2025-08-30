@@ -1,6 +1,8 @@
 // Test setup for Vitest
 import "@testing-library/jest-dom";
 
+
+
 // Mock ResizeObserver for chart components
 global.ResizeObserver = class ResizeObserver {
   constructor(cb: ResizeObserverCallback) {

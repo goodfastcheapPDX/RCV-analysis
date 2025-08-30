@@ -12,7 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { withPreservedQuery } from "@/lib/url-preserve";
-import type { ManifestT } from "@/packages/contracts/lib/manifest";
+import type { Manifest } from "@/lib/manifest";
 
 interface BreadcrumbSegment {
   label: string;
@@ -21,7 +21,7 @@ interface BreadcrumbSegment {
 
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const [manifest, setManifest] = useState<ManifestT | null>(null);
+  const [manifest, setManifest] = useState<Manifest | null>(null);
 
   // Load manifest on client side
   useEffect(() => {
@@ -65,8 +65,8 @@ export function Breadcrumbs() {
         segments.push({ label: "Elections", href: "/e" });
 
         const electionId = pathParts[1];
-        const election = manifest?.elections.find((e) => e.id === electionId);
-        const electionName = election?.name || electionId;
+        const election = manifest?.elections.find((e) => e.election_id === electionId);
+        const electionName = election?.title || electionId;
 
         if (pathParts.length === 2) {
           // /e/[electionId] - show election name (current page)
@@ -76,8 +76,8 @@ export function Breadcrumbs() {
           segments.push({ label: electionName, href: `/e/${electionId}` });
 
           const contestId = pathParts[3];
-          const contest = election?.contests.find((c) => c.id === contestId);
-          const contestName = contest?.name || contestId;
+          const contest = election?.contests.find((c) => c.contest_id === contestId);
+          const contestName = contest?.title || contestId;
 
           if (pathParts.length === 4) {
             // /e/[electionId]/c/[contestId] - show contest name (current page)

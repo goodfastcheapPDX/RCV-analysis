@@ -1,7 +1,7 @@
 import { type DataEnv, getArtifactRoot } from "@/lib/env";
 
-const CANON_ELECTION = "portland-2024-general";
-const CANON_CONTEST = "council-district-2";
+const CANON_ELECTION = "portland-20241105-gen";
+const CANON_CONTEST = "d2-3seat";
 
 export type ArtifactPaths = {
   firstChoiceParquet?: string;
@@ -21,8 +21,8 @@ export function getArtifacts(
   }
   const root = getArtifactRoot(env);
   return {
-    firstChoiceParquet: `${root}/summary/first_choice.parquet`,
-    stvTabulationParquet: `${root}/stv/stv_rounds.parquet`,
-    stvMetaParquet: `${root}/stv/stv_meta.parquet`,
+    firstChoiceParquet: `${root}/${electionId}/${contestId}/first_choice/first_choice.parquet`,
+    stvTabulationParquet: `${root}/${electionId}/${contestId}/stv/rounds.parquet`,
+    stvMetaParquet: `${root}/${electionId}/${contestId}/stv/meta.parquet`,
   };
 }
