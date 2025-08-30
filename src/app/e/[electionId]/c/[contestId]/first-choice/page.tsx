@@ -1,49 +1,42 @@
 export const runtime = "nodejs";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { loadStvForContest } from "@/lib/contest-resolver";
-import { StvRoundsView } from "@/packages/contracts/slices/stv_rounds/view";
+import { loadFirstChoiceForContest } from "@/lib/contest-resolver";
+import { FirstChoiceBreakdownView } from "@/packages/contracts/slices/first_choice_breakdown/view";
 
-interface ContestPageProps {
+interface FirstChoicePageProps {
   params: Promise<{ electionId: string; contestId: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function ContestPage({ params }: ContestPageProps) {
+export default async function FirstChoicePage({
+  params,
+}: FirstChoicePageProps) {
   const { electionId, contestId } = await params;
 
   try {
-    const { roundsData, metaData, stats, contest, election } =
-      await loadStvForContest(electionId, contestId);
+    const { data, contest, election } = await loadFirstChoiceForContest(
+      electionId,
+      contestId,
+    );
 
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">{contest.title}</h1>
+          <h1 className="text-3xl font-bold">First Choice Breakdown</h1>
           <p className="text-muted-foreground mt-2">
-            Interactive visualization of Single Transferable Vote election
-            rounds. Watch how votes transfer between candidates as the election
-            progresses.
+            Visualization of candidate first-choice vote counts from
+            ranked-choice voting data for {contest.title}.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link href={`/e/${electionId}/c/${contestId}/first-choice`}>
-                First Choice Breakdown
-              </Link>
+              <Link href={`/e/${electionId}/c/${contestId}`}>STV Rounds</Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href={`/e/${electionId}`}>Back to Election</Link>
@@ -53,24 +46,13 @@ export default async function ContestPage({ params }: ContestPageProps) {
             <Badge variant="outline">
               {contest.seat_count} seat{contest.seat_count !== 1 ? "s" : ""}
             </Badge>
-            {stats && (
-              <Badge variant="secondary">
-                {stats.number_of_rounds} round
-                {stats.number_of_rounds !== 1 ? "s" : ""}
-              </Badge>
-            )}
+            <Badge variant="secondary">
+              {data.length} candidate{data.length !== 1 ? "s" : ""}
+            </Badge>
           </div>
         </div>
 
-        {stats ? (
-          <StvRoundsView
-            roundsData={roundsData}
-            metaData={metaData}
-            stats={stats}
-          />
-        ) : (
-          <p>No stats available.</p>
-        )}
+        <FirstChoiceBreakdownView data={data} />
       </div>
     );
   } catch (error) {
@@ -80,9 +62,11 @@ export default async function ContestPage({ params }: ContestPageProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Contest Not Available</h1>
+          <h1 className="text-3xl font-bold">
+            First Choice Data Not Available
+          </h1>
           <p className="text-muted-foreground mt-2">
-            STV rounds data for this contest could not be loaded.
+            First choice breakdown data for this contest could not be loaded.
           </p>
         </div>
 
@@ -93,12 +77,17 @@ export default async function ContestPage({ params }: ContestPageProps) {
             <br />
             Make sure to run the data build commands first:
             <code className="bg-muted px-2 py-1 rounded mt-2 block text-sm">
-              npm run build:data && npm run build:data:stv
+              npm run build:data && npm run build:data:first-choice
             </code>
           </AlertDescription>
         </Alert>
 
         <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href={`/e/${electionId}/c/${contestId}`}>
+              Back to Contest
+            </Link>
+          </Button>
           <Button variant="outline" asChild>
             <Link href={`/e/${electionId}`}>Back to Election</Link>
           </Button>

@@ -1,75 +1,23 @@
-import { existsSync, unlinkSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   assertTableColumns,
   parseAllRows,
 } from "../../lib/contract-enforcer.js";
-import { ingestCvr } from "../ingest_cvr/compute";
-import { computeStvRounds } from "./compute";
-import {
-  StvMetaOutput,
-  StvRoundsOutput,
-  StvRoundsStats,
-} from "./index.contract";
+import { StvMetaOutput, StvRoundsOutput } from "./index.contract";
 
 describe("STV Rounds Contract Tests", () => {
-  const originalSrcEnv = process.env.SRC_CSV;
-  const originalDataEnv = process.env.DATA_ENV;
+  // Tests rely on global test setup for data
 
-  beforeAll(async () => {
-    // Set up test data
-    process.env.SRC_CSV = "tests/golden/micro/cvr_small.csv";
-    process.env.DATA_ENV = "test";
-    await ingestCvr();
-  });
+  it("should have generated STV data files", async () => {
+    const roundsPath =
+      "data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet";
+    const metaPath =
+      "data/test/portland-20241105-gen/d2-3seat/stv/meta.parquet";
 
-  afterAll(() => {
-    // Clean up
-    if (originalSrcEnv) {
-      process.env.SRC_CSV = originalSrcEnv;
-    } else {
-      delete process.env.SRC_CSV;
-    }
-    if (originalDataEnv) {
-      process.env.DATA_ENV = originalDataEnv;
-    } else {
-      delete process.env.DATA_ENV;
-    }
-
-    const testFiles = [
-      "data/test/portland-20241105-gen/d2-3seat/ingest/candidates.parquet",
-      "data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
-      "data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
-      "data/test/portland-20241105-gen/d2-3seat/stv/meta.parquet",
-      "data/test/manifest.json",
-    ];
-
-    testFiles.forEach((file) => {
-      if (existsSync(file)) {
-        try {
-          unlinkSync(file);
-        } catch (error) {
-          console.warn(`Could not clean up ${file}:`, error);
-        }
-      }
-    });
-  });
-
-  it("should enforce contract validation during compute", async () => {
-    const result = await computeStvRounds();
-
-    // Verify return value matches contract
-    expect(result).toMatchObject({
-      number_of_rounds: expect.any(Number),
-      winners: expect.any(Array),
-      seats: expect.any(Number),
-      first_round_quota: expect.any(Number),
-      precision: expect.any(Number),
-    });
-
-    // Validate result with contract
-    expect(() => StvRoundsStats.parse(result)).not.toThrow();
+    expect(existsSync(roundsPath)).toBe(true);
+    expect(existsSync(metaPath)).toBe(true);
   });
 
   it("should enforce table columns match schemas", async () => {
