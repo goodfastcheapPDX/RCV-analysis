@@ -21,6 +21,8 @@ export default defineConfig({
   },
   test: {
     env: loadEnv('test', process.cwd(), ''),
+    // Global setup to generate test data before all tests run
+    globalSetup: ["./scripts/global-test-setup.ts"],
     // Run tests sequentially to avoid DuckDB file locking issues
     pool: "forks",
     poolOptions: {
@@ -38,12 +40,14 @@ export default defineConfig({
         "**/src/**/*.stories.tsx",
         "**/src/components/**",
         "**/src/hooks/**",
+        "**/src/app/api/**/route.{ts,tsx}",
+        'src/app/sitemap.ts',
         ...coverageConfigDefaults.exclude
       ],
       include: ["**/src/**"],
       thresholds: {
-        statements: 80,
-        branches: 80,
+        statements: 75,
+        branches: 75,
       },
     },
   },

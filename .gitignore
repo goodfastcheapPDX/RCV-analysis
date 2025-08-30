@@ -44,3 +44,7 @@ next-env.d.ts
 storybook-static
 data/2024-11/canonical/
 data/test
+data/error-test-ballots
+data/error-test-contest
+data/error-test-election
+data/corrupt-test
