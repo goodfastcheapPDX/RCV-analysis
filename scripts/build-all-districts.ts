@@ -10,6 +10,7 @@ import {
 } from "@/contracts/ids";
 import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
+import { computeStvRounds } from "../src/packages/contracts/slices/stv_rounds/compute";
 
 interface DistrictConfig {
   districtId: DistrictId;
@@ -90,6 +91,19 @@ async function processDistrict(district: DistrictConfig) {
 
     console.log(
       `   ✅ First Choice: ${firstChoiceResult.stats.total_valid_ballots} ballots processed`,
+    );
+
+    // Step 3: STV Rounds
+    console.log(`🗳️  Computing STV rounds for ${district.districtId}...`);
+    const stvResult = await computeStvRounds({
+      electionId,
+      contestId,
+      districtId: district.districtId,
+      seatCount: district.seatCount,
+    });
+
+    console.log(
+      `   ✅ STV: ${stvResult.winners.length} winners elected from ${stvResult.seats} seats in ${stvResult.number_of_rounds} rounds`,
     );
   } catch (error) {
     console.error(`   ❌ Failed to process ${district.districtId}:`);

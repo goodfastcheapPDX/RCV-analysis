@@ -243,6 +243,38 @@ describe("ingest_cvr", () => {
     }
   });
 
+  it("should handle candidate names with apostrophes (like David O'Connor)", async () => {
+    // Create a CSV with candidate name containing apostrophe
+    const apostropheCsvPath = "tests/golden/micro/apostrophe_cvr.csv";
+    const header =
+      '"BallotID","PrecinctID","BallotStyleID","Status","Choice_36_1:City of Portland, Councilor, District 3:1:Number of Winners 3:David O\'Connor:NON","Choice_37_1:City of Portland, Councilor, District 3:2:Number of Winners 3:Test Candidate:NON"';
+    const data = '"B001","P01","S01",0,1,0\n"B002","P01","S01",0,0,1';
+    writeFileSync(apostropheCsvPath, `${header}\n${data}\n`);
+
+    const originalEnv = process.env.SRC_CSV;
+    process.env.SRC_CSV = apostropheCsvPath;
+
+    try {
+      const result = await ingestCvr();
+
+      // Should successfully parse data with apostrophes in candidate names
+      expect(result.candidates.rows).toBe(2);
+      expect(result.ballots_long.ballots).toBe(2);
+      expect(result.ballots_long.rows).toBe(2);
+      expect(result.ballots_long.min_rank).toBe(1);
+      expect(result.ballots_long.max_rank).toBe(2);
+
+      // Verify the candidate with apostrophe is correctly processed
+      // (This tests that SQL escaping works properly)
+      expect(result.ballots_long.candidates).toBe(2);
+    } finally {
+      process.env.SRC_CSV = originalEnv;
+      if (existsSync(apostropheCsvPath)) {
+        unlinkSync(apostropheCsvPath);
+      }
+    }
+  });
+
   it("should ingest canonical District 2 subset with real candidate data", async () => {
     const originalEnv = process.env.SRC_CSV;
     process.env.SRC_CSV = "tests/golden/micro/canonical_subset.csv";
