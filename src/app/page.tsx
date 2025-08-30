@@ -43,7 +43,7 @@ export default function Home() {
             <p className="-foreground mb-4">
               Browse available election data and start your analysis journey.
             </p>
-            <Button variant="link" asChild className="w-full text-white">
+            <Button variant="link" asChild className="w-full">
               <Link href="/e">Explore Elections</Link>
             </Button>
           </CardContent>
@@ -58,7 +58,7 @@ export default function Home() {
               See the platform in action with Portland's 2024 City Council
               District 2 election.
             </p>
-            <Button variant="link" asChild className="w-full text-white">
+            <Button variant="link" asChild className="w-full">
               <Link href="/demos">View Demo</Link>
             </Button>
           </CardContent>
