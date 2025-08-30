@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`prose w-full min-w-full ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`w-full min-w-full ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AppShell>{children}</AppShell>
         <Toaster />
