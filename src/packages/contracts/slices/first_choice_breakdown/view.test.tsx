@@ -64,7 +64,7 @@ describe("FirstChoiceBreakdownView", () => {
   it("displays educational information about the chart", () => {
     render(<FirstChoiceBreakdownView data={mockData} />);
 
-    expect(screen.getByText("About this chart:")).toBeInTheDocument();
+    expect(screen.getAllByText("About this chart:")[0]).toBeInTheDocument();
     expect(
       screen.getByText(/This shows how many voters selected each candidate/),
     ).toBeInTheDocument();

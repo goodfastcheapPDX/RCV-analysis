@@ -82,6 +82,22 @@ export class ContestResolver {
     const contest = this.getContest(electionId, contestId);
     return contest.stv.meta?.uri ?? null;
   }
+
+  /**
+   * Get candidates URI for contest
+   */
+  getCandidatesUri(electionId: string, contestId: string): string | null {
+    const contest = this.getContest(electionId, contestId);
+    return contest.cvr.candidates?.uri ?? null;
+  }
+
+  /**
+   * Get ballots_long URI for contest
+   */
+  getBallotsLongUri(electionId: string, contestId: string): string | null {
+    const contest = this.getContest(electionId, contestId);
+    return contest.cvr.ballots_long?.uri ?? null;
+  }
 }
 
 /**

@@ -1,7 +1,8 @@
 #!/usr/bin/env tsx
 
 import { existsSync } from "fs";
-import { getContestArtifacts, loadManifestSync } from "@/lib/manifest";
+import { loadManifestSync } from "@/lib/manifest";
+import { ContestResolver } from "@/lib/manifest/contest-resolver";
 
 async function main() {
   try {
@@ -16,19 +17,25 @@ async function main() {
 
     // Test finding contest artifacts
     console.log("2. Resolving contest artifacts...");
-    const artifacts = getContestArtifacts(
-      manifest,
-      "portland-20241105-gen",
-      "d2-3seat",
-    );
-    console.log(`   ✅ Found contest: ${artifacts.contest.title}`);
+    const resolver = new ContestResolver(manifest);
+    const contest = resolver.getContest("portland-20241105-gen", "d2-3seat");
+    console.log(`   ✅ Found contest: ${contest.title}`);
 
     // Test artifact file existence
     console.log("3. Checking artifact files...");
     const checks = [
-      { name: "Candidates", path: artifacts.candidates },
-      { name: "Ballots Long", path: artifacts.ballotsLong },
-      { name: "First Choice", path: artifacts.firstChoice },
+      {
+        name: "Candidates",
+        path: resolver.getCandidatesUri("portland-20241105-gen", "d2-3seat"),
+      },
+      {
+        name: "Ballots Long",
+        path: resolver.getBallotsLongUri("portland-20241105-gen", "d2-3seat"),
+      },
+      {
+        name: "First Choice",
+        path: resolver.getFirstChoiceUri("portland-20241105-gen", "d2-3seat"),
+      },
     ];
 
     for (const check of checks) {
@@ -43,9 +50,9 @@ async function main() {
 
     console.log("4. Validation summary:");
     console.log(`   - Election ID: ${manifest.elections[0].election_id}`);
-    console.log(`   - Contest ID: ${artifacts.contest.contest_id}`);
-    console.log(`   - District: ${artifacts.contest.district_id}`);
-    console.log(`   - Seats: ${artifacts.contest.seat_count}`);
+    console.log(`   - Contest ID: ${contest.contest_id}`);
+    console.log(`   - District: ${contest.district_id}`);
+    console.log(`   - Seats: ${contest.seat_count}`);
     console.log(`   - Generated at: ${manifest.generated_at}`);
 
     console.log("\n🎉 Manifest-based data resolution test passed!");
