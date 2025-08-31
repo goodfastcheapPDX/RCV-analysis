@@ -8,9 +8,19 @@ async function main() {
 
     // Parse command line arguments for flexibility
     const args = process.argv.slice(2);
-    const electionId = args[0] || "portland-20241105-gen";
-    const contestId = args[1] || "d2-3seat";
-    const env = args[2] || "dev";
+    let electionId = "portland-20241105-gen";
+    let contestId = "d2-3seat";
+    let env = "dev";
+
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] === "--electionId" && i + 1 < args.length) {
+        electionId = args[i + 1];
+      } else if (args[i] === "--contestId" && i + 1 < args.length) {
+        contestId = args[i + 1];
+      } else if (args[i] === "--env" && i + 1 < args.length) {
+        env = args[i + 1];
+      }
+    }
 
     console.log(`Processing: ${electionId}/${contestId} (env: ${env})`);
 
