@@ -297,17 +297,17 @@
     "sliceKey": "rank_distribution_by_candidate",
     "stats": {
       "max_rank": 6,
-      "total_ballots": 73856,
-      "candidate_count": 34,
+      "total_ballots": 74087,
+      "candidate_count": 26,
       "zero_rank_candidates": 0
     },
     "data": {
-      "rows": 204
+      "rows": 156
     },
     "artifactPaths": [
-      "portland-20241105-gen/d4-3seat/rank_distribution/rank_distribution.parquet"
+      "portland-20241105-gen/d2-3seat/rank_distribution/rank_distribution.parquet"
     ],
-    "rank_distribution_hash": "ead32a30997c2d203db68be05cd96d616228a1d7f0f70c9786d81fd025ec258b",
-    "generated_at": "2025-08-31T14:29:33.722Z"
+    "rank_distribution_hash": "4365e4b39d011a6541ea157ff490aed2434cd1ef3efaad86da74bc0996f0953d",
+    "generated_at": "2025-08-31T14:37:53.512Z"
   }
 }

@@ -1,6 +1,7 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
+import type { Manifest } from "@/contracts/manifest";
 import {
   assertManifestSection,
   assertTableColumns,
@@ -51,14 +52,40 @@ export async function computeRankDistributionByCandidate(
     `Processing rank distribution by candidate for ${electionId}/${contestId}`,
   );
 
-  // Skip dependency validation for now since the manifest structure is different
-  // TODO: Implement proper dependency validation for the manifest structure
   const manifestPath = getManifestPath(env);
-
   const inputPath = getInputPath(env, electionId, contestId);
   const outputPath = getOutputPath(env, electionId, contestId);
 
   console.log(`Output path: ${outputPath}`);
+
+  // Load manifest to get contest metadata
+  if (!existsSync(manifestPath)) {
+    throw new Error(
+      `Manifest not found: ${manifestPath}. Run ingest_cvr first.`,
+    );
+  }
+
+  const manifestData = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const manifest = manifestData as Manifest;
+
+  // Find the contest in manifest
+  const election = manifest.elections.find(
+    (e: any) => e.election_id === electionId,
+  );
+  if (!election) {
+    throw new Error(`Election ${electionId} not found in manifest`);
+  }
+
+  const contest = election.contests.find(
+    (c: any) => c.contest_id === contestId,
+  );
+  if (!contest) {
+    throw new Error(`Contest ${contestId} not found in manifest`);
+  }
+
+  // Extract contest metadata from manifest instead of parsing contestId
+  const districtId = contest.district_id;
+  const seatCount = contest.seat_count;
 
   // Ensure output directory exists
   mkdirSync(outputPath, { recursive: true });
@@ -84,8 +111,8 @@ export async function computeRankDistributionByCandidate(
       SELECT
         '${electionId}' AS election_id,
         '${contestId}' AS contest_id,
-        '${contestId.split("-")[0]}' AS district_id,
-        ${parseInt(contestId.split("-")[1].replace("seat", ""))} AS seat_count,
+        '${districtId}' AS district_id,
+        ${seatCount} AS seat_count,
         candidate_id,
         rank_position,
         count,
