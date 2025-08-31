@@ -53,35 +53,6 @@ export function loadManifestSync(env?: string): ManifestV2 {
   }
 }
 
-/**
- * Get artifact data for a specific contest
- */
-export function getContestArtifacts(
-  manifest: ManifestV2,
-  electionId: string,
-  contestId: string,
-) {
-  const contest = findContest(manifest, electionId, contestId);
-  if (!contest) {
-    throw new Error(`Contest ${electionId}/${contestId} not found in manifest`);
-  }
-
-  return {
-    contest,
-    candidates: contest.cvr.candidates
-      ? getArtifactUri(contest.cvr.candidates)
-      : null,
-    ballotsLong: contest.cvr.ballots_long
-      ? getArtifactUri(contest.cvr.ballots_long)
-      : null,
-    firstChoice: contest.first_choice
-      ? getArtifactUri(contest.first_choice)
-      : null,
-    stvRounds: contest.stv.rounds ? getArtifactUri(contest.stv.rounds) : null,
-    stvMeta: contest.stv.meta ? getArtifactUri(contest.stv.meta) : null,
-  };
-}
-
 // Re-export types and utilities from the contract
 export {
   findContest,
@@ -89,20 +60,3 @@ export {
   getArtifactUri,
   type Manifest,
 } from "@/contracts/manifest";
-
-// Legacy types for backward compatibility
-export type Contest = {
-  id: string;
-  name: string;
-  seats: number;
-};
-
-export type Election = {
-  id: string;
-  name: string;
-  contests: Contest[];
-};
-
-export type ManifestT = {
-  elections: Election[];
-};

@@ -41,7 +41,7 @@ describe("handleFirstChoiceDataRequest", () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.status).toBe(500); // Will be 500 because contest lookup fails before file check
+    expect(result.status).toBe(404); // Will be 404 because contest is not found
     expect(result.error).toContain(
       "Contest invalid-election/invalid-contest not found",
     );
