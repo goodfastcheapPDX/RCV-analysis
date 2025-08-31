@@ -8,6 +8,7 @@ import {
 } from "../src/contracts/ids";
 import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
+import { computeRankDistributionByCandidate } from "../src/packages/contracts/slices/rank_distribution_by_candidate/compute";
 
 async function main() {
   try {
@@ -76,6 +77,23 @@ async function main() {
     );
     console.log(`  - Candidates: ${firstChoiceResult.stats.candidate_count}`);
     console.log(`  - Output rows: ${firstChoiceResult.data.rows}`);
+    console.log();
+
+    // Step 3: Rank Distribution by Candidate
+    console.log("=== Step 3: Rank Distribution by Candidate ===");
+    const rankDistResult = await computeRankDistributionByCandidate({
+      electionId,
+      contestId,
+    });
+
+    console.log(`✅ Rank distribution by candidate completed:`);
+    console.log(`  - Max rank: ${rankDistResult.stats.max_rank}`);
+    console.log(`  - Total ballots: ${rankDistResult.stats.total_ballots}`);
+    console.log(`  - Candidates: ${rankDistResult.stats.candidate_count}`);
+    console.log(
+      `  - Zero-rank candidates: ${rankDistResult.stats.zero_rank_candidates}`,
+    );
+    console.log(`  - Output rows: ${rankDistResult.data.rows}`);
     console.log();
 
     console.log("🎉 Full pipeline completed successfully!");

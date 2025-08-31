@@ -10,6 +10,7 @@ import {
 } from "@/contracts/ids";
 import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
+import { computeRankDistributionByCandidate } from "../src/packages/contracts/slices/rank_distribution_by_candidate/compute";
 import { computeStvRounds } from "../src/packages/contracts/slices/stv_rounds/compute";
 
 interface DistrictConfig {
@@ -93,7 +94,18 @@ async function processDistrict(district: DistrictConfig) {
       `   ✅ First Choice: ${firstChoiceResult.stats.total_valid_ballots} ballots processed`,
     );
 
-    // Step 3: STV Rounds
+    // Step 3: Rank Distribution by Candidate
+    console.log(`📈 Computing rank distribution for ${district.districtId}...`);
+    const rankDistResult = await computeRankDistributionByCandidate({
+      electionId,
+      contestId,
+    });
+
+    console.log(
+      `   ✅ Rank Distribution: ${rankDistResult.stats.candidate_count} candidates × ${rankDistResult.stats.max_rank} ranks (${rankDistResult.data.rows} rows)`,
+    );
+
+    // Step 4: STV Rounds
     console.log(`🗳️  Computing STV rounds for ${district.districtId}...`);
     const stvResult = await computeStvRounds({
       electionId,
