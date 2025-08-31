@@ -1,174 +1,144 @@
-Title: Build slice rank_distribution_by_candidate (contract-first, no UI)
-Context (spec packet)
+Title: Modernize build scripts with yargs for type-safe command line argument parsing
 
-Multi-election/contest pipeline is live; artifacts are namespaced by (env)/(electionId)/(contestId)/….
+Context
 
-We already produce: ingest_cvr (normalized ballots), first_choice_breakdown, and stv_rounds.
+Our current build scripts in the `scripts/` directory use manual command line argument parsing with `process.argv.slice(2)` and string operations like `.find(arg => arg.startsWith('--option='))?.split('=')[1]`. This approach is error-prone, lacks type safety, and provides poor developer experience with no help text or validation.
 
-Goal: expose a chart-ready dataset that shows, for each candidate, how often they appear at each rank position (1..max_rank) in a given contest. This slice will drive a per-candidate “Rank distribution” view later.
-
-Source of truth: ingest_cvr ballots_long.parquet table with columns: election_id, contest_id, BallotID, candidate_id, rank_position (int), has_vote (boolean). Only count rows where has_vote=TRUE. Use existing column names without normalization.
+We want to migrate to yargs (https://www.npmjs.com/package/yargs) to get:
+- Type-safe argument parsing with compile-time validation
+- Automatic help text generation
+- Built-in validation and coercion
+- Better error messages
+- Standardized CLI interface across all build scripts
 
 Scope
 
-Contract
+Package Installation
 
-Create packages/contracts/slices/rank_distribution_by_candidate/index.contract.ts defining:
+Install yargs and its TypeScript types:
+```bash
+npm install --save-dev yargs @types/yargs
+```
 
-Output (Zod) rows:
+Script Migration
 
-{
-  election_id: string,
-  contest_id: string,
-  candidate_id: number,         // use existing int type from ingest_cvr
-  rank_position: number,        // 1..max_rank within contest (use existing column name)
-  count: number,                // ballots that ranked this candidate at this exact rank (has_vote=TRUE only)
-  pct_all_ballots: number,      // count / total_ballots_in_contest
-  pct_among_rankers: number     // count / total_ballots_that_ranked_this_candidate_at_any_rank
+Migrate the following build scripts to use yargs:
+
+1. `scripts/build-data.ts` - CVR ingestion script
+2. `scripts/build-pipeline-multi.ts` - Full pipeline runner  
+3. `scripts/build-all-districts.ts` - Multi-district processor
+4. `scripts/build-first-choice.ts` - First choice breakdown
+5. `scripts/build-rank-distribution.ts` - Rank distribution
+6. Any other scripts with manual `process.argv` parsing
+
+Type Safety Requirements
+
+For each script, create a TypeScript interface that defines the expected arguments with:
+- Required vs optional arguments
+- Argument types (string, number, boolean)
+- Default values where applicable
+- Validation rules where statically determinable
+
+Example interface for build-data.ts:
+```typescript
+interface BuildDataArgs {
+  election?: string;
+  contest?: string;
+  srcCsv?: string;
+  help?: boolean;
 }
+```
 
+Yargs Configuration
 
-Stats (Zod) sidecar on manifest entry:
+Each script should:
+- Use `.scriptName()` to set the script name for help text
+- Use `.usage()` to provide a description
+- Define options with `.option()` including:
+  - Type specification
+  - Description text
+  - Default values
+  - Aliases where helpful (e.g., `-h` for `--help`)
+- Use `.help()` to enable automatic help generation
+- Use `.version(false)` to disable version flag (unless needed)
+- Use `.strict()` to reject unknown options
+- Parse with `.parseSync()` for type safety
 
-{
-  election_id: string,
-  contest_id: string,
-  max_rank: number,            // discovered from data
-  total_ballots: number,       // distinct ballots in contest
-  candidate_count: number,     // candidates in contest (incl. write-ins if present)
-  zero_rank_candidates: number // candidates never ranked by any ballot
-}
+Example yargs setup:
+```typescript
+const args = yargs(process.argv.slice(2))
+  .scriptName('build-data')
+  .usage('Build CVR data for elections')
+  .option('election', {
+    type: 'string',
+    description: 'Election ID override',
+    default: electionIdFrom({ jurisdiction: 'portland', date: '2024-11-05', kind: 'gen' })
+  })
+  .option('contest', {
+    type: 'string', 
+    description: 'Contest ID override',
+    default: contestIdFrom({ districtId: 'd2', seatCount: 3 })
+  })
+  .option('src-csv', {
+    type: 'string',
+    description: 'Source CSV file path',
+    default: 'data/2024-11/canonical/district-2-cast-vote-record.csv'
+  })
+  .help()
+  .strict()
+  .parseSync();
+```
 
+Validation Enhancements
 
-Version: 1.0.0.
+Where possible, add static validation:
+- File existence checks for CSV paths
+- Enum validation for known district IDs
+- Range validation for seat counts
+- Format validation for election/contest ID patterns
 
-Notes: percentages must be finite (0 ≤ pct ≤ 1) with deterministic rounding only at presentation; keep full-precision floats in artifact.
+Backward Compatibility
 
-SQL (concept)
+Ensure all existing npm script commands continue to work:
+- `npm run build:data`
+- `npm run build:data:all` 
+- `npm run build:data:firstchoice`
+- etc.
 
-Inputs: normalized ingest_cvr table for the (election_id, contest_id) pair.
-
-Steps (DuckDB CTEs):
-
-contest_ballots — distinct BallotID in contest where has_vote=TRUE → total_ballots.
-
-contest_candidates — distinct candidate_id in contest.
-
-rank_rows — rows where has_vote=TRUE and rank_position is not null and 1 ≤ rank_position ≤ max_rank.
-
-counts — SELECT candidate_id, rank_position, COUNT(DISTINCT BallotID) AS count FROM rank_rows.
-
-rankers — per candidate: total ballots that ranked them at any rank (has_vote=TRUE).
-
-joined — join counts + rankers + total_ballots to compute pct_all_ballots and pct_among_rankers.
-
-(Required completeness) generate dense rank_position 1..max_rank per candidate and left join to yield zero-count rows (keeps chart axes aligned).
-
-Output one table with all candidates × rank_positions (including zero-count rows).
-
-Compute
-
-Implement compute.ts in the slice folder:
-
-Accept params (electionId, contestId); for static-first, materialize all candidates in this contest into a single artifact.
-
-Use node-duckdb against existing Parquet artifacts from ingest_cvr.
-
-Contract enforcement (MANDATORY, per CLAUDE rules):
-
-assertTableColumns(conn, 'rank_distribution_tmp', OutputSchema)
-
-parseAllRows(conn, 'rank_distribution_tmp', OutputSchema) (validate ALL rows)
-
-Derive Stats from parsed rows (not raw SQL)
-
-assertManifestSection(manifestPath, key, StatsSchema)
-
-Write Parquet artifact with deterministic filename (content hash via sha256(filePath)), update manifest entry under:
-
-data/{env}/{electionId}/{contestId}/rank_distribution/part-*.parquet
-
-
-Manifest entry should include: version, stats, artifactPaths, and sliceKey: "rank_distribution_by_candidate".
-
-Tests
-
-Location: tests/slices/rank_distribution_by_candidate/.
-
-Golden micro (hand-verifiable):
-
-A 6–12 ballot contest with 3–5 candidates, max_rank = 4–6.
-
-Include cases where:
-
-A candidate is never ranked (tests zero-rank handling).
-
-Some ballots skip intermediate ranks (e.g., rank 1 and 3 only).
-
-Ties in popularity at a given rank.
-
-Invariant tests:
-
-count ≥ 0; rank_position ∈ [1, max_rank].
-
-For each candidate: sum(count over rank_position) == ballots_that_ranked_candidate.
-
-pct_all_ballots == count / total_ballots within float tolerance.
-
-If a candidate has no rankers: they should still appear with rank_position 1..max_rank and all count=0, pct_* = 0, and be counted in zero_rank_candidates.
-
-For any given rank_position r: sum(count over all candidates at r) ≤ total_ballots (strict < allowed due to under-ranking/invalids).
-
-Schema test: ensure columns/types match Output exactly.
-
-Docs / CHANGELOG
-
-Append CHANGELOG entry with slice key, version, and brief description.
-
-Update any slice index/readme if present to list this slice and its contract.
+Environment variable support should be preserved where currently used.
 
 Guardrails
 
-No UI or Storybook in this task.
+- Do not change script functionality, only the argument parsing mechanism
+- Do not modify any slice computation logic or data processing
+- Do not change the contract enforcement or validation patterns
+- Focus only on the CLI argument parsing layer
+- Maintain all existing default values and behaviors
 
-Do not touch STV or first-choice SQL/compute.
+Testing
 
-No API routes; static artifact only.
-
-No changes outside: new slice folder, manifest write, and tests.
-
-Must keep compute ≤ 60s and artifact ≤ 50MB for typical contests; if exceeded, STOP and print diagnostic with proposed sharding.
+After migration:
+- Test each script with no arguments (should use defaults)
+- Test with --help flag (should show usage)  
+- Test with various argument combinations
+- Verify all npm scripts still work
+- Ensure error messages are helpful for invalid arguments
 
 Done When
 
-pnpm build:data (or slice-specific command) produces the Parquet artifact(s) and updates manifest with sliceKey="rank_distribution_by_candidate" and Stats.
-
-pnpm test passes, including golden + invariants + schema tests.
-
-Validated rows via contract enforcer; manifests validated via assertManifestSection.
-
-A sample contest shows expected totals (manual spot-check from golden).
+- All build scripts use yargs for argument parsing
+- Each script has type-safe argument interfaces
+- Help text is available with --help for all scripts
+- All existing npm scripts continue to work unchanged
+- Arguments have proper validation where feasible
+- Error messages are clear and helpful
+- No functionality changes to core data processing logic
 
 Output
 
 PR diff including:
-
-packages/contracts/slices/rank_distribution_by_candidate/index.contract.ts
-
-packages/contracts/slices/rank_distribution_by_candidate/compute.ts
-
-tests/slices/rank_distribution_by_candidate/* (golden CSV/Parquet, tests)
-
-CHANGELOG update
-
-5-line PR summary:
-
-Adds rank_distribution_by_candidate slice (v1.0.0).
-
-Outputs candidate×rank counts + two normalized pcts.
-
-Enforces contract on all rows; manifest stats derived from validated data.
-
-Includes golden micro + invariants (zero-rank candidates, gaps, skipped ranks).
-
-Precomputes one artifact per contest for static-first UI.
+- Updated package.json with yargs dependency
+- Migrated scripts with yargs-based argument parsing
+- Type interfaces for each script's arguments
+- Improved help text and validation
+- All existing functionality preserved
