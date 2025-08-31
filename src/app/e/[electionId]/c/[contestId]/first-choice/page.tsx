@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { loadFirstChoiceForContest } from "@/lib/contest-resolver";
+import { loadFirstChoiceForContest } from "@/lib/manifest/loaders";
 import { FirstChoiceBreakdownView } from "@/packages/contracts/slices/first_choice_breakdown/view";
 
 interface FirstChoicePageProps {
