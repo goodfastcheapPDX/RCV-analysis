@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { loadStvForContest } from "@/lib/contest-resolver";
+import { loadStvForContest } from "@/lib/manifest/loaders";
 import { StvRoundsView } from "@/packages/contracts/slices/stv_rounds/view";
 
 interface ContestPageProps {
