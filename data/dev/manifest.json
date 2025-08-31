@@ -1,7 +1,7 @@
 {
   "env": "dev",
   "version": 2,
-  "generated_at": "2025-08-31T14:25:24.403Z",
+  "generated_at": "2025-08-31T14:29:35.479Z",
   "inputs": {
     "portland-20241105-gen/d1-1seat": {
       "cvr_files": [
@@ -22,8 +22,8 @@
     "portland-20241105-gen/d2-3seat": {
       "cvr_files": [
         {
-          "path": "tests/golden/micro/cvr_small.csv",
-          "sha256": "8d2068f863d579e8dd4103ed0a469702ad99c2effa70d07856da1b6740eddcd6"
+          "path": "data/2024-11/canonical/district-2-cast-vote-record.csv",
+          "sha256": "88e3eec199a1bbb9ecc922562159303eab6169869a356aef1f77637def8db72b"
         }
       ]
     },
@@ -138,13 +138,13 @@
           "cvr": {
             "candidates": {
               "uri": "data/dev/portland-20241105-gen/d2-3seat/ingest/candidates.parquet",
-              "sha256": "6e6ad456ea7ef48a2a1da6b79f2cdd43729c66257dd47575c2f6071140c69c4d",
-              "rows": 5
+              "sha256": "845b18fe3d308e96e6c5b98a888084678ad57ce8b82bbb53454ec5046a03f33d",
+              "rows": 26
             },
             "ballots_long": {
               "uri": "data/dev/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
-              "sha256": "c4e164ccf862489d9f6faa692e6019ed8d75f712f2af1abd5d6eb6b4e31d8fe9",
-              "rows": 31
+              "sha256": "0ca12532086baccee021bdd65b73fda081cca97ccb38af61d59bf5da8b40d72e",
+              "rows": 344920
             }
           },
           "stv": {
@@ -179,8 +179,8 @@
           },
           "first_choice": {
             "uri": "data/dev/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
-            "sha256": "7aee55c75e72642151ab6e0aabc43efc5c4d1c40d8032ca6653cda17e598b97e",
-            "rows": 5
+            "sha256": "38d66fcfa4ef261640d6786430461505ed2e2e5447b4dbd9da812df34cb02426",
+            "rows": 26
           }
         },
         {
@@ -196,19 +196,19 @@
             },
             "ballots_long": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/ingest/ballots_long.parquet",
-              "sha256": "29c525290dcdcafc83be931cc749d3587b6e11e1f9022192f593ed084237027f",
+              "sha256": "b145124042a7a0122892dbc0db22849d5388275c82fd05f9af7e9f473d264744",
               "rows": 378275
             }
           },
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/rounds.parquet",
-              "sha256": "8dabe8e7a6f08483c78793c11f524d64d254502d2dd0e11e546c84a834163bac",
+              "sha256": "ca0c0fbbbb482ec772b9e9465452f3b37a245cc31b7f5c0d13ce7a9d17ac0954",
               "rows": 1088
             },
             "meta": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/meta.parquet",
-              "sha256": "6d8a7b1d16839fd3e941e0b7a0b63f85a1b64b1f96dc525e1c45fd53526a474f",
+              "sha256": "18e6785c8e5fb0062b742d743cac47de5050b01ff53628b006e964d3c7e8875e",
               "rows": 32
             },
             "stats": {
@@ -296,18 +296,18 @@
     "version": "1.0.0",
     "sliceKey": "rank_distribution_by_candidate",
     "stats": {
-      "max_rank": 3,
-      "total_ballots": 11,
-      "candidate_count": 5,
+      "max_rank": 6,
+      "total_ballots": 73856,
+      "candidate_count": 34,
       "zero_rank_candidates": 0
     },
     "data": {
-      "rows": 15
+      "rows": 204
     },
     "artifactPaths": [
-      "portland-20241105-gen/d2-3seat/rank_distribution/rank_distribution.parquet"
+      "portland-20241105-gen/d4-3seat/rank_distribution/rank_distribution.parquet"
     ],
-    "rank_distribution_hash": "905ae802f3927df30b9ce8e6125bfbfa097d068bc58cb6f4bfcad84e1d00cce6",
-    "generated_at": "2025-08-31T14:25:24.447Z"
+    "rank_distribution_hash": "ead32a30997c2d203db68be05cd96d616228a1d7f0f70c9786d81fd025ec258b",
+    "generated_at": "2025-08-31T14:29:33.722Z"
   }
 }
