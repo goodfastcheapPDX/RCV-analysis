@@ -4,6 +4,7 @@ A comprehensive analysis platform for ranked-choice voting elections, featuring 
 
 ## Development Rules
 
+- check @SLICE_SIZING.md before starting work on a new slice to set the right expectations of the slice scope.
 - any test failure is a blocking issue. if the test failure is in an unrelated file, it doesn't matter. that's a blocking issue. we do not proceed with work unless all tests pass.
 - when creating tests, do not write mocks. always exercise the code fully and naturally. if there are external dependencies within our control, build test versions of them as part of the test setup. if there are dependencies out of our control, flag this explicitly before proceeding.
 - never proceed with development outside the scope of `CURRENT_TASK.md`.
