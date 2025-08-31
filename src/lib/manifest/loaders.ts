@@ -103,9 +103,13 @@ export async function loadStvForContest(
     // Calculate basic stats from rounds data
     const stats: StvRoundsStats = {
       number_of_rounds: Math.max(...roundsData.map((r) => r.round)),
-      winners: roundsData
-        .filter((r) => r.status === "elected")
-        .map((r) => r.candidate_name),
+      winners: [
+        ...new Set(
+          roundsData
+            .filter((r) => r.status === "elected")
+            .map((r) => r.candidate_name),
+        ),
+      ],
       seats: contest.seat_count,
       first_round_quota: metaData.find((m) => m.round === 1)?.quota || 0,
       precision: 0.000001,

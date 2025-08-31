@@ -1,10 +1,4 @@
-import { existsSync } from "node:fs";
-import { getContestArtifacts, loadManifestSync } from "@/lib/manifest";
-import { parseAllRows } from "@/packages/contracts/lib/contract-enforcer";
-import {
-  StvMetaOutput,
-  StvRoundsOutput,
-} from "@/packages/contracts/slices/stv_rounds/index.contract";
+import { loadStvForContest } from "@/lib/manifest/loaders";
 
 export interface StvDataParams {
   electionId?: string;
@@ -17,80 +11,33 @@ export async function handleStvDataRequest(params: StvDataParams = {}) {
     const electionId = params.electionId || "portland-20241105-gen";
     const contestId = params.contestId || "d2-3seat";
 
-    // Load manifest and find contest data
-    const manifest = loadManifestSync();
-    const artifacts = getContestArtifacts(manifest, electionId, contestId);
+    // Load contest data using new loader
+    const result = await loadStvForContest(electionId, contestId);
 
-    // Verify both STV rounds and meta parquet files exist
-    if (!artifacts.stvRounds || !existsSync(artifacts.stvRounds)) {
-      return {
-        success: false,
-        error: `STV rounds data not found for ${electionId}/${contestId}. Expected: ${artifacts.stvRounds || "not generated"}. Run STV rounds computation first.`,
-        status: 404,
-      };
-    }
-
-    if (!artifacts.stvMeta || !existsSync(artifacts.stvMeta)) {
-      return {
-        success: false,
-        error: `STV meta data not found for ${electionId}/${contestId}. Expected: ${artifacts.stvMeta || "not generated"}. Run STV rounds computation first.`,
-        status: 404,
-      };
-    }
-
-    // Dynamically import DuckDB to avoid SSG issues
-    const duck = await import("@duckdb/node-api");
-
-    const instance = await duck.DuckDBInstance.create();
-    const conn = await instance.connect();
-
-    try {
-      // Create views from both parquet files
-      await conn.run(
-        `CREATE VIEW stv_rounds_data AS SELECT * FROM '${artifacts.stvRounds}'`,
-      );
-
-      await conn.run(
-        `CREATE VIEW stv_meta_data AS SELECT * FROM '${artifacts.stvMeta}'`,
-      );
-
-      // Get rounds data from rounds parquet file
-      const roundsData = await parseAllRows(
-        conn,
-        "stv_rounds_data",
-        StvRoundsOutput,
-      );
-
-      // Get meta data from meta parquet file
-      const metaData = await parseAllRows(conn, "stv_meta_data", StvMetaOutput);
-
-      // Get stats from manifest
-      const contestStats = artifacts.contest.stv.stats;
-
-      return {
-        success: true,
-        data: {
-          electionId,
-          contestId,
-          roundsData,
-          metaData,
-          stats: contestStats || null,
-          metadata: {
-            contest: artifacts.contest,
-            roundsUri: artifacts.stvRounds,
-            metaUri: artifacts.stvMeta,
-          },
+    return {
+      success: true,
+      data: {
+        electionId,
+        contestId,
+        roundsData: result.roundsData,
+        metaData: result.metaData,
+        stats: result.stats,
+        metadata: {
+          contest: result.contest,
+          roundsUri: result.contest.stv.rounds?.uri || null,
+          metaUri: result.contest.stv.meta?.uri || null,
         },
-      };
-    } finally {
-      await conn.closeSync();
-    }
+      },
+    };
   } catch (error) {
     console.error("Error in STV data handler:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",
-      status: 500,
+      status:
+        error instanceof Error && error.message.includes("not found")
+          ? 404
+          : 500,
     };
   }
 }
