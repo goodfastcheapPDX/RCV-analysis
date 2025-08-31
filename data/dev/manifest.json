@@ -1,13 +1,45 @@
 {
   "env": "dev",
   "version": 2,
-  "generated_at": "2025-08-30T21:44:18.560Z",
+  "generated_at": "2025-08-31T04:16:42.863Z",
   "inputs": {
     "portland-20241105-gen/d1-1seat": {
       "cvr_files": [
         {
           "path": "data/test/isolated-test.csv",
           "sha256": "5b2e250d603897dea4b59f540b616ab51e65752b63acdf0e71d06746e0af1af3"
+        }
+      ]
+    },
+    "portland-20241105-gen/d1-3seat": {
+      "cvr_files": [
+        {
+          "path": "data/2024-11/canonical/district-1-cast-vote-record.csv",
+          "sha256": "dab997c4a57e2c35e5f95956af9a258950cb6973760201517b652aa6b0029433"
+        }
+      ]
+    },
+    "portland-20241105-gen/d2-3seat": {
+      "cvr_files": [
+        {
+          "path": "data/2024-11/canonical/district-2-cast-vote-record.csv",
+          "sha256": "88e3eec199a1bbb9ecc922562159303eab6169869a356aef1f77637def8db72b"
+        }
+      ]
+    },
+    "portland-20241105-gen/d3-3seat": {
+      "cvr_files": [
+        {
+          "path": "data/2024-11/canonical/district-3-cast-vote-record.csv",
+          "sha256": "4b9069baf840ec8665309deafcd61d2a4f3622dadf6349ac1a5f11448169a210"
+        }
+      ]
+    },
+    "portland-20241105-gen/d4-3seat": {
+      "cvr_files": [
+        {
+          "path": "data/2024-11/canonical/district-4-cast-vote-record.csv",
+          "sha256": "35bbad123222bc0b93551686b6122fbb13eba15c0dcdc7abbd65ffff752b1d56"
         }
       ]
     }
@@ -43,6 +75,218 @@
             "precision": 0.000001,
             "tie_break": "lexicographic",
             "seats": 1
+          }
+        },
+        {
+          "contest_id": "d1-3seat",
+          "district_id": "d1",
+          "seat_count": 3,
+          "title": "City Council District 1 (3 seats)",
+          "cvr": {
+            "candidates": {
+              "uri": "data/dev/portland-20241105-gen/d1-3seat/ingest/candidates.parquet",
+              "sha256": "2b54662b9637f31d0d2ddc0840e1f498356c32a83d21e7fb47397c4d7a3dfe61",
+              "rows": 20
+            },
+            "ballots_long": {
+              "uri": "data/dev/portland-20241105-gen/d1-3seat/ingest/ballots_long.parquet",
+              "sha256": "443030b187a30b605b38075b39aeba8f30c5b57f4756e63ae27732ba1fd8e034",
+              "rows": 181904
+            }
+          },
+          "stv": {
+            "rounds": {
+              "uri": "data/dev/portland-20241105-gen/d1-3seat/stv/rounds.parquet",
+              "sha256": "d2f4ba164e7a82970b796772ce3bf546ceb49a996ce7d7d3bc1de9722a7752dd",
+              "rows": 400
+            },
+            "meta": {
+              "uri": "data/dev/portland-20241105-gen/d1-3seat/stv/meta.parquet",
+              "sha256": "60331db0870a432a58860f94daaeb5a5c15086744ac8b339884a0a0bd6fb7ac3",
+              "rows": 20
+            },
+            "stats": {
+              "number_of_rounds": 20,
+              "winners": [
+                "Candace Avalos",
+                "Jamie Dunphy",
+                "Loretta Smith"
+              ],
+              "seats": 3,
+              "first_round_quota": 10370,
+              "precision": 0.000001
+            }
+          },
+          "rules": {
+            "method": "meek",
+            "quota": "droop",
+            "precision": 0.000001,
+            "tie_break": "lexicographic",
+            "seats": 3
+          },
+          "first_choice": {
+            "uri": "data/dev/portland-20241105-gen/d1-3seat/first_choice/first_choice.parquet",
+            "sha256": "5da0a9348a8ef551091d3fed5598643b7481a571d558e87d56c5c7f8b83d9d1a",
+            "rows": 20
+          }
+        },
+        {
+          "contest_id": "d2-3seat",
+          "district_id": "d2",
+          "seat_count": 3,
+          "title": "City Council District 2 (3 seats)",
+          "cvr": {
+            "candidates": {
+              "uri": "data/dev/portland-20241105-gen/d2-3seat/ingest/candidates.parquet",
+              "sha256": "845b18fe3d308e96e6c5b98a888084678ad57ce8b82bbb53454ec5046a03f33d",
+              "rows": 26
+            },
+            "ballots_long": {
+              "uri": "data/dev/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
+              "sha256": "0ca12532086baccee021bdd65b73fda081cca97ccb38af61d59bf5da8b40d72e",
+              "rows": 344920
+            }
+          },
+          "stv": {
+            "rounds": {
+              "uri": "data/dev/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
+              "sha256": "82da9bd9b8ffdea59d8a0647fdaa17a90465c632a9bddfb8b80aeccec228f892",
+              "rows": 650
+            },
+            "meta": {
+              "uri": "data/dev/portland-20241105-gen/d2-3seat/stv/meta.parquet",
+              "sha256": "b49ffcea9b434a23327be27afd873d46a2805d23e70826eacc831762e796e3ee",
+              "rows": 25
+            },
+            "stats": {
+              "number_of_rounds": 25,
+              "winners": [
+                "Dan Ryan",
+                "Elana Pirtle-Guiney",
+                "Sameer Kanal"
+              ],
+              "seats": 3,
+              "first_round_quota": 18522,
+              "precision": 0.000001
+            }
+          },
+          "rules": {
+            "method": "meek",
+            "quota": "droop",
+            "precision": 0.000001,
+            "tie_break": "lexicographic",
+            "seats": 3
+          },
+          "first_choice": {
+            "uri": "data/dev/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+            "sha256": "38d66fcfa4ef261640d6786430461505ed2e2e5447b4dbd9da812df34cb02426",
+            "rows": 26
+          }
+        },
+        {
+          "contest_id": "d3-3seat",
+          "district_id": "d3",
+          "seat_count": 3,
+          "title": "City Council District 3 (3 seats)",
+          "cvr": {
+            "candidates": {
+              "uri": "data/dev/portland-20241105-gen/d3-3seat/ingest/candidates.parquet",
+              "sha256": "40ee9897592befb990cc29ce1bbd942635f52c930606c95fba34d06e183624a7",
+              "rows": 34
+            },
+            "ballots_long": {
+              "uri": "data/dev/portland-20241105-gen/d3-3seat/ingest/ballots_long.parquet",
+              "sha256": "29c525290dcdcafc83be931cc749d3587b6e11e1f9022192f593ed084237027f",
+              "rows": 378275
+            }
+          },
+          "stv": {
+            "rounds": {
+              "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/rounds.parquet",
+              "sha256": "8dabe8e7a6f08483c78793c11f524d64d254502d2dd0e11e546c84a834163bac",
+              "rows": 1088
+            },
+            "meta": {
+              "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/meta.parquet",
+              "sha256": "6d8a7b1d16839fd3e941e0b7a0b63f85a1b64b1f96dc525e1c45fd53526a474f",
+              "rows": 32
+            },
+            "stats": {
+              "number_of_rounds": 32,
+              "winners": [
+                "Angelita Morillo",
+                "Steve Novick",
+                "Tiffany Koyama Lane"
+              ],
+              "seats": 3,
+              "first_round_quota": 20292,
+              "precision": 0.000001
+            }
+          },
+          "rules": {
+            "method": "meek",
+            "quota": "droop",
+            "precision": 0.000001,
+            "tie_break": "lexicographic",
+            "seats": 3
+          },
+          "first_choice": {
+            "uri": "data/dev/portland-20241105-gen/d3-3seat/first_choice/first_choice.parquet",
+            "sha256": "b8041858e479add63a6207ee8dd4b64fbdb512ce92f85c8d4b888b5eb88b5d34",
+            "rows": 34
+          }
+        },
+        {
+          "contest_id": "d4-3seat",
+          "district_id": "d4",
+          "seat_count": 3,
+          "title": "City Council District 4 (3 seats)",
+          "cvr": {
+            "candidates": {
+              "uri": "data/dev/portland-20241105-gen/d4-3seat/ingest/candidates.parquet",
+              "sha256": "e01cbc26357d2cadd36bc4adeafddf1e34fce067e7417b7dd397774f0b31175d",
+              "rows": 34
+            },
+            "ballots_long": {
+              "uri": "data/dev/portland-20241105-gen/d4-3seat/ingest/ballots_long.parquet",
+              "sha256": "dbe512c4e4dea30173b5212e9d3e7a9d7cf9c7b3cdc7208377f57e4bc6588d9a",
+              "rows": 338645
+            }
+          },
+          "stv": {
+            "rounds": {
+              "uri": "data/dev/portland-20241105-gen/d4-3seat/stv/rounds.parquet",
+              "sha256": "ac12a0e3dcb977ad765cbbc555d7509712462a74129b8080b285fe0763138d48",
+              "rows": 1156
+            },
+            "meta": {
+              "uri": "data/dev/portland-20241105-gen/d4-3seat/stv/meta.parquet",
+              "sha256": "145d2f2cb6240c72edbee6a6bdfd4f4c16267f3dab297fc0b7355e5d4cabcb3c",
+              "rows": 34
+            },
+            "stats": {
+              "number_of_rounds": 34,
+              "winners": [
+                "Eric Zimmerman",
+                "Mitch Green",
+                "Olivia Clark"
+              ],
+              "seats": 3,
+              "first_round_quota": 18465,
+              "precision": 0.000001
+            }
+          },
+          "rules": {
+            "method": "meek",
+            "quota": "droop",
+            "precision": 0.000001,
+            "tie_break": "lexicographic",
+            "seats": 3
+          },
+          "first_choice": {
+            "uri": "data/dev/portland-20241105-gen/d4-3seat/first_choice/first_choice.parquet",
+            "sha256": "8dce9803de0cf3f5768191e58001990a11db80dd8156b2783b24b2c9bd28fa0a",
+            "rows": 34
           }
         }
       ]

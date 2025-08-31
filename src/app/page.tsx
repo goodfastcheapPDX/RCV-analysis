@@ -48,21 +48,6 @@ export default function Home() {
             </Button>
           </CardContent>
         </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <CardTitle>Jump to Demo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="-foreground mb-4">
-              See the platform in action with Portland's 2024 City Council
-              District 2 election.
-            </p>
-            <Button variant="link" asChild className="w-full">
-              <Link href="/demos">View Demo</Link>
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       <Separator className="my-8" />
