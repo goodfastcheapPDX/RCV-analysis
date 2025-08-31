@@ -1,36 +1,54 @@
 #!/usr/bin/env tsx
 
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { contestIdFrom, electionIdFrom } from "../src/contracts/ids";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
+
+interface BuildDataArgs {
+  election?: string;
+  contest?: string;
+  srcCsv?: string;
+}
 
 async function main() {
   try {
     console.log("Starting multi-election CVR data ingestion...");
 
-    // Parse command line arguments
-    const args = process.argv.slice(2);
-    const electionArg = args
-      .find((arg) => arg.startsWith("--election="))
-      ?.split("=")[1];
-    const contestArg = args
-      .find((arg) => arg.startsWith("--contest="))
-      ?.split("=")[1];
-    const srcCsvArg = args
-      .find((arg) => arg.startsWith("--src-csv="))
-      ?.split("=")[1];
+    const args = yargs(hideBin(process.argv))
+      .scriptName("build-data")
+      .usage("Build CVR data for elections")
+      .option("election", {
+        type: "string",
+        description: "Election ID override",
+        alias: "e",
+      })
+      .option("contest", {
+        type: "string",
+        description: "Contest ID override",
+        alias: "c",
+      })
+      .option("src-csv", {
+        type: "string",
+        description: "Source CSV file path",
+        alias: "s",
+      })
+      .help()
+      .strict()
+      .parseSync() as BuildDataArgs;
 
     // Set defaults for District 2
     const srcCsv =
-      srcCsvArg ||
+      args.srcCsv ||
       process.env.SRC_CSV ||
       "data/2024-11/canonical/district-2-cast-vote-record.csv";
-    const electionId = (electionArg ||
+    const electionId = (args.election ||
       electionIdFrom({
         jurisdiction: "portland",
         date: "2024-11-05",
         kind: "gen",
       })) as any;
-    const contestId = (contestArg ||
+    const contestId = (args.contest ||
       contestIdFrom({
         districtId: "d2",
         seatCount: 3,

@@ -1,26 +1,43 @@
 #!/usr/bin/env tsx
 
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { computeRankDistributionByCandidate } from "../src/packages/contracts/slices/rank_distribution_by_candidate/compute";
+
+interface BuildRankDistributionArgs {
+  electionId: string;
+  contestId: string;
+  env: string;
+}
 
 async function main() {
   try {
     console.log("Building rank distribution by candidate...");
 
-    // Parse command line arguments for flexibility
-    const args = process.argv.slice(2);
-    let electionId = "portland-20241105-gen";
-    let contestId = "d2-3seat";
-    let env = "dev";
+    const args = yargs(hideBin(process.argv))
+      .scriptName("build-rank-distribution")
+      .usage("Build rank distribution data for a specific contest")
+      .option("electionId", {
+        type: "string",
+        description: "Election ID",
+        default: "portland-20241105-gen",
+      })
+      .option("contestId", {
+        type: "string",
+        description: "Contest ID",
+        default: "d2-3seat",
+      })
+      .option("env", {
+        type: "string",
+        description: "Environment (dev, prod)",
+        default: "dev",
+        choices: ["dev", "prod"],
+      })
+      .help()
+      .strict()
+      .parseSync() as BuildRankDistributionArgs;
 
-    for (let i = 0; i < args.length; i++) {
-      if (args[i] === "--electionId" && i + 1 < args.length) {
-        electionId = args[i + 1];
-      } else if (args[i] === "--contestId" && i + 1 < args.length) {
-        contestId = args[i + 1];
-      } else if (args[i] === "--env" && i + 1 < args.length) {
-        env = args[i + 1];
-      }
-    }
+    const { electionId, contestId, env } = args;
 
     console.log(`Processing: ${electionId}/${contestId} (env: ${env})`);
 

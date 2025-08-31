@@ -1,29 +1,44 @@
 #!/usr/bin/env tsx
 
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { contestIdFrom, electionIdFrom } from "../src/contracts/ids";
 import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
+
+interface BuildFirstChoiceMultiArgs {
+  election?: string;
+  contest?: string;
+}
 
 async function main() {
   try {
     console.log("Starting multi-election first choice breakdown...");
 
-    // Parse command line arguments
-    const args = process.argv.slice(2);
-    const electionArg = args
-      .find((arg) => arg.startsWith("--election="))
-      ?.split("=")[1];
-    const contestArg = args
-      .find((arg) => arg.startsWith("--contest="))
-      ?.split("=")[1];
+    const args = yargs(hideBin(process.argv))
+      .scriptName("build-first-choice-multi")
+      .usage("Build first choice breakdown data for elections")
+      .option("election", {
+        type: "string",
+        description: "Election ID override",
+        alias: "e",
+      })
+      .option("contest", {
+        type: "string",
+        description: "Contest ID override",
+        alias: "c",
+      })
+      .help()
+      .strict()
+      .parseSync() as BuildFirstChoiceMultiArgs;
 
     // Set defaults for District 2
-    const electionId = (electionArg ||
+    const electionId = (args.election ||
       electionIdFrom({
         jurisdiction: "portland",
         date: "2024-11-05",
         kind: "gen",
       })) as any;
-    const contestId = (contestArg ||
+    const contestId = (args.contest ||
       contestIdFrom({
         districtId: "d2",
         seatCount: 3,

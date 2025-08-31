@@ -1,5 +1,7 @@
 #!/usr/bin/env tsx
 
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import {
   type ContestId,
   contestIdFrom,
@@ -10,32 +12,48 @@ import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/fi
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/packages/contracts/slices/rank_distribution_by_candidate/compute";
 
+interface BuildPipelineArgs {
+  election?: string;
+  contest?: string;
+  srcCsv?: string;
+}
+
 async function main() {
   try {
     console.log("Starting multi-election full pipeline...");
 
-    // Parse command line arguments
-    const args = process.argv.slice(2);
-    const electionArg = args
-      .find((arg) => arg.startsWith("--election="))
-      ?.split("=")[1];
-    const contestArg = args
-      .find((arg) => arg.startsWith("--contest="))
-      ?.split("=")[1];
-    const srcCsvArg = args
-      .find((arg) => arg.startsWith("--src-csv="))
-      ?.split("=")[1];
+    const args = yargs(hideBin(process.argv))
+      .scriptName("build-pipeline-multi")
+      .usage("Run full election data processing pipeline")
+      .option("election", {
+        type: "string",
+        description: "Election ID override",
+        alias: "e",
+      })
+      .option("contest", {
+        type: "string",
+        description: "Contest ID override",
+        alias: "c",
+      })
+      .option("src-csv", {
+        type: "string",
+        description: "Source CSV file path",
+        alias: "s",
+      })
+      .help()
+      .strict()
+      .parseSync() as BuildPipelineArgs;
 
     // Set defaults for District 2
     const srcCsv =
-      srcCsvArg || process.env.SRC_CSV || "tests/golden/micro/cvr_small.csv";
-    const electionId = (electionArg ||
+      args.srcCsv || process.env.SRC_CSV || "tests/golden/micro/cvr_small.csv";
+    const electionId = (args.election ||
       electionIdFrom({
         jurisdiction: "portland",
         date: "2024-11-05",
         kind: "gen",
       })) as ElectionId;
-    const contestId = (contestArg ||
+    const contestId = (args.contest ||
       contestIdFrom({
         districtId: "d2",
         seatCount: 3,
