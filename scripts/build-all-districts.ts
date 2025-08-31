@@ -1,6 +1,8 @@
 #!/usr/bin/env tsx
 
 import { existsSync } from "fs";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import {
   type ContestId,
   contestIdFrom,
@@ -126,12 +128,27 @@ async function processDistrict(district: DistrictConfig) {
   }
 }
 
+interface BuildAllDistrictsArgs {
+  skipOnError?: boolean;
+}
+
 async function main() {
   try {
     console.log("🚀 Building all Portland districts for 2024 General Election");
 
-    const args = process.argv.slice(2);
-    const skipOnError = args.includes("--skip-on-error");
+    const args = yargs(hideBin(process.argv))
+      .scriptName("build-all-districts")
+      .usage("Build election data for all Portland districts")
+      .option("skip-on-error", {
+        type: "boolean",
+        description: "Continue processing remaining districts if one fails",
+        default: false,
+      })
+      .help()
+      .strict()
+      .parseSync() as BuildAllDistrictsArgs;
+
+    const skipOnError = args.skipOnError;
 
     let successful = 0;
     let failed = 0;

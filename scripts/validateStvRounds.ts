@@ -3,6 +3,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
 import Decimal from "decimal.js";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 
 type DecimalType = InstanceType<typeof Decimal>;
 
@@ -348,21 +350,33 @@ async function validateAgainstOfficial(
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const config: ValidationConfig = {
-    env: process.env.NODE_ENV === "development" ? "dev" : "prod",
-    all: false,
-  };
+  const args = yargs(hideBin(process.argv))
+    .scriptName("validate-stv-rounds")
+    .usage("Validate STV round calculations against expected results")
+    .option("case", {
+      type: "string",
+      description: "Test case to validate (e.g., 'micro', 'portland_d2_2024')",
+    })
+    .option("env", {
+      type: "string",
+      description: "Environment to validate",
+      default: process.env.NODE_ENV === "development" ? "dev" : "prod",
+      choices: ["dev", "prod"],
+    })
+    .option("all", {
+      type: "boolean",
+      description: "Validate all available test cases",
+      default: false,
+    })
+    .help()
+    .strict()
+    .parseSync();
 
-  // Parse command line arguments
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    if (arg.startsWith("--case=")) {
-      config.case = arg.split("=")[1];
-    } else if (arg === "--all") {
-      config.all = true;
-    }
-  }
+  const config: ValidationConfig = {
+    case: args.case,
+    env: args.env,
+    all: args.all,
+  };
 
   try {
     if (config.all) {
