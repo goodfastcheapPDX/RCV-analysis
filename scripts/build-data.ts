@@ -3,7 +3,12 @@
 import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { contestIdFrom, electionIdFrom } from "../src/contracts/ids";
+import {
+  type ContestId,
+  contestIdFrom,
+  type ElectionId,
+  electionIdFrom,
+} from "../src/contracts/ids";
 import { validateEnv } from "../src/lib/env";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 
@@ -68,12 +73,12 @@ async function main() {
         jurisdiction: "portland",
         date: "2024-11-05",
         kind: "gen",
-      })) as any;
+      })) as ElectionId;
     const contestId = (args.contest ||
       contestIdFrom({
         districtId: "d2",
         seatCount: 3,
-      })) as any;
+      })) as ContestId;
 
     console.log(`Election: ${electionId}`);
     console.log(`Contest: ${contestId}`);

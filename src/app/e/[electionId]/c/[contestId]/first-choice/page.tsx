@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { loadFirstChoiceForContest } from "@/lib/manifest/loaders";
+import {
+  loadCandidatesForContest,
+  loadFirstChoiceForContest,
+} from "@/lib/manifest/loaders";
 import { FirstChoiceBreakdownView } from "@/packages/contracts/slices/first_choice_breakdown/view";
 
 interface FirstChoicePageProps {
@@ -18,7 +21,13 @@ export default async function FirstChoicePage({
   const { electionId, contestId } = await params;
 
   try {
-    const { data, contest, election } = await loadFirstChoiceForContest(
+    const { data, contest } = await loadFirstChoiceForContest(
+      electionId,
+      contestId,
+    );
+
+    // Load candidates to get ID mapping for links
+    const { data: candidates } = await loadCandidatesForContest(
       electionId,
       contestId,
     );
@@ -52,7 +61,12 @@ export default async function FirstChoicePage({
           </div>
         </div>
 
-        <FirstChoiceBreakdownView data={data} />
+        <FirstChoiceBreakdownView
+          data={data}
+          candidates={candidates}
+          electionId={electionId}
+          contestId={contestId}
+        />
       </div>
     );
   } catch (error) {

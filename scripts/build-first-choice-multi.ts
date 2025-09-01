@@ -2,7 +2,12 @@
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { contestIdFrom, electionIdFrom } from "../src/contracts/ids";
+import {
+  type ContestId,
+  contestIdFrom,
+  type ElectionId,
+  electionIdFrom,
+} from "../src/contracts/ids";
 import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
 
 interface BuildFirstChoiceMultiArgs {
@@ -37,12 +42,12 @@ async function main() {
         jurisdiction: "portland",
         date: "2024-11-05",
         kind: "gen",
-      })) as any;
+      })) as ElectionId;
     const contestId = (args.contest ||
       contestIdFrom({
         districtId: "d2",
         seatCount: 3,
-      })) as any;
+      })) as ContestId;
 
     console.log(`Election: ${electionId}`);
     console.log(`Contest: ${contestId}`);

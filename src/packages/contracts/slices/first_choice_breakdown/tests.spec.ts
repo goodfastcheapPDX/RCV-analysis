@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import type { Manifest } from "@/contracts/manifest";
 import {
   assertTableColumns,
   parseAllRows,
@@ -60,39 +61,35 @@ describe("first_choice_breakdown", () => {
 
     const manifest = JSON.parse(
       readFileSync("data/test/manifest.json", "utf8"),
-    );
+    ) as Manifest;
     const election = manifest.elections.find(
-      (e: any) => e.election_id === "portland-20241105-gen",
+      (e) => e.election_id === "portland-20241105-gen",
     );
-    const contest = election.contests.find(
-      (c: any) => c.contest_id === "d2-3seat",
-    );
-    const entry = contest.first_choice;
+    const contest = election?.contests.find((c) => c.contest_id === "d2-3seat");
+    const entry = contest?.first_choice;
 
     expect(entry).toBeDefined();
-    expect(entry.uri).toBe(
+    expect(entry?.uri).toBe(
       "data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
     );
-    expect(entry.sha256).toMatch(/^[a-f0-9]{64}$/); // SHA256 hash
-    expect(entry.rows).toBe(5);
-    expect(contest.title).toBeDefined();
+    expect(entry?.sha256).toMatch(/^[a-f0-9]{64}$/); // SHA256 hash
+    expect(entry?.rows).toBe(5);
+    expect(contest?.title).toBeDefined();
   });
 
   it("should have consistent file hashing", async () => {
     // Verify the hash exists and is properly formatted
     const manifest = JSON.parse(
       readFileSync("data/test/manifest.json", "utf8"),
-    );
+    ) as Manifest;
     const election = manifest.elections.find(
-      (e: any) => e.election_id === "portland-20241105-gen",
+      (e) => e.election_id === "portland-20241105-gen",
     );
-    const contest = election.contests.find(
-      (c: any) => c.contest_id === "d2-3seat",
-    );
-    const hash = contest.first_choice.sha256;
+    const contest = election?.contests.find((c) => c.contest_id === "d2-3seat");
+    const hash = contest?.first_choice?.sha256;
 
     expect(hash).toMatch(/^[a-f0-9]{64}$/); // Valid SHA256 format
-    expect(hash.length).toBe(64);
+    expect(hash?.length).toBe(64);
   });
 
   it("should validate percentage calculations with contract enforcement", async () => {

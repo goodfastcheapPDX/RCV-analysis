@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DuckDBInstance } from "@duckdb/node-api";
+import { type DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
@@ -18,10 +18,15 @@ import {
 
 // Keep the real file system functions for our tests
 
+// Mock connection interface for testing
+interface MockConnection {
+  run: ReturnType<typeof vi.fn>;
+}
+
 describe("contract-enforcer", () => {
   let tempDir: string;
   let db: DuckDBInstance;
-  let conn: any;
+  let conn: DuckDBConnection;
 
   beforeEach(async () => {
     // Create temporary directory for test files
@@ -49,28 +54,36 @@ describe("contract-enforcer", () => {
 
     it("should handle database query errors (lines 104-105)", async () => {
       // Mock connection that throws an error
-      const mockConn = {
+      const mockConn: MockConnection = {
         run: vi.fn().mockRejectedValue(new Error("Database connection failed")),
-      } as any;
+      };
 
       await expect(
-        assertTableColumns(mockConn, "test_table", TestSchema),
+        assertTableColumns(
+          mockConn as unknown as DuckDBConnection,
+          "test_table",
+          TestSchema,
+        ),
       ).rejects.toThrow(
         "Failed to check table columns for 'test_table': Database connection failed",
       );
     });
 
     it("should re-throw schema mismatch errors", async () => {
-      const mockConn = {
+      const mockConn: MockConnection = {
         run: vi
           .fn()
           .mockRejectedValue(
             new Error("Schema mismatch: expected string, got number"),
           ),
-      } as any;
+      };
 
       await expect(
-        assertTableColumns(mockConn, "test_table", TestSchema),
+        assertTableColumns(
+          mockConn as unknown as DuckDBConnection,
+          "test_table",
+          TestSchema,
+        ),
       ).rejects.toThrow("Schema mismatch: expected string, got number");
     });
   });
@@ -279,7 +292,7 @@ describe("contract-enforcer", () => {
 
       // Write file and calculate correct hash
       writeFileSync(artifactPath, content);
-      const correctHash = createHash("sha256").update(content).digest("hex");
+      const _correctHash = createHash("sha256").update(content).digest("hex");
 
       // Put wrong hash in manifest
       const manifestContent = {

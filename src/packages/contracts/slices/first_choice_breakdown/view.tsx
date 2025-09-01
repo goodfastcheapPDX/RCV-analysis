@@ -1,6 +1,7 @@
 "use client";
 
 import { TrendingUp } from "lucide-react";
+import Link from "next/link";
 import {
   Bar,
   BarChart,
@@ -23,19 +24,51 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import type { CandidatesOutput } from "../ingest_cvr/index.contract";
 import type { Output } from "./index.contract";
 
 interface FirstChoiceBreakdownViewProps {
   data: Output[];
+  candidates?: CandidatesOutput[];
+  electionId?: string;
+  contestId?: string;
 }
 
 export function FirstChoiceBreakdownView({
   data,
+  candidates,
+  electionId,
+  contestId,
 }: FirstChoiceBreakdownViewProps) {
   // Sort data by first_choice_votes in descending order
   const sortedData = [...data].sort(
     (a, b) => b.first_choice_votes - a.first_choice_votes,
   );
+
+  // Helper to get candidate ID for linking
+  const getCandidateId = (candidateName: string): string | null => {
+    if (!candidates) return null;
+    const candidate = candidates.find(
+      (c) => c.candidate_name === candidateName,
+    );
+    return candidate ? candidate.candidate_id.toString() : null;
+  };
+
+  // Helper to create candidate link if possible
+  const CandidateLink = ({ name }: { name: string }) => {
+    const candidateId = getCandidateId(name);
+    if (candidateId && electionId && contestId) {
+      return (
+        <Link
+          href={`/e/${electionId}/c/${contestId}/cand/${candidateId}`}
+          className="hover:underline text-blue-600 hover:text-blue-800"
+        >
+          {name}
+        </Link>
+      );
+    }
+    return <span>{name}</span>;
+  };
 
   // Reliable color palette for all candidates
   const colors = [
@@ -147,7 +180,7 @@ export function FirstChoiceBreakdownView({
                     formatter={(value, _name, props) => [
                       <div key="tooltip" className="flex flex-col gap-1">
                         <div className="font-medium text-foreground">
-                          {props.payload?.fullName}
+                          <CandidateLink name={props.payload?.fullName || ""} />
                         </div>
                         <div className="text-sm text-foreground/80 font-medium">
                           {value.toLocaleString()} votes (
@@ -175,7 +208,7 @@ export function FirstChoiceBreakdownView({
       {topCandidate && (
         <CardFooter className="flex-col items-start gap-2 text-sm">
           <div className="flex gap-2 font-medium leading-none">
-            {topCandidate.candidate_name} leads with{" "}
+            <CandidateLink name={topCandidate.candidate_name} /> leads with{" "}
             {topCandidate.pct.toFixed(1)}%
             <TrendingUp className="h-4 w-4" />
           </div>

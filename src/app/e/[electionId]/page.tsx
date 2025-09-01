@@ -16,10 +16,7 @@ interface ElectionPageProps {
   params: Promise<{ electionId: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
-export default async function ElectionPage({
-  params,
-  searchParams,
-}: ElectionPageProps) {
+export default async function ElectionPage({ params }: ElectionPageProps) {
   const { electionId } = await params;
   const manifest = Manifest.parse(await loadManifest());
 

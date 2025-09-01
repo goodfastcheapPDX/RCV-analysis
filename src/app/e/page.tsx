@@ -9,13 +9,7 @@ import {
 import { Manifest } from "@/contracts/manifest";
 import { loadManifest } from "@/lib/manifest";
 
-interface ElectionsIndexPageProps {
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
-}
-
-export default async function ElectionsIndexPage({
-  searchParams,
-}: ElectionsIndexPageProps) {
+export default async function ElectionsIndexPage() {
   const manifest = Manifest.parse(await loadManifest());
   return (
     <div className="space-y-6">

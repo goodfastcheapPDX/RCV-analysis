@@ -1,5 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { ContestId, DistrictId, ElectionId } from "@/contracts/ids";
+import type { Manifest } from "@/contracts/manifest";
 import { ingestCvr } from "./compute";
 
 describe("ingest_cvr", () => {
@@ -18,17 +20,15 @@ describe("ingest_cvr", () => {
     // Verify manifest contains expected stats
     const manifest = JSON.parse(
       readFileSync("data/test/manifest.json", "utf8"),
-    );
+    ) as Manifest;
     const election = manifest.elections.find(
-      (e: any) => e.election_id === "portland-20241105-gen",
+      (e) => e.election_id === "portland-20241105-gen",
     );
-    const contest = election.contests.find(
-      (c: any) => c.contest_id === "d2-3seat",
-    );
+    const contest = election?.contests.find((c) => c.contest_id === "d2-3seat");
 
-    expect(contest.cvr.candidates.rows).toBe(5); // 5 candidates
-    expect(contest.cvr.ballots_long.rows).toBeGreaterThan(20); // Expected vote records
-    expect(contest.cvr.ballots_long.sha256).toMatch(/^[a-f0-9]{64}$/); // Valid hash
+    expect(contest?.cvr.candidates.rows).toBe(5); // 5 candidates
+    expect(contest?.cvr.ballots_long.rows).toBeGreaterThan(20); // Expected vote records
+    expect(contest?.cvr.ballots_long.sha256).toMatch(/^[a-f0-9]{64}$/); // Valid hash
   });
 
   it("should have created Parquet export files", async () => {
@@ -49,23 +49,21 @@ describe("ingest_cvr", () => {
 
     const manifest = JSON.parse(
       readFileSync("data/test/manifest.json", "utf8"),
-    );
+    ) as Manifest;
     const election = manifest.elections.find(
-      (e: any) => e.election_id === "portland-20241105-gen",
+      (e) => e.election_id === "portland-20241105-gen",
     );
-    const contest = election.contests.find(
-      (c: any) => c.contest_id === "d2-3seat",
-    );
+    const contest = election?.contests.find((c) => c.contest_id === "d2-3seat");
 
     expect(contest).toBeDefined();
-    expect(contest.cvr.candidates.uri).toBe(
+    expect(contest?.cvr.candidates.uri).toBe(
       "data/test/portland-20241105-gen/d2-3seat/ingest/candidates.parquet",
     );
-    expect(contest.cvr.ballots_long.uri).toBe(
+    expect(contest?.cvr.ballots_long.uri).toBe(
       "data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
     );
-    expect(contest.cvr.ballots_long.rows).toBeGreaterThan(20);
-    expect(contest.cvr.candidates.rows).toBe(5);
+    expect(contest?.cvr.ballots_long.rows).toBeGreaterThan(20);
+    expect(contest?.cvr.candidates.rows).toBe(5);
   });
 });
 
@@ -86,11 +84,11 @@ describe("ingest_cvr error conditions", () => {
     try {
       await expect(
         ingestCvr({
-          electionId: "portland-20241105-gen" as any,
-          contestId: "d1-1seat" as any,
-          districtId: "d1" as any,
+          electionId: "portland-20241105-gen" as ElectionId,
+          contestId: "d1-1seat" as ContestId,
+          districtId: "d1" as DistrictId,
           seatCount: 1,
-          srcCsv: undefined as any, // undefined should trigger error
+          srcCsv: undefined as unknown as string, // undefined should trigger error
         }),
       ).rejects.toThrow("SRC_CSV must be provided");
     } finally {
@@ -111,9 +109,9 @@ describe("ingest_cvr error conditions", () => {
 
     await expect(
       ingestCvr({
-        electionId: "portland-20241105-gen" as any,
-        contestId: "d1-1seat" as any,
-        districtId: "d1" as any,
+        electionId: "portland-20241105-gen" as ElectionId,
+        contestId: "d1-1seat" as ContestId,
+        districtId: "d1" as DistrictId,
         seatCount: 1,
         srcCsv: testCsvPath,
       }),

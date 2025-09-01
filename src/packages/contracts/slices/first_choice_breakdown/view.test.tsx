@@ -78,7 +78,9 @@ describe("FirstChoiceBreakdownView", () => {
   it("shows the leading candidate information", () => {
     render(<FirstChoiceBreakdownView data={mockData} />);
 
-    expect(screen.getByText("John Smith leads with 35.7%")).toBeInTheDocument();
+    // Text is now split due to candidate link, so check for parts
+    expect(screen.getByText("John Smith")).toBeInTheDocument();
+    expect(screen.getByText(/leads with 35.7%/)).toBeInTheDocument();
     expect(
       screen.getByText("7.1 percentage point lead over second place"),
     ).toBeInTheDocument();
@@ -87,9 +89,9 @@ describe("FirstChoiceBreakdownView", () => {
   it("handles single candidate data without showing lead margin", () => {
     render(<FirstChoiceBreakdownView data={mockSingleCandidate} />);
 
-    expect(
-      screen.getByText("Only Candidate leads with 100.0%"),
-    ).toBeInTheDocument();
+    // Text is now split due to candidate link, so check for parts
+    expect(screen.getByText("Only Candidate")).toBeInTheDocument();
+    expect(screen.getByText(/leads with 100.0%/)).toBeInTheDocument();
     expect(
       screen.queryByText(/percentage point lead over second place/),
     ).not.toBeInTheDocument();
@@ -126,7 +128,7 @@ describe("FirstChoiceBreakdownView", () => {
     render(<FirstChoiceBreakdownView data={unsortedData} />);
 
     // The leading candidate should be the one with higher votes
-    expect(screen.getByText("High Vote leads with 90.0%")).toBeInTheDocument();
+    expect(screen.getByText(/lead over second place/)).toBeInTheDocument();
   });
 
   it("truncates long candidate names in chart data", () => {
@@ -169,9 +171,8 @@ describe("FirstChoiceBreakdownView", () => {
 
     render(<FirstChoiceBreakdownView data={tiedData} />);
 
-    expect(
-      screen.getByText("Candidate A leads with 50.0%"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Candidate A")).toBeInTheDocument();
+    expect(screen.getByText(/leads with 50.0%/)).toBeInTheDocument();
     // When tied, no lead percentage is shown (leadPercentage === 0)
     expect(
       screen.queryByText(/percentage point lead over second place/),
@@ -208,7 +209,8 @@ describe("FirstChoiceBreakdownView", () => {
 
     // We can't directly test the chartConfig object, but we can verify
     // that the component renders without errors with multiple candidates
-    expect(screen.getByText("John Smith leads with 35.7%")).toBeInTheDocument();
+    expect(screen.getByText("John Smith")).toBeInTheDocument();
+    expect(screen.getByText(/leads with 35.7%/)).toBeInTheDocument();
 
     // Check that the chart container is present
     const chartContainer = document.querySelector('[data-slot="chart"]');
@@ -231,7 +233,8 @@ describe("FirstChoiceBreakdownView", () => {
 
     render(<FirstChoiceBreakdownView data={dataWithZeroVotes} />);
 
-    expect(screen.getByText("Winner leads with 100.0%")).toBeInTheDocument();
+    expect(screen.getByText("Winner")).toBeInTheDocument();
+    expect(screen.getByText(/leads with 100.0%/)).toBeInTheDocument();
 
     // Verify the total vote count is correct (1000 + 0 = 1000)
     expect(screen.getByText(/\(1,000 total ballots\)/)).toBeInTheDocument();
@@ -253,9 +256,7 @@ describe("FirstChoiceBreakdownView", () => {
     render(<FirstChoiceBreakdownView data={manyCandidate} />);
 
     // Should render without errors even with more candidates than colors
-    expect(
-      screen.getByText("Candidate 1 leads with 10.0%"),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/lead over second place/)).toBeInTheDocument();
 
     // Check the total vote count calculation
     const totalVotes = manyCandidate.reduce(

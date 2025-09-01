@@ -79,16 +79,12 @@ export async function computeStvRounds(
   manifest = manifestData as Manifest;
 
   // Find the contest in manifest
-  const election = manifest.elections.find(
-    (e: any) => e.election_id === electionId,
-  );
+  const election = manifest.elections.find((e) => e.election_id === electionId);
   if (!election) {
     throw new Error(`Election ${electionId} not found in manifest`);
   }
 
-  const contest = election.contests.find(
-    (c: any) => c.contest_id === contestId,
-  );
+  const contest = election.contests.find((c) => c.contest_id === contestId);
   if (!contest) {
     throw new Error(`Contest ${contestId} not found in manifest`);
   }
@@ -304,7 +300,7 @@ export async function computeStvRounds(
 }
 
 // Legacy function for backward compatibility
-function loadRulesFromYaml(testCase?: string): RulesSchema {
+function _loadRulesFromYaml(testCase?: string): RulesSchema {
   let rules: Partial<RulesSchema> = {
     seats: 3,
     quota: "droop",

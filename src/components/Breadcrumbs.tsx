@@ -95,7 +95,7 @@ export function Breadcrumbs() {
             // For any additional segments, show the path segment as-is
             for (let i = 4; i < pathParts.length; i++) {
               const isLast = i === pathParts.length - 1;
-              const segmentPath = "/" + pathParts.slice(0, i + 1).join("/");
+              const segmentPath = `/${pathParts.slice(0, i + 1).join("/")}`;
               segments.push({
                 label: pathParts[i],
                 href: isLast ? undefined : segmentPath,
@@ -112,7 +112,7 @@ export function Breadcrumbs() {
       // For other paths, show segments as-is
       for (let i = 0; i < pathParts.length; i++) {
         const isLast = i === pathParts.length - 1;
-        const segmentPath = "/" + pathParts.slice(0, i + 1).join("/");
+        const segmentPath = `/${pathParts.slice(0, i + 1).join("/")}`;
         segments.push({
           label: pathParts[i],
           href: isLast ? undefined : segmentPath,

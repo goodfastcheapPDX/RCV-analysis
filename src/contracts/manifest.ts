@@ -126,3 +126,51 @@ export function getArtifactUri(ref: ArtifactRef): string {
   // In production, this could map to blob URLs
   return ref.uri;
 }
+
+// Test fixture generators - single source of truth for test data
+export const createArtifactRefFixture = (
+  overrides: Partial<ArtifactRef> = {},
+): ArtifactRef => ({
+  uri: "test/fixture.parquet",
+  sha256: "a".repeat(64),
+  rows: 100,
+  ...overrides,
+});
+
+export const createStvRulesFixture = (
+  overrides: Partial<StvRules> = {},
+): StvRules => ({
+  method: "meek",
+  quota: "droop",
+  precision: 1e-9,
+  tie_break: "lexicographic",
+  seats: 3,
+  ...overrides,
+});
+
+export const createContestFixture = (
+  overrides: Partial<Contest> = {},
+): Contest => ({
+  contest_id: "d2-3seat",
+  district_id: "d2",
+  seat_count: 3,
+  title: "Test Contest",
+  cvr: {
+    candidates: createArtifactRefFixture({ uri: "test/candidates.parquet" }),
+    ballots_long: createArtifactRefFixture({ uri: "test/ballots.parquet" }),
+  },
+  stv: {},
+  rules: createStvRulesFixture(),
+  ...overrides,
+});
+
+export const createElectionFixture = (
+  overrides: Partial<Election> = {},
+): Election => ({
+  election_id: "portland-20241105-gen",
+  date: "2024-11-05",
+  jurisdiction: "portland",
+  title: "Test Election",
+  contests: [createContestFixture()],
+  ...overrides,
+});

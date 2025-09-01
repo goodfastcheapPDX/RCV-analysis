@@ -12,7 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { loadStvForContest } from "@/lib/manifest/loaders";
+import {
+  loadCandidatesForContest,
+  loadStvForContest,
+} from "@/lib/manifest/loaders";
+import type { CandidatesOutput } from "@/packages/contracts/slices/ingest_cvr/index.contract";
 import { StvRoundsView } from "@/packages/contracts/slices/stv_rounds/view";
 
 interface ContestPageProps {
@@ -24,8 +28,23 @@ export default async function ContestPage({ params }: ContestPageProps) {
   const { electionId, contestId } = await params;
 
   try {
-    const { roundsData, metaData, stats, contest, election } =
-      await loadStvForContest(electionId, contestId);
+    const { roundsData, metaData, stats, contest } = await loadStvForContest(
+      electionId,
+      contestId,
+    );
+
+    // Load candidates for linking
+    let candidates: CandidatesOutput[] | undefined;
+    try {
+      const candidatesResult = await loadCandidatesForContest(
+        electionId,
+        contestId,
+      );
+      candidates = candidatesResult.data;
+    } catch (error) {
+      // Candidates may not be available, continue without them
+      console.warn("Candidates data not available for links:", error);
+    }
 
     return (
       <div className="space-y-6">
@@ -67,6 +86,9 @@ export default async function ContestPage({ params }: ContestPageProps) {
             roundsData={roundsData}
             metaData={metaData}
             stats={stats}
+            candidates={candidates}
+            electionId={electionId}
+            contestId={contestId}
           />
         ) : (
           <p>No stats available.</p>
