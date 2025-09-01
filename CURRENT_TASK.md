@@ -1,144 +1,157 @@
-Title: Modernize build scripts with yargs for type-safe command line argument parsing
+Title: Add per-candidate page scaffold + routing (rank distribution placeholder)
+Context (spec packet)
 
-Context
+Multi-election routes exist at /e/[electionId]/c/[contestId] with first-choice + STV visualizations.
 
-Our current build scripts in the `scripts/` directory use manual command line argument parsing with `process.argv.slice(2)` and string operations like `.find(arg => arg.startsWith('--option='))?.split('=')[1]`. This approach is error-prone, lacks type safety, and provides poor developer experience with no help text or validation.
+We need a canonical page per candidate to host upcoming visuals (starting with rank-distribution).
 
-We want to migrate to yargs (https://www.npmjs.com/package/yargs) to get:
-- Type-safe argument parsing with compile-time validation
-- Automatic help text generation
-- Built-in validation and coercion
-- Better error messages
-- Standardized CLI interface across all build scripts
+Contracts-first policy: no changes to compute/artifacts in this task; consume what exists.
+
+Decisions (to unblock):
+
+candidateId format: use the existing candidate_id value from artifacts as the canonical string id in URLs (cast numerics to strings).
+
+Slug policy: skip slug support for now - deal directly with canonical candidate IDs until it becomes necessary.
+
+Badge logic:
+
+“Elected” if candidate appears in STV meta as elected for this (electionId, contestId).
+
+“Eliminated” if present in any elimination event.
+
+If neither, show no status badge.
+
+Tab persistence: keep ?tab=rank (default) in the query string; when navigating between candidates within the same contest, preserve the current tab value; when moving to a different contest or election, reset to default (rank).
 
 Scope
 
-Package Installation
+Routing
 
-Install yargs and its TypeScript types:
-```bash
-npm install --save-dev yargs @types/yargs
-```
+New route: /e/[electionId]/c/[contestId]/cand/[candidateId].
 
-Script Migration
+On load:
 
-Migrate the following build scripts to use yargs:
+Detect if the param matches a known candidate_id (string compare).
 
-1. `scripts/build-data.ts` - CVR ingestion script
-2. `scripts/build-pipeline-multi.ts` - Full pipeline runner  
-3. `scripts/build-all-districts.ts` - Multi-district processor
-4. `scripts/build-first-choice.ts` - First choice breakdown
-5. `scripts/build-rank-distribution.ts` - Rank distribution
-6. Any other scripts with manual `process.argv` parsing
+If no match → render Not Found.
 
-Type Safety Requirements
+Canonical URL shape:
+/e/{eid}/c/{cid}/cand/{candidateId}?tab=rank
 
-For each script, create a TypeScript interface that defines the expected arguments with:
-- Required vs optional arguments
-- Argument types (string, number, boolean)
-- Default values where applicable
-- Validation rules where statically determinable
+Data access (read-only)
 
-Example interface for build-data.ts:
-```typescript
-interface BuildDataArgs {
-  election?: string;
-  contest?: string;
-  srcCsv?: string;
-  help?: boolean;
-}
-```
+Use existing manifest lookups to obtain:
 
-Yargs Configuration
+Contest candidates list (id, display_name at minimum).
 
-Each script should:
-- Use `.scriptName()` to set the script name for help text
-- Use `.usage()` to provide a description
-- Define options with `.option()` including:
-  - Type specification
-  - Description text
-  - Default values
-  - Aliases where helpful (e.g., `-h` for `--help`)
-- Use `.help()` to enable automatic help generation
-- Use `.version(false)` to disable version flag (unless needed)
-- Use `.strict()` to reject unknown options
-- Parse with `.parseSync()` for type safety
+STV meta/rounds for badge derivation (elected vs eliminated).
 
-Example yargs setup:
-```typescript
-const args = yargs(process.argv.slice(2))
-  .scriptName('build-data')
-  .usage('Build CVR data for elections')
-  .option('election', {
-    type: 'string',
-    description: 'Election ID override',
-    default: electionIdFrom({ jurisdiction: 'portland', date: '2024-11-05', kind: 'gen' })
-  })
-  .option('contest', {
-    type: 'string', 
-    description: 'Contest ID override',
-    default: contestIdFrom({ districtId: 'd2', seatCount: 3 })
-  })
-  .option('src-csv', {
-    type: 'string',
-    description: 'Source CSV file path',
-    default: 'data/2024-11/canonical/district-2-cast-vote-record.csv'
-  })
-  .help()
-  .strict()
-  .parseSync();
-```
+Skip utils layer for now - implement candidate lookup and badge logic directly in the page component until complexity requires abstraction.
 
-Validation Enhancements
+No new fetch endpoints; use whatever manifest/file helpers already exist. If candidates live in Parquet, call the existing data loader that reads it (or temporary manifest cache if present).
 
-Where possible, add static validation:
-- File existence checks for CSV paths
-- Enum validation for known district IDs
-- Range validation for seat counts
-- Format validation for election/contest ID patterns
+Page shell
 
-Backward Compatibility
+Server component page renders:
 
-Ensure all existing npm script commands continue to work:
-- `npm run build:data`
-- `npm run build:data:all` 
-- `npm run build:data:firstchoice`
-- etc.
+Header with candidate name + badge chip (elected / eliminated / none).
 
-Environment variable support should be preserved where currently used.
+Breadcrumbs: Election › Contest › Candidate.
+
+Local tabs (client component): Overview (stub), Rank distribution (default), Rounds (stub).
+
+RankDistributionCard placeholder component:
+
+Clear explanatory text stating this is a placeholder for the upcoming rank distribution visualization.
+
+Expected data contract documentation: { rank: number; count: number; pct_all_ballots: number; pct_among_rankers: number }[]
+
+NO VISUALIZATION IMPLEMENTATION - this task only creates the placeholder, not the actual chart/bars.
+
+Navigation wiring
+
+Make candidate labels in first-choice and STV rounds views link to the new page:
+
+Preserve ?tab when staying within same contest; otherwise omit.
+
+Use the canonical candidate ID in URLs.
+
+Provide a “Back to contest” link in page header secondary actions.
+
+404 / validation
+
+Validate candidate existence within the (electionId, contestId) scope (not globally).
+
+Unknown candidate → friendly Not Found with link back to contest page.
+
+UX polish
+
+Responsive layout; chart container with sensible min-height.
+
+Tooltip “What is rank distribution?” short explainer.
+
+“Data source” chip showing slice key it will use later: rank_distribution_by_candidate.
+
+Tests
+
+Route resolution:
+
+valid candidate id → renders candidate header.
+
+unknown candidate id → Not Found.
+
+Badge logic unit test with a tiny in-memory STV meta fixture.
+
+Link integration:
+
+First-choice table candidate name points to canonical URL.
+
+STV rounds candidate link points to canonical URL.
+
+Tab persistence across candidate nav within same contest.
 
 Guardrails
 
-- Do not change script functionality, only the argument parsing mechanism
-- Do not modify any slice computation logic or data processing
-- Do not change the contract enforcement or validation patterns
-- Focus only on the CLI argument parsing layer
-- Maintain all existing default values and behaviors
+No data-pipeline changes (no new artifacts, no compute).
 
-Testing
+No API routes; use existing file/manifest loaders.
 
-After migration:
-- Test each script with no arguments (should use defaults)
-- Test with --help flag (should show usage)  
-- Test with various argument combinations
-- Verify all npm scripts still work
-- Ensure error messages are helpful for invalid arguments
+No refactors outside: new route folder, minimal link wrappers in existing views, shared nav/breadcrumb components.
+
+Absolute imports only.
+
+Keep changes small; no visual chart implementation here.
 
 Done When
 
-- All build scripts use yargs for argument parsing
-- Each script has type-safe argument interfaces
-- Help text is available with --help for all scripts
-- All existing npm scripts continue to work unchanged
-- Arguments have proper validation where feasible
-- Error messages are clear and helpful
-- No functionality changes to core data processing logic
+Visiting /e/{eid}/c/{cid}/cand/{candidateId} renders header, breadcrumbs, tabs, and rank-distribution placeholder.
+
+First-choice + STV views link correctly to the canonical candidate page.
+
+Not Found renders for invalid candidate within the contest.
+
+Tests pass for routing, badge logic, 404, and link wiring (no slug tests needed).
+
+No changes to compute or artifacts.
 
 Output
 
-PR diff including:
-- Updated package.json with yargs dependency
-- Migrated scripts with yargs-based argument parsing
-- Type interfaces for each script's arguments
-- Improved help text and validation
-- All existing functionality preserved
+PR including:
+
+app/e/[electionId]/c/[contestId]/cand/[candidateId]/page.tsx (server)
+
+components/candidate/Tabs.tsx (client) and components/candidate/RankDistributionCard.tsx
+
+Minimal updates to first-choice & STV components to wrap names with links
+
+Tests under tests/ui/candidate-page/*
+
+PR summary (3–5 lines) describing:
+
+Canonical URL shape (candidate ID only, no slug support)
+
+Badge derivation source (STV meta)
+
+Tab persistence rules
+
+What's stubbed (rank distribution viz) vs complete (routing + scaffold)
