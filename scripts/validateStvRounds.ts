@@ -6,7 +6,7 @@ import Decimal from "decimal.js";
 import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { validateEnv } from "../env.d";
+import { validateEnv } from "../src/lib/env";
 
 // Load environment variables and validate
 dotenv();

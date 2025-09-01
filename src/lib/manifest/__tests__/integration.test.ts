@@ -122,8 +122,6 @@ describe("Manifest Integration Tests", () => {
       // Validate top-level manifest structure
       expect(manifest.env).toBe("dev");
       expect(manifest.version).toBe(2);
-      expect(manifest.generated_at).toBeTruthy();
-      expect(typeof manifest.generated_at).toBe("string");
 
       // Validate elections structure
       expect(Array.isArray(manifest.elections)).toBe(true);

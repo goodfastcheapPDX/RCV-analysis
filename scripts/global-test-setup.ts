@@ -1,5 +1,5 @@
 import { config as dotenv } from "dotenv";
-import { validateEnv } from "../env.d";
+import { validateEnv } from "../src/lib/env";
 import { setupTestData } from "./setup-test-data";
 
 export async function setup() {

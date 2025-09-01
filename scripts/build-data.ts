@@ -3,8 +3,8 @@
 import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { validateEnv } from "../env.d";
 import { contestIdFrom, electionIdFrom } from "../src/contracts/ids";
+import { validateEnv } from "../src/lib/env";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 
 // Load environment variables and validate

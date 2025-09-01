@@ -125,7 +125,6 @@ describe("first_choice_breakdown contract enforcement", () => {
       const badManifest = {
         env: "test",
         version: 2,
-        generated_at: new Date().toISOString(),
         elections: [
           {
             election_id: "portland-20241105-gen",

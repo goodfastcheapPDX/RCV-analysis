@@ -108,12 +108,12 @@ export async function setupTestData() {
     if (originalDataEnv !== undefined) {
       process.env.DATA_ENV = originalDataEnv;
     } else {
-      (process.env as any).DATA_ENV = undefined;
+      delete (process.env as any).DATA_ENV;
     }
     if (originalSrcCsv !== undefined) {
       process.env.SRC_CSV = originalSrcCsv;
     } else {
-      (process.env as any).SRC_CSV = undefined;
+      delete (process.env as any).SRC_CSV;
     }
   }
 }
