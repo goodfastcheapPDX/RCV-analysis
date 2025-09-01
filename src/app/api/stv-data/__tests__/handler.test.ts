@@ -1,15 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
-import { ingestCvr } from "@/packages/contracts/slices/ingest_cvr/compute";
-import { computeStvRounds } from "@/packages/contracts/slices/stv_rounds/compute";
+import { describe, expect, it } from "vitest";
 import { handleStvDataRequest } from "../handler";
 
 describe("handleStvDataRequest", () => {
-  beforeAll(async () => {
-    // Generate test data
-    await ingestCvr();
-    await computeStvRounds();
-  });
-
   it("should return success with STV data using defaults", async () => {
     const result = await handleStvDataRequest();
 

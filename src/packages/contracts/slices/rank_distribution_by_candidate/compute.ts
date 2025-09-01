@@ -166,7 +166,6 @@ export async function computeRankDistributionByCandidate(
         `${electionId}/${contestId}/rank_distribution/rank_distribution.parquet`,
       ],
       rank_distribution_hash: fileHash,
-      generated_at: new Date().toISOString(),
     };
 
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));

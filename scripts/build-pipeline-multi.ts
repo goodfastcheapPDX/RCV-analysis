@@ -3,13 +3,13 @@
 import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { validateEnv } from "../env.d";
 import {
   type ContestId,
   contestIdFrom,
   type ElectionId,
   electionIdFrom,
 } from "../src/contracts/ids";
+import { validateEnv } from "../src/lib/env";
 import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/packages/contracts/slices/rank_distribution_by_candidate/compute";

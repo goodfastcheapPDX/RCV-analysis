@@ -76,7 +76,6 @@ export const Election = z.object({
 export const Manifest = z.object({
   env: z.enum(["dev", "test", "prod"]),
   version: z.literal(2), // Bumped for multi-election support
-  generated_at: z.string().datetime(), // ISO datetime
 
   // Input hashes for determinism checking
   inputs: z.record(

@@ -278,8 +278,7 @@ export async function computeStvRounds(
       stats: validatedStats,
     };
 
-    // Update manifest generated timestamp
-    manifest.generated_at = new Date().toISOString();
+    // Update manifest
 
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 

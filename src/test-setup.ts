@@ -2,7 +2,7 @@
 import "@testing-library/jest-dom";
 import { config as dotenv } from "dotenv";
 import { vi } from "vitest";
-import { validateEnv } from "../env.d";
+import { validateEnv } from "../src/lib/env";
 
 // Load test environment variables
 dotenv({ path: ".env.test" });

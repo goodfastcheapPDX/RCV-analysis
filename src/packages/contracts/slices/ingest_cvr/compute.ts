@@ -287,7 +287,6 @@ export async function ingestCvr(
         manifest = {
           env: env as any,
           version: 2,
-          generated_at: new Date().toISOString(),
           inputs: {},
           elections: [],
         };
@@ -296,7 +295,6 @@ export async function ingestCvr(
       manifest = {
         env: env as any,
         version: 2,
-        generated_at: new Date().toISOString(),
         inputs: {},
         elections: [],
       };
@@ -363,8 +361,7 @@ export async function ingestCvr(
       };
     }
 
-    // Update manifest generated timestamp and input hashes
-    manifest.generated_at = new Date().toISOString();
+    // Update manifest input hashes
     manifest.inputs[`${electionId}/${contestId}`] = {
       cvr_files: [
         {

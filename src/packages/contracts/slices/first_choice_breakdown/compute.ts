@@ -198,8 +198,7 @@ export async function computeFirstChoiceBreakdown(
       rows: validatedRows.length,
     };
 
-    // Update manifest timestamp
-    manifest.generated_at = new Date().toISOString();
+    // Update manifest
 
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 

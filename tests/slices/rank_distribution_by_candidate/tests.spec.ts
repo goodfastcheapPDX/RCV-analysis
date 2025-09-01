@@ -153,9 +153,6 @@ describe("Rank Distribution by Candidate Integration", () => {
         `${electionId}/${contestId}/rank_distribution/rank_distribution.parquet`,
       ],
       rank_distribution_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
-      generated_at: expect.stringMatching(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      ),
     });
 
     // Validate stats schema

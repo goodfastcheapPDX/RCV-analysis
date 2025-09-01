@@ -1,14 +1,7 @@
-import { beforeAll, describe, expect, it } from "vitest";
-import { computeFirstChoiceBreakdown } from "@/packages/contracts/slices/first_choice_breakdown/compute";
-import { ingestCvr } from "@/packages/contracts/slices/ingest_cvr/compute";
+import { describe, expect, it } from "vitest";
 import { handleFirstChoiceDataRequest } from "../handler";
 
 describe("handleFirstChoiceDataRequest", () => {
-  beforeAll(async () => {
-    // Generate test data
-    await ingestCvr();
-    await computeFirstChoiceBreakdown();
-  });
   it("should return success with first choice data using defaults", async () => {
     const result = await handleFirstChoiceDataRequest();
 
