@@ -17,7 +17,6 @@ export default async function ElectionsIndexPage({
   searchParams,
 }: ElectionsIndexPageProps) {
   const manifest = Manifest.parse(await loadManifest());
-  console.log(manifest);
   return (
     <div className="space-y-6">
       <div>

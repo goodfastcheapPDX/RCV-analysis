@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { coverageConfigDefaults, defineConfig } from "vitest/config";
-import { loadEnv } from 'vite';
+import dotenv from 'dotenv'
 
 const dirname =
   typeof __dirname !== "undefined"
@@ -20,7 +20,11 @@ export default defineConfig({
     },
   },
   test: {
-    env: loadEnv('test', process.cwd(), ''),
+    env: {
+      NODE_ENV: 'test',
+      ...dotenv.config({ path: '.env.test' }).parsed,
+      ...dotenv.config().parsed,
+    },
     // Global setup to generate test data before all tests run
     globalSetup: ["./scripts/global-test-setup.ts"],
     // Run tests sequentially to avoid DuckDB file locking issues

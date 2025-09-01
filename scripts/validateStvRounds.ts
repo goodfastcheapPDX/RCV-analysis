@@ -3,8 +3,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
 import Decimal from "decimal.js";
+import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { validateEnv } from "../env.d";
+
+// Load environment variables and validate
+dotenv();
+validateEnv();
 
 type DecimalType = InstanceType<typeof Decimal>;
 

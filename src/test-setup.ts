@@ -1,6 +1,13 @@
 // Test setup for Vitest
 import "@testing-library/jest-dom";
+import { config as dotenv } from "dotenv";
 import { vi } from "vitest";
+import { validateEnv } from "../env.d";
+
+// Load test environment variables
+dotenv({ path: ".env.test" });
+dotenv(); // Load base .env as fallback
+validateEnv();
 
 // Mock Next.js fonts globally for all tests
 vi.mock("next/font/google", () => ({

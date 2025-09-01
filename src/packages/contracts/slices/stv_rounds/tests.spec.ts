@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createIdentity } from "@/contracts/ids";
-import { computeStvRounds } from "./compute";
 import type { BallotData } from "./engine";
 import { runSTV } from "./engine";
 import { RulesSchema } from "./index.contract";

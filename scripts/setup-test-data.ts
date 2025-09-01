@@ -2,9 +2,6 @@
 
 import { spawn } from "child_process";
 import { existsSync, rmSync } from "fs";
-import { promisify } from "util";
-
-const execAsync = promisify(spawn);
 
 async function runCommand(
   command: string,
@@ -90,7 +87,11 @@ export async function setupTestData() {
     // we'll run individual computations for the golden dataset
     console.log("📊 Running test data pipeline with golden dataset...");
 
-    await runCommand("npm", ["run", "build:data"], testEnv);
+    await runCommand(
+      "npm",
+      ["run", "build:data", "--", "--data-env=test"],
+      testEnv,
+    );
     await runCommand("npm", ["run", "build:data:firstchoice"], testEnv);
     await runCommand("npm", ["run", "build:data:stv"], testEnv);
 
@@ -107,12 +108,12 @@ export async function setupTestData() {
     if (originalDataEnv !== undefined) {
       process.env.DATA_ENV = originalDataEnv;
     } else {
-      delete process.env.DATA_ENV;
+      (process.env as any).DATA_ENV = undefined;
     }
     if (originalSrcCsv !== undefined) {
       process.env.SRC_CSV = originalSrcCsv;
     } else {
-      delete process.env.SRC_CSV;
+      (process.env as any).SRC_CSV = undefined;
     }
   }
 }

@@ -51,6 +51,20 @@ exports[`Error Page > should match snapshot 1`] = `
       data-slot="alert-description"
     >
       An unexpected error occurred while loading this page.
+      <details
+        class="mt-2"
+      >
+        <summary
+          class="cursor-pointer text-sm font-medium"
+        >
+          Error details (development only)
+        </summary>
+        <code
+          class="text-xs mt-1 block p-2 bg-muted rounded"
+        >
+          Test error message
+        </code>
+      </details>
     </div>
   </div>
   <div

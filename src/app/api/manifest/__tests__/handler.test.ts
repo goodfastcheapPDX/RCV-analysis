@@ -13,7 +13,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should return success with manifest data", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
@@ -23,7 +23,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should include election data in manifest", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     expect(Array.isArray(result.data?.elections)).toBe(true);
@@ -35,7 +35,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should validate manifest structure", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     expect(result.data).toHaveProperty("version");
@@ -49,7 +49,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should include contest structure with required properties", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     const election = result.data?.elections[0];
@@ -70,7 +70,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should include CVR section with candidate and ballot data", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     const contest = result.data?.elections[0]?.contests[0];
@@ -90,7 +90,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should include first choice breakdown section", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     const contest = result.data?.elections[0]?.contests[0];
@@ -103,7 +103,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should include STV section with stats and artifacts", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     const contest = result.data?.elections[0]?.contests[0];
@@ -130,7 +130,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should contain valid election ID and contest ID", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
     const election = result.data?.elections[0];
@@ -139,7 +139,7 @@ describe("handleManifestRequest", () => {
   });
 
   it("should have consistent timestamps", async () => {
-    const result = await handleManifestRequest();
+    const result = await handleManifestRequest("test");
 
     expect(result.success).toBe(true);
 
@@ -156,8 +156,8 @@ describe("handleManifestRequest", () => {
   });
 
   it("should handle consistent data structure across multiple calls", async () => {
-    const result1 = await handleManifestRequest();
-    const result2 = await handleManifestRequest();
+    const result1 = await handleManifestRequest("test");
+    const result2 = await handleManifestRequest("test");
 
     expect(result1.success).toBe(true);
     expect(result2.success).toBe(true);

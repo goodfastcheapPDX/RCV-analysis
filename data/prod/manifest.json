@@ -1,7 +1,7 @@
 {
   "env": "prod",
   "version": 2,
-  "generated_at": "2025-08-30T14:54:57.818Z",
+  "generated_at": "2025-09-01T15:11:41.281Z",
   "inputs": {
     "portland-20241105-gen/d2-3seat": {
       "cvr_files": [
@@ -36,29 +36,7 @@
               "rows": 31
             }
           },
-          "stv": {
-            "rounds": {
-              "uri": "data/prod/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
-              "sha256": "7c47da5b1e510191b7d1052c13ce77d10f31f862bc9c10d5029b9d7440888d3d",
-              "rows": 20
-            },
-            "meta": {
-              "uri": "data/prod/portland-20241105-gen/d2-3seat/stv/meta.parquet",
-              "sha256": "37ab8f8c091f1f91a938c63984857064bb83b0785c7d672efd85dc99c1bee24c",
-              "rows": 4
-            },
-            "stats": {
-              "number_of_rounds": 4,
-              "winners": [
-                "Bob",
-                "Charlie",
-                "Diana"
-              ],
-              "seats": 3,
-              "first_round_quota": 3,
-              "precision": 0.000001
-            }
-          },
+          "stv": {},
           "rules": {
             "method": "meek",
             "quota": "droop",
