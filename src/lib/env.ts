@@ -8,5 +8,5 @@ export function getDataEnv(): DataEnv {
 }
 
 export function getArtifactRoot(env: DataEnv): string {
-  return `/data/${env}`;
+  return `data/${env}`;
 }

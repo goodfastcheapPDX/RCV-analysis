@@ -1,7 +1,9 @@
 #!/usr/bin/env tsx
 
+import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { validateEnv } from "../env.d";
 import {
   type ContestId,
   contestIdFrom,
@@ -12,10 +14,15 @@ import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/fi
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/packages/contracts/slices/rank_distribution_by_candidate/compute";
 
+// Load environment variables and validate
+dotenv();
+validateEnv();
+
 interface BuildPipelineArgs {
   election?: string;
   contest?: string;
   srcCsv?: string;
+  dataEnv?: "dev" | "test" | "prod";
 }
 
 async function main() {
@@ -40,11 +47,25 @@ async function main() {
         description: "Source CSV file path",
         alias: "s",
       })
+      .option("data-env", {
+        type: "string",
+        description: "Data environment (dev, test, prod)",
+        choices: ["dev", "test", "prod"],
+        default: process.env.NODE_ENV === "production" ? "prod" : "dev",
+        alias: "d",
+      })
       .help()
       .strict()
       .parseSync() as BuildPipelineArgs;
 
-    // Set defaults for District 2
+    // Override DATA_ENV if specified via command line
+    if (args.dataEnv) {
+      process.env.DATA_ENV = args.dataEnv;
+    }
+
+    console.log(`Data Environment: ${process.env.DATA_ENV}`);
+
+    // Set defaults for District 2 (using type-safe environment variables)
     const srcCsv =
       args.srcCsv || process.env.SRC_CSV || "tests/golden/micro/cvr_small.csv";
     const electionId = (args.election ||

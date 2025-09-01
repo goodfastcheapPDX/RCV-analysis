@@ -1,7 +1,17 @@
+import { config as dotenv } from "dotenv";
+import { validateEnv } from "../env.d";
 import { setupTestData } from "./setup-test-data";
 
 export async function setup() {
   console.log("🔧 Running global test setup...");
+
+  // Load test environment variables
+  dotenv({ path: ".env.test" });
+  dotenv(); // Load base .env as fallback
+
+  // Validate environment
+  validateEnv();
+
   try {
     await setupTestData();
     console.log("✅ Global test setup completed successfully");

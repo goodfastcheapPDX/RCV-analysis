@@ -1,7 +1,7 @@
 {
   "env": "dev",
   "version": 2,
-  "generated_at": "2025-08-31T14:29:35.479Z",
+  "generated_at": "2025-09-01T15:34:53.345Z",
   "inputs": {
     "portland-20241105-gen/d1-1seat": {
       "cvr_files": [
@@ -196,19 +196,19 @@
             },
             "ballots_long": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/ingest/ballots_long.parquet",
-              "sha256": "b145124042a7a0122892dbc0db22849d5388275c82fd05f9af7e9f473d264744",
+              "sha256": "29c525290dcdcafc83be931cc749d3587b6e11e1f9022192f593ed084237027f",
               "rows": 378275
             }
           },
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/rounds.parquet",
-              "sha256": "ca0c0fbbbb482ec772b9e9465452f3b37a245cc31b7f5c0d13ce7a9d17ac0954",
+              "sha256": "95c4ed4fa0231fb58510e165f0d3965574954d547cb9eecacb7fb62afd0c17f5",
               "rows": 1088
             },
             "meta": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/meta.parquet",
-              "sha256": "18e6785c8e5fb0062b742d743cac47de5050b01ff53628b006e964d3c7e8875e",
+              "sha256": "5cf960eaefa866f9de97ba234fdba076cd844d536b263ed71a8b61619b3f3dd0",
               "rows": 32
             },
             "stats": {
@@ -249,19 +249,19 @@
             },
             "ballots_long": {
               "uri": "data/dev/portland-20241105-gen/d4-3seat/ingest/ballots_long.parquet",
-              "sha256": "dbe512c4e4dea30173b5212e9d3e7a9d7cf9c7b3cdc7208377f57e4bc6588d9a",
+              "sha256": "51ed59a1da276eb1538a4c13e8cba30f7b0d2557c81c65f9e1f75b77b354f7e1",
               "rows": 338645
             }
           },
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d4-3seat/stv/rounds.parquet",
-              "sha256": "ac12a0e3dcb977ad765cbbc555d7509712462a74129b8080b285fe0763138d48",
+              "sha256": "abc0ca9521af9590bf264195f119e2735280b0bbb4b04ce9f91d3a7f7b13cfc8",
               "rows": 1156
             },
             "meta": {
               "uri": "data/dev/portland-20241105-gen/d4-3seat/stv/meta.parquet",
-              "sha256": "145d2f2cb6240c72edbee6a6bdfd4f4c16267f3dab297fc0b7355e5d4cabcb3c",
+              "sha256": "d16678a8162e97572d1a7aca59eb46406436def87438140d4266325fbd4d783b",
               "rows": 34
             },
             "stats": {
@@ -297,17 +297,17 @@
     "sliceKey": "rank_distribution_by_candidate",
     "stats": {
       "max_rank": 6,
-      "total_ballots": 74087,
-      "candidate_count": 26,
+      "total_ballots": 73856,
+      "candidate_count": 34,
       "zero_rank_candidates": 0
     },
     "data": {
-      "rows": 156
+      "rows": 204
     },
     "artifactPaths": [
-      "portland-20241105-gen/d2-3seat/rank_distribution/rank_distribution.parquet"
+      "portland-20241105-gen/d4-3seat/rank_distribution/rank_distribution.parquet"
     ],
-    "rank_distribution_hash": "4365e4b39d011a6541ea157ff490aed2434cd1ef3efaad86da74bc0996f0953d",
-    "generated_at": "2025-08-31T14:37:53.512Z"
+    "rank_distribution_hash": "ead32a30997c2d203db68be05cd96d616228a1d7f0f70c9786d81fd025ec258b",
+    "generated_at": "2025-09-01T15:34:51.667Z"
   }
 }

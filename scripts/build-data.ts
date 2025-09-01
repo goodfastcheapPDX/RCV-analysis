@@ -1,14 +1,21 @@
 #!/usr/bin/env tsx
 
+import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { validateEnv } from "../env.d";
 import { contestIdFrom, electionIdFrom } from "../src/contracts/ids";
 import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
+
+// Load environment variables and validate
+dotenv();
+validateEnv();
 
 interface BuildDataArgs {
   election?: string;
   contest?: string;
   srcCsv?: string;
+  dataEnv?: "dev" | "test" | "prod";
 }
 
 async function main() {
@@ -33,11 +40,25 @@ async function main() {
         description: "Source CSV file path",
         alias: "s",
       })
+      .option("data-env", {
+        type: "string",
+        description: "Data environment (dev, test, prod)",
+        choices: ["dev", "test", "prod"],
+        default: process.env.NODE_ENV === "production" ? "prod" : "dev",
+        alias: "d",
+      })
       .help()
       .strict()
       .parseSync() as BuildDataArgs;
 
-    // Set defaults for District 2
+    // Override DATA_ENV if specified via command line
+    if (args.dataEnv) {
+      process.env.DATA_ENV = args.dataEnv;
+    }
+
+    console.log(`Data Environment: ${process.env.DATA_ENV}`);
+
+    // Set defaults for District 2 (using type-safe environment variables)
     const srcCsv =
       args.srcCsv ||
       process.env.SRC_CSV ||
