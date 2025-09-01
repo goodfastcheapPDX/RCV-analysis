@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { spawn } from "child_process";
-import { existsSync, rmSync } from "fs";
+import { spawn } from "node:child_process";
+import { existsSync, rmSync } from "node:fs";
 
 async function runCommand(
   command: string,
@@ -108,12 +108,12 @@ export async function setupTestData() {
     if (originalDataEnv !== undefined) {
       process.env.DATA_ENV = originalDataEnv;
     } else {
-      delete (process.env as any).DATA_ENV;
+      delete (process.env as Record<string, string | undefined>).DATA_ENV;
     }
     if (originalSrcCsv !== undefined) {
       process.env.SRC_CSV = originalSrcCsv;
     } else {
-      delete (process.env as any).SRC_CSV;
+      delete (process.env as Record<string, string | undefined>).SRC_CSV;
     }
   }
 }

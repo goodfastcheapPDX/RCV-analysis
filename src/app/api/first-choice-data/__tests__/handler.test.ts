@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { z } from "zod";
+import type { Output } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
 import { handleFirstChoiceDataRequest } from "../handler";
 
 describe("handleFirstChoiceDataRequest", () => {
@@ -60,7 +62,7 @@ describe("handleFirstChoiceDataRequest", () => {
     expect(result.success).toBe(true);
 
     // Each row should match the Output schema
-    result.data?.data.forEach((row: any) => {
+    result.data?.data.forEach((row: z.infer<typeof Output>) => {
       expect(row).toHaveProperty("candidate_name");
       expect(row).toHaveProperty("first_choice_votes");
       expect(row).toHaveProperty("pct");

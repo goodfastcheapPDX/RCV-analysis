@@ -280,7 +280,7 @@ describe("loaders", () => {
               {
                 ...testManifest.elections[0].contests[0],
                 stv: {
-                  rounds: testManifest.elections[0].contests[0].stv.rounds!,
+                  rounds: testManifest.elections[0].contests[0].stv.rounds,
                   // No meta data
                 },
               },

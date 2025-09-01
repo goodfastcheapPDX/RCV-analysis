@@ -9,7 +9,7 @@ import {
   type ElectionId,
 } from "../../../../contracts/ids";
 import { ArtifactRef, type Manifest } from "../../../../contracts/manifest";
-import { getDataEnv } from "../../../../lib/env";
+import { type DataEnv, getDataEnv } from "../../../../lib/env";
 import {
   assertManifestSection,
   assertTableColumns,
@@ -285,7 +285,7 @@ export async function ingestCvr(
           error,
         );
         manifest = {
-          env: env as any,
+          env: env as DataEnv,
           version: 2,
           inputs: {},
           elections: [],
@@ -293,7 +293,7 @@ export async function ingestCvr(
       }
     } else {
       manifest = {
-        env: env as any,
+        env: env as DataEnv,
         version: 2,
         inputs: {},
         elections: [],
@@ -301,9 +301,7 @@ export async function ingestCvr(
     }
 
     // Find or create election
-    let election = manifest.elections.find(
-      (e: any) => e.election_id === electionId,
-    );
+    let election = manifest.elections.find((e) => e.election_id === electionId);
     if (!election) {
       election = {
         election_id: electionId,
@@ -316,9 +314,7 @@ export async function ingestCvr(
     }
 
     // Find or create contest
-    let contest = election.contests.find(
-      (c: any) => c.contest_id === contestId,
-    );
+    let contest = election.contests.find((c) => c.contest_id === contestId);
     if (!contest) {
       contest = {
         contest_id: contestId,

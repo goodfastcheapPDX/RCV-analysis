@@ -9,3 +9,10 @@
 - implement a typography system
 - setup the chatgpt project for management
 - coalition mass graph: https://github.com/vasturiano/react-force-graph
+- implement logging library
+- move src/packages/contracts up to src root
+- empty src/packages
+- standardize test spec file naming and file location
+- standardize test fixture generators
+- cleanup nonsensical test data/ folders like data/corrupt-test
+    - 

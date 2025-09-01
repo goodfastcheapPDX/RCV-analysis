@@ -10,6 +10,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   Card,
@@ -18,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { CandidatesOutput } from "../ingest_cvr/index.contract";
 import type {
   StvMetaOutput,
   StvRoundsOutput,
@@ -28,6 +30,9 @@ interface StvRoundsViewProps {
   roundsData: StvRoundsOutput[];
   metaData: StvMetaOutput[];
   stats: StvRoundsStats;
+  candidates?: CandidatesOutput[];
+  electionId?: string;
+  contestId?: string;
 }
 
 interface CandidateRoundData {
@@ -43,9 +48,43 @@ export function StvRoundsView({
   roundsData,
   metaData,
   stats,
+  candidates,
+  electionId,
+  contestId,
 }: StvRoundsViewProps) {
   const [currentRound, setCurrentRound] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Helper to get candidate ID for linking
+  const getCandidateId = (candidateName: string): string | null => {
+    if (!candidates) return null;
+    const candidate = candidates.find(
+      (c) => c.candidate_name === candidateName,
+    );
+    return candidate ? candidate.candidate_id.toString() : null;
+  };
+
+  // Helper to create candidate link if possible
+  const CandidateLink = ({
+    name,
+    className,
+  }: {
+    name: string;
+    className?: string;
+  }) => {
+    const candidateId = getCandidateId(name);
+    if (candidateId && electionId && contestId) {
+      return (
+        <Link
+          href={`/e/${electionId}/c/${contestId}/cand/${candidateId}`}
+          className={`hover:underline text-blue-600 hover:text-blue-800 ${className || ""}`}
+        >
+          {name}
+        </Link>
+      );
+    }
+    return <span className={className}>{name}</span>;
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -276,9 +315,10 @@ export function StvRoundsView({
                         className={`w-3 h-3 rounded-full ${getStatusColor(roundData.status)}`}
                         title={getStatusText(roundData.status)}
                       />
-                      <span className="font-medium truncate">
-                        {candidate.candidate_name}
-                      </span>
+                      <CandidateLink
+                        name={candidate.candidate_name}
+                        className="font-medium truncate"
+                      />
                       <span className="text-sm -foreground">
                         ({getStatusText(roundData.status)})
                       </span>

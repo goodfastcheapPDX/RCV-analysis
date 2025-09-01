@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { loadManifestSync } from "@/lib/manifest";
 import { ContestResolver } from "@/lib/manifest/contest-resolver";

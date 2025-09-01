@@ -70,52 +70,44 @@ describe("Rank Distribution by Candidate Integration", () => {
     // Read and validate parquet data
     const db = await DuckDBInstance.create();
     const conn = await db.connect();
+    await conn.run(`CREATE VIEW rank_data AS SELECT * FROM '${parquetPath}';`);
 
-    try {
-      await conn.run(
-        `CREATE VIEW rank_data AS SELECT * FROM '${parquetPath}';`,
-      );
+    // Check structure
+    const result = await conn.run("PRAGMA table_info('rank_data')");
+    const columns = await result.getRowObjects();
+    const columnNames = columns.map((col) => col.name);
 
-      // Check structure
-      const result = await conn.run("PRAGMA table_info('rank_data')");
-      const columns = await result.getRowObjects();
-      const columnNames = columns.map((col) => col.name);
+    expect(columnNames).toContain("election_id");
+    expect(columnNames).toContain("contest_id");
+    expect(columnNames).toContain("candidate_id");
+    expect(columnNames).toContain("rank_position");
+    expect(columnNames).toContain("count");
+    expect(columnNames).toContain("pct_all_ballots");
+    expect(columnNames).toContain("pct_among_rankers");
 
-      expect(columnNames).toContain("election_id");
-      expect(columnNames).toContain("contest_id");
-      expect(columnNames).toContain("candidate_id");
-      expect(columnNames).toContain("rank_position");
-      expect(columnNames).toContain("count");
-      expect(columnNames).toContain("pct_all_ballots");
-      expect(columnNames).toContain("pct_among_rankers");
+    // Check data validity
+    const dataResult = await conn.run("SELECT * FROM rank_data LIMIT 10");
+    const rows = await dataResult.getRowObjects();
 
-      // Check data validity
-      const dataResult = await conn.run("SELECT * FROM rank_data LIMIT 10");
-      const rows = await dataResult.getRowObjects();
+    expect(rows.length).toBeGreaterThan(0);
 
-      expect(rows.length).toBeGreaterThan(0);
-
-      // Validate a sample row structure
-      const firstRow = rows[0];
-      expect(firstRow).toHaveProperty("election_id", electionId);
-      expect(firstRow).toHaveProperty("contest_id", contestId);
-      expect(
-        typeof firstRow.candidate_id === "number" ||
-          typeof firstRow.candidate_id === "bigint",
-      ).toBe(true);
-      expect(
-        typeof firstRow.rank_position === "number" ||
-          typeof firstRow.rank_position === "bigint",
-      ).toBe(true);
-      expect(
-        typeof firstRow.count === "number" ||
-          typeof firstRow.count === "bigint",
-      ).toBe(true);
-      expect(typeof firstRow.pct_all_ballots).toBe("number");
-      expect(typeof firstRow.pct_among_rankers).toBe("number");
-    } catch (error) {
-      throw error;
-    }
+    // Validate a sample row structure
+    const firstRow = rows[0];
+    expect(firstRow).toHaveProperty("election_id", electionId);
+    expect(firstRow).toHaveProperty("contest_id", contestId);
+    expect(
+      typeof firstRow.candidate_id === "number" ||
+        typeof firstRow.candidate_id === "bigint",
+    ).toBe(true);
+    expect(
+      typeof firstRow.rank_position === "number" ||
+        typeof firstRow.rank_position === "bigint",
+    ).toBe(true);
+    expect(
+      typeof firstRow.count === "number" || typeof firstRow.count === "bigint",
+    ).toBe(true);
+    expect(typeof firstRow.pct_all_ballots).toBe("number");
+    expect(typeof firstRow.pct_among_rankers).toBe("number");
   });
 
   test("updates manifest correctly", async () => {
@@ -196,7 +188,7 @@ describe("Rank Distribution by Candidate Integration", () => {
 
     const startTime = Date.now();
 
-    const result = await computeRankDistributionByCandidate({
+    const _result = await computeRankDistributionByCandidate({
       electionId,
       contestId,
       env,
@@ -217,7 +209,7 @@ describe("Rank Distribution by Candidate Integration", () => {
       "rank_distribution.parquet",
     );
 
-    const stats = require("fs").statSync(parquetPath);
+    const stats = require("node:fs").statSync(parquetPath);
     expect(stats.size).toBeLessThan(50 * 1024 * 1024); // 50MB in bytes
   });
 });

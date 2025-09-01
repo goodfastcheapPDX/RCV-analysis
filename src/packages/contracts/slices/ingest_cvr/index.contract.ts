@@ -51,6 +51,19 @@ export const IngestCvrOutputSchema = IngestCvrOutput;
 export const version = "1.0.0";
 export const CONTRACT_VERSION = version;
 
+// Test fixture generators - single source of truth for test data
+export const createCandidatesOutputFixture = (
+  overrides: Partial<CandidatesOutput> = {},
+): CandidatesOutput => ({
+  election_id: "portland-20241105-gen",
+  contest_id: "d2-3seat",
+  district_id: "d2",
+  seat_count: 3,
+  candidate_id: 1,
+  candidate_name: "Test Candidate",
+  ...overrides,
+});
+
 export const SQL_QUERIES = {
   createRawTable: (csvPath: string) => `
     CREATE OR REPLACE TABLE rcv_raw AS

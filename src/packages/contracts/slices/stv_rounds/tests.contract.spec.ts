@@ -1,6 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, it } from "vitest";
+import type { Manifest } from "@/contracts/manifest";
 import {
   assertTableColumns,
   parseAllRows,
@@ -91,8 +92,7 @@ describe("STV Rounds Contract Tests", () => {
     const manifestPath = "data/test/manifest.json";
     expect(existsSync(manifestPath)).toBe(true);
 
-    const fs = await import("node:fs");
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Manifest;
 
     // Verify v2 manifest structure
     expect(manifest.version).toBe(2);
@@ -100,16 +100,14 @@ describe("STV Rounds Contract Tests", () => {
     expect(manifest.elections.length).toBeGreaterThan(0);
 
     const election = manifest.elections.find(
-      (e: any) => e.election_id === "portland-20241105-gen",
+      (e) => e.election_id === "portland-20241105-gen",
     );
     expect(election).toBeDefined();
 
-    const contest = election.contests.find(
-      (c: any) => c.contest_id === "d2-3seat",
-    );
+    const contest = election?.contests.find((c) => c.contest_id === "d2-3seat");
     expect(contest).toBeDefined();
-    expect(contest.stv).toBeDefined();
-    expect(contest.stv.rounds).toBeDefined();
-    expect(contest.stv.meta).toBeDefined();
+    expect(contest?.stv).toBeDefined();
+    expect(contest?.stv.rounds).toBeDefined();
+    expect(contest?.stv.meta).toBeDefined();
   });
 });

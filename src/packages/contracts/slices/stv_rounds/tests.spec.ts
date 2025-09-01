@@ -311,7 +311,7 @@ describe("STV Compute Function Tests", () => {
   describe("getEnvironmentConfig", () => {
     it("should return 'dev' env when NODE_ENV is development", async () => {
       process.env = { ...originalEnv, NODE_ENV: "development" };
-      const { computeStvRounds } = await import("./compute");
+      await import("./compute");
 
       // We can't directly test getEnvironmentConfig since it's not exported,
       // but we can test it indirectly through computeStvRounds behavior
@@ -321,14 +321,14 @@ describe("STV Compute Function Tests", () => {
 
     it("should return 'prod' env when NODE_ENV is not development", async () => {
       process.env = { ...originalEnv, NODE_ENV: "production" };
-      const { computeStvRounds } = await import("./compute");
+      await import("./compute");
 
       expect(process.env.NODE_ENV).toBe("production");
     });
 
     it("should use SEATS environment variable when provided", async () => {
       process.env = { ...originalEnv, SEATS: "5" };
-      const { computeStvRounds } = await import("./compute");
+      await import("./compute");
 
       expect(process.env.SEATS).toBe("5");
     });
@@ -336,7 +336,7 @@ describe("STV Compute Function Tests", () => {
     it("should default to 3 seats when SEATS is not provided", async () => {
       process.env = { ...originalEnv };
       delete process.env.SEATS;
-      const { computeStvRounds } = await import("./compute");
+      await import("./compute");
 
       expect(process.env.SEATS).toBeUndefined();
     });
@@ -345,7 +345,7 @@ describe("STV Compute Function Tests", () => {
   describe("loadRules", () => {
     it("should handle case with existing rules file", async () => {
       process.env = { ...originalEnv, CASE: "micro" };
-      const { computeStvRounds } = await import("./compute");
+      await import("./compute");
 
       // This will test the config.case branch and existsSync(rulesPath) branch
       expect(process.env.CASE).toBe("micro");
@@ -353,7 +353,7 @@ describe("STV Compute Function Tests", () => {
 
     it("should handle case with non-existing rules file", async () => {
       process.env = { ...originalEnv, CASE: "nonexistent" };
-      const { computeStvRounds } = await import("./compute");
+      await import("./compute");
 
       // This will test the config.case branch and the else branch of existsSync
       expect(process.env.CASE).toBe("nonexistent");
@@ -362,7 +362,7 @@ describe("STV Compute Function Tests", () => {
     it("should handle no case specified", async () => {
       process.env = { ...originalEnv };
       delete process.env.CASE;
-      const { computeStvRounds } = await import("./compute");
+      await import("./compute");
 
       // This will test the !config.case branch
       expect(process.env.CASE).toBeUndefined();

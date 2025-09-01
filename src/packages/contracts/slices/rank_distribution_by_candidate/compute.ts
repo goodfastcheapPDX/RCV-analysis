@@ -69,16 +69,12 @@ export async function computeRankDistributionByCandidate(
   const manifest = manifestData as Manifest;
 
   // Find the contest in manifest
-  const election = manifest.elections.find(
-    (e: any) => e.election_id === electionId,
-  );
+  const election = manifest.elections.find((e) => e.election_id === electionId);
   if (!election) {
     throw new Error(`Election ${electionId} not found in manifest`);
   }
 
-  const contest = election.contests.find(
-    (c: any) => c.contest_id === contestId,
-  );
+  const contest = election.contests.find((c) => c.contest_id === contestId);
   if (!contest) {
     throw new Error(`Contest ${contestId} not found in manifest`);
   }
@@ -92,21 +88,19 @@ export async function computeRankDistributionByCandidate(
 
   const db = await DuckDBInstance.create();
   const conn = await db.connect();
+  // Create view from input parquet
+  console.log(
+    `Creating ballots_long view from ${inputPath}/ballots_long.parquet...`,
+  );
+  await conn.run(SQL_QUERIES.createBallotsLongView(inputPath));
 
-  try {
-    // Create view from input parquet
-    console.log(
-      `Creating ballots_long view from ${inputPath}/ballots_long.parquet...`,
-    );
-    await conn.run(SQL_QUERIES.createBallotsLongView(inputPath));
+  // Export rank distribution data to temp table
+  console.log("Computing rank distribution by candidate...");
+  await conn.run(SQL_QUERIES.exportRankDistribution);
 
-    // Export rank distribution data to temp table
-    console.log("Computing rank distribution by candidate...");
-    await conn.run(SQL_QUERIES.exportRankDistribution);
-
-    // Add identity columns
-    console.log("Adding identity columns...");
-    await conn.run(`
+  // Add identity columns
+  console.log("Adding identity columns...");
+  await conn.run(`
       CREATE OR REPLACE TABLE rank_distribution_with_identity AS
       SELECT
         '${electionId}' AS election_id,
@@ -121,64 +115,61 @@ export async function computeRankDistributionByCandidate(
       FROM rank_distribution_tmp;
     `);
 
-    // Enforce contract: validate table schema
-    console.log("Enforcing contract: validating table schema...");
-    await assertTableColumns(conn, "rank_distribution_with_identity", Output);
+  // Enforce contract: validate table schema
+  console.log("Enforcing contract: validating table schema...");
+  await assertTableColumns(conn, "rank_distribution_with_identity", Output);
 
-    // Enforce contract: validate all rows
-    console.log("Enforcing contract: validating all rows...");
-    const parsedRows = await parseAllRows(
-      conn,
-      "rank_distribution_with_identity",
-      Output,
-    );
+  // Enforce contract: validate all rows
+  console.log("Enforcing contract: validating all rows...");
+  const parsedRows = await parseAllRows(
+    conn,
+    "rank_distribution_with_identity",
+    Output,
+  );
 
-    // Calculate stats from validated rows (not separate SQL)
-    const stats = deriveStatsFromRows(parsedRows);
-    const data: Data = { rows: parsedRows.length };
+  // Calculate stats from validated rows (not separate SQL)
+  const stats = deriveStatsFromRows(parsedRows);
+  const data: Data = { rows: parsedRows.length };
 
-    // Export to parquet
-    const parquetPath = join(outputPath, "rank_distribution.parquet");
-    console.log(`Exporting to ${parquetPath}...`);
-    await conn.run(SQL_QUERIES.copyToParquet(outputPath));
+  // Export to parquet
+  const parquetPath = join(outputPath, "rank_distribution.parquet");
+  console.log(`Exporting to ${parquetPath}...`);
+  await conn.run(SQL_QUERIES.copyToParquet(outputPath));
 
-    // Calculate deterministic hash
-    const fileHash = sha256(parquetPath);
-    console.log(`Rank distribution by candidate completed:`);
-    console.log(`- Max rank: ${stats.max_rank}`);
-    console.log(`- Total ballots: ${stats.total_ballots}`);
-    console.log(`- Candidates: ${stats.candidate_count}`);
-    console.log(`- Zero-rank candidates: ${stats.zero_rank_candidates}`);
-    console.log(`- Output rows: ${data.rows}`);
-    console.log(`- File hash: ${fileHash.substring(0, 16)}...`);
+  // Calculate deterministic hash
+  const fileHash = sha256(parquetPath);
+  console.log(`Rank distribution by candidate completed:`);
+  console.log(`- Max rank: ${stats.max_rank}`);
+  console.log(`- Total ballots: ${stats.total_ballots}`);
+  console.log(`- Candidates: ${stats.candidate_count}`);
+  console.log(`- Zero-rank candidates: ${stats.zero_rank_candidates}`);
+  console.log(`- Output rows: ${data.rows}`);
+  console.log(`- File hash: ${fileHash.substring(0, 16)}...`);
 
-    // Update manifest
-    console.log("Updating manifest...");
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    const sliceKey = `rank_distribution_by_candidate@${version}`;
+  // Update manifest
+  console.log("Updating manifest...");
+  const sliceManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const sliceKey = `rank_distribution_by_candidate@${version}`;
 
-    manifest[sliceKey] = {
-      version,
-      sliceKey: "rank_distribution_by_candidate",
-      stats,
-      data,
-      artifactPaths: [
-        `${electionId}/${contestId}/rank_distribution/rank_distribution.parquet`,
-      ],
-      rank_distribution_hash: fileHash,
-    };
+  sliceManifest[sliceKey] = {
+    version,
+    sliceKey: "rank_distribution_by_candidate",
+    stats,
+    data,
+    artifactPaths: [
+      `${electionId}/${contestId}/rank_distribution/rank_distribution.parquet`,
+    ],
+    rank_distribution_hash: fileHash,
+  };
 
-    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+  writeFileSync(manifestPath, JSON.stringify(sliceManifest, null, 2));
 
-    // Validate manifest section
-    await assertManifestSection(manifestPath, sliceKey, Stats);
+  // Validate manifest section
+  await assertManifestSection(manifestPath, sliceKey, Stats);
 
-    console.log("Build completed successfully!");
+  console.log("Build completed successfully!");
 
-    return { stats, data };
-  } catch (error) {
-    throw error;
-  }
+  return { stats, data };
 }
 
 function deriveStatsFromRows(rows: Output[]): Stats {

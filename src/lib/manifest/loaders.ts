@@ -1,5 +1,6 @@
 import { parseAllRows } from "@/packages/contracts/lib/contract-enforcer";
 import { Output as FirstChoiceOutput } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
+import { CandidatesOutput } from "@/packages/contracts/slices/ingest_cvr/index.contract";
 import {
   StvMetaOutput,
   StvRoundsOutput,
@@ -119,6 +120,50 @@ export async function loadStvForContest(
       roundsData,
       metaData,
       stats,
+      contest,
+      election,
+    };
+  } finally {
+    await conn.closeSync();
+  }
+}
+
+/**
+ * Load candidates data for a specific contest
+ * Uses existing contract validation from ingest_cvr slice
+ */
+export async function loadCandidatesForContest(
+  electionId: string,
+  contestId: string,
+  env?: string,
+  resolver?: ContestResolver,
+) {
+  const contestResolver = resolver || createContestResolverSync(env);
+
+  const uri = contestResolver.getCandidatesUri(electionId, contestId);
+  if (!uri) {
+    throw new Error(
+      `Candidates data not available for contest ${electionId}/${contestId}`,
+    );
+  }
+
+  // Dynamically import DuckDB to avoid SSG issues
+  const duck = await import("@duckdb/node-api");
+  const instance = await duck.DuckDBInstance.create();
+  const conn = await instance.connect();
+
+  try {
+    // Create view directly from parquet file
+    await conn.run(`CREATE VIEW candidates_data AS SELECT * FROM '${uri}'`);
+
+    // Use contract enforcer to get validated data
+    const data = await parseAllRows(conn, "candidates_data", CandidatesOutput);
+
+    const contest = contestResolver.getContest(electionId, contestId);
+    const election = contestResolver.getElection(electionId);
+
+    return {
+      data,
       contest,
       election,
     };
