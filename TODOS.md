@@ -1,13 +1,8 @@
-- swap hand-written css for shadcn components
-- write an end-to-end build pipeline script
-    - make all the data for an env from start to finish following the necessary order of operations
-    - add a "checker" that can skip any parts that are unecessary if the resulting artifact is already done
+https://vscode.dev/github/goodfastcheapPDX/RCV-analysis/blob/feat/rank-distribution-viz-per-candidate/src/components/candidate/RankDistributionCard.tsx#L56 makes no sense. the data is being passed as a prop but it's parents don't pass any data. the page needs to get the data and send it down. the tabs component should be fetching data either
 - round explorer updates
     - progress bar
     - cross out eliminated names
-- add instructions to always start new ui work by checking for shadcn components that we could use off the shelf: https://ui.shadcn.com/docs/components
 - implement a typography system
-- setup the chatgpt project for management
 - coalition mass graph: https://github.com/vasturiano/react-force-graph
 - implement logging library
 - move src/packages/contracts up to src root
@@ -15,4 +10,4 @@
 - standardize test spec file naming and file location
 - standardize test fixture generators
 - cleanup nonsensical test data/ folders like data/corrupt-test
-    - 
+- cache all the data for the app in a big object at the top and useContext to get it in lower abstractions. don't be fetching data all over the componentry willy nilly

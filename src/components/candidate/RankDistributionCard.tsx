@@ -1,10 +1,9 @@
 "use client";
 
-import { Info, RefreshCw } from "lucide-react";
+import { Info } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -18,7 +17,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Toggle } from "@/components/ui/toggle";
 import {
   Tooltip,
@@ -26,27 +24,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { CandidateRankDistribution } from "@/lib/slices/rankDistribution";
+import type { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 
 interface RankDistributionCardProps {
   candidateName: string;
-  candidateId?: number;
-  electionId?: string;
-  contestId?: string;
-  data?: CandidateRankDistribution[];
-  loading?: boolean;
-  error?: string;
-  onRetry?: () => void;
+  data: RankDistributionOutput[];
 }
 
 type MetricType = "pct_all_ballots" | "pct_among_rankers";
 
 export function RankDistributionCard({
   candidateName,
-  data = [],
-  loading = false,
-  error,
-  onRetry,
+  data,
 }: RankDistributionCardProps) {
   const [selectedMetric, setSelectedMetric] =
     useState<MetricType>("pct_all_ballots");
@@ -65,8 +54,8 @@ export function RankDistributionCard({
           : row.pct_among_rankers;
 
       return {
-        rank: `Rank ${row.rank}`,
-        rank_number: row.rank,
+        rank: `Rank ${row.rank_position}`,
+        rank_number: row.rank_position,
         value: value * 100, // Convert to percentage for display
         count: row.count,
         pct_all_ballots: row.pct_all_ballots * 100,
@@ -85,89 +74,6 @@ export function RankDistributionCard({
           : "% Among Rankers",
     },
   } satisfies ChartConfig;
-
-  // Loading state
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle>Rank Distribution</CardTitle>
-              <Skeleton className="h-4 w-4 rounded" />
-            </div>
-            <Badge variant="outline" className="text-xs">
-              rank_distribution_by_candidate
-            </Badge>
-          </div>
-          <CardDescription>
-            Visual breakdown of ranking patterns for {candidateName}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-32" />
-              <Skeleton className="h-9 w-32" />
-            </div>
-            <Skeleton className="h-[280px] w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle>Rank Distribution</CardTitle>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">
-                      Shows how voters ranked this candidate across all ballot
-                      positions. Helps identify whether voters saw this
-                      candidate as a first choice, backup option, or compromise
-                      pick.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Badge variant="outline" className="text-xs">
-              rank_distribution_by_candidate
-            </Badge>
-          </div>
-          <CardDescription>
-            Visual breakdown of ranking patterns for {candidateName}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="min-h-[280px] flex items-center justify-center">
-            <div className="text-center space-y-4 max-w-md">
-              <div className="text-lg font-semibold text-muted-foreground">
-                Data Unavailable
-              </div>
-              <div className="text-sm text-muted-foreground">{error}</div>
-              {onRetry && (
-                <Button onClick={onRetry} variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   // Empty state (zero-rank candidate)
   if (!hasRankers) {

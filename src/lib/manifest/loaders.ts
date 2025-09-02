@@ -1,6 +1,7 @@
 import { parseAllRows } from "@/packages/contracts/lib/contract-enforcer";
 import { Output as FirstChoiceOutput } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
 import { CandidatesOutput } from "@/packages/contracts/slices/ingest_cvr/index.contract";
+import { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 import {
   StvMetaOutput,
   StvRoundsOutput,
@@ -158,6 +159,56 @@ export async function loadCandidatesForContest(
 
     // Use contract enforcer to get validated data
     const data = await parseAllRows(conn, "candidates_data", CandidatesOutput);
+
+    const contest = contestResolver.getContest(electionId, contestId);
+    const election = contestResolver.getElection(electionId);
+
+    return {
+      data,
+      contest,
+      election,
+    };
+  } finally {
+    await conn.closeSync();
+  }
+}
+
+/**
+ * Load rank distribution data for a specific contest
+ * Uses existing contract validation from rank_distribution_by_candidate slice
+ */
+export async function loadRankDistributionForContest(
+  electionId: string,
+  contestId: string,
+  env?: string,
+  resolver?: ContestResolver,
+) {
+  const contestResolver = resolver || createContestResolverSync(env);
+
+  const uri = contestResolver.getRankDistributionUri(electionId, contestId);
+  if (!uri) {
+    throw new Error(
+      `Rank distribution data not available for contest ${electionId}/${contestId}`,
+    );
+  }
+
+  // Dynamically import DuckDB to avoid SSG issues
+  const duck = await import("@duckdb/node-api");
+  const instance = await duck.DuckDBInstance.create();
+  const conn = await instance.connect();
+
+  try {
+    // Create view directly from parquet file
+    await conn.run(
+      `CREATE VIEW rank_distribution_data AS SELECT * FROM '${uri}'`,
+    );
+
+    // Use contract enforcer to get validated data
+    const data = await parseAllRows(
+      conn,
+      "rank_distribution_data",
+      RankDistributionOutput,
+    );
 
     const contest = contestResolver.getContest(electionId, contestId);
     const election = contestResolver.getElection(electionId);

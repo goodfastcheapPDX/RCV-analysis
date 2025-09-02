@@ -15,16 +15,11 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   loadCandidatesForContest,
+  loadRankDistributionForContest,
   loadStvForContest,
 } from "@/lib/manifest/loaders";
+import type { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 
 interface CandidatePageProps {
   params: Promise<{
@@ -57,6 +52,24 @@ export default async function CandidatePage({
 
     if (!candidate) {
       notFound();
+    }
+
+    // Load rank distribution data
+    let rankDistributionData: RankDistributionOutput[] = [];
+
+    try {
+      const { data: allRankData } = await loadRankDistributionForContest(
+        electionId,
+        contestId,
+      );
+
+      // Filter for this candidate and sort by rank_position
+      rankDistributionData = allRankData
+        .filter((row) => row.candidate_id === candidate.candidate_id)
+        .sort((a, b) => a.rank_position - b.rank_position);
+    } catch (error) {
+      // Rank distribution data may not be available, continue without it
+      console.warn("Rank distribution data not available:", error);
     }
 
     // Load STV data for badge logic
@@ -148,6 +161,7 @@ export default async function CandidatePage({
           candidateId={candidateId}
           candidateName={candidate.candidate_name}
           currentTab={currentTab}
+          rankDistributionData={rankDistributionData}
         />
       </div>
     );
