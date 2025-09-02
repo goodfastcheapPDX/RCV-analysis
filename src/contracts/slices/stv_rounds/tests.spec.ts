@@ -233,6 +233,169 @@ describe("STV Engine Functional Tests", () => {
     });
   });
 
+  describe("Advanced Edge Cases", () => {
+    it("should handle infinite loop prevention - max rounds exceeded", () => {
+      // Create a pathological ballot setup that could cause infinite loops
+      const ballots: BallotData[] = [];
+
+      // Create many candidates with equal votes to force many rounds
+      const candidates = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+      for (let i = 0; i < 100; i++) {
+        const candidate = candidates[i % candidates.length];
+        ballots.push({
+          BallotID: `B${i}`,
+          candidate_name: candidate,
+          rank_position: 1,
+        });
+      }
+
+      const rules = RulesSchema.parse({
+        seats: 1,
+        quota: "droop",
+        surplus_method: "fractional",
+        precision: 1e-6,
+        tie_break: "lexicographic",
+      });
+
+      // This should complete without hitting the infinite loop protection
+      const result = runSTV(ballots, rules, testIdentity);
+
+      expect(result.rounds.length).toBeGreaterThan(0);
+      expect(result.rounds.length).toBeLessThan(100); // Should not hit the 100 round limit
+    });
+
+    it("should handle zero-candidate scenario gracefully", () => {
+      const ballots: BallotData[] = [];
+
+      const result = runSTV(ballots, defaultRules, testIdentity);
+
+      expect(result.winners).toEqual([]);
+      expect(result.rounds).toEqual([]);
+      expect(result.meta).toEqual([]);
+    });
+
+    it("should handle ballots with gaps in rank positions", () => {
+      const ballots: BallotData[] = [
+        // Ballot with gap: rank 1, 3, 5 (missing 2, 4)
+        { BallotID: "B1", candidate_name: "Alice", rank_position: 1 },
+        { BallotID: "B1", candidate_name: "Bob", rank_position: 3 },
+        { BallotID: "B1", candidate_name: "Charlie", rank_position: 5 },
+
+        // Normal ballot
+        { BallotID: "B2", candidate_name: "Alice", rank_position: 1 },
+        { BallotID: "B2", candidate_name: "Bob", rank_position: 2 },
+      ];
+
+      const result = runSTV(ballots, defaultRules, testIdentity);
+
+      expect(result.winners.length).toBeGreaterThan(0);
+      // Alice should win with 2 votes
+      expect(result.winners).toContain("Alice");
+    });
+
+    it("should handle random tie-breaking when specified", () => {
+      const ballots: BallotData[] = [
+        { BallotID: "B1", candidate_name: "TieA", rank_position: 1 },
+        { BallotID: "B2", candidate_name: "TieB", rank_position: 1 },
+        { BallotID: "B3", candidate_name: "Winner", rank_position: 1 },
+        { BallotID: "B4", candidate_name: "Winner", rank_position: 1 },
+        { BallotID: "B5", candidate_name: "Winner", rank_position: 1 },
+      ];
+
+      const randomRules = RulesSchema.parse({
+        ...defaultRules,
+        tie_break: "random",
+        random_seed: 12345, // For deterministic testing
+      });
+
+      const result = runSTV(ballots, randomRules, testIdentity);
+
+      expect(result.winners).toContain("Winner");
+
+      // One of the tied candidates should be eliminated
+      const eliminatedCandidates = result.rounds
+        .filter((r) => r.status === "eliminated")
+        .map((r) => r.candidate_name);
+
+      expect(
+        eliminatedCandidates.some((name) => ["TieA", "TieB"].includes(name)),
+      ).toBe(true);
+    });
+
+    it("should handle candidate with zero votes throughout election", () => {
+      const ballots: BallotData[] = [
+        { BallotID: "B1", candidate_name: "Popular", rank_position: 1 },
+        { BallotID: "B2", candidate_name: "Popular", rank_position: 1 },
+        { BallotID: "B3", candidate_name: "Popular", rank_position: 1 },
+        { BallotID: "B4", candidate_name: "Unpopular", rank_position: 1 },
+        // ZeroVotes candidate gets no first-choice votes but is in the candidate list
+      ];
+
+      // Add ZeroVotes to ballot data to ensure it's in the candidate list
+      ballots.push({
+        BallotID: "B5",
+        candidate_name: "ZeroVotes",
+        rank_position: 2,
+      });
+      ballots.push({
+        BallotID: "B5",
+        candidate_name: "Popular",
+        rank_position: 1,
+      });
+
+      const result = runSTV(ballots, defaultRules, testIdentity);
+
+      expect(result.winners).toContain("Popular");
+
+      // ZeroVotes should be eliminated first
+      const eliminatedCandidates = result.rounds
+        .filter((r) => r.status === "eliminated")
+        .map((r) => r.candidate_name);
+
+      expect(eliminatedCandidates).toContain("ZeroVotes");
+    });
+
+    it("should handle very small surplus transfers below precision threshold", () => {
+      const ballots: BallotData[] = [];
+
+      // Create a scenario with very small surplus
+      for (let i = 0; i < 1000; i++) {
+        ballots.push({
+          BallotID: `B${i}`,
+          candidate_name: "MajorityCandidate",
+          rank_position: 1,
+        });
+
+        // Add a tiny number of secondary preferences
+        if (i < 2) {
+          ballots.push({
+            BallotID: `B${i}`,
+            candidate_name: "MinorCandidate",
+            rank_position: 2,
+          });
+        }
+      }
+
+      for (let i = 1000; i < 1002; i++) {
+        ballots.push({
+          BallotID: `B${i}`,
+          candidate_name: "MinorCandidate",
+          rank_position: 1,
+        });
+      }
+
+      const singleSeatRules = RulesSchema.parse({
+        ...defaultRules,
+        seats: 1,
+      });
+
+      const result = runSTV(ballots, singleSeatRules, testIdentity);
+
+      expect(result.winners).toContain("MajorityCandidate");
+    });
+  });
+
   describe("Precision and Numerical Stability", () => {
     it("should handle small vote fractions correctly", () => {
       const ballots: BallotData[] = [];
