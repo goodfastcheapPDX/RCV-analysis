@@ -113,7 +113,8 @@ export async function computeRankDistributionByCandidate(
         rank_position,
         count,
         pct_all_ballots,
-        pct_among_rankers
+        pct_among_rankers,
+        pct_among_position_rankers
       FROM rank_distribution_tmp;
     `);
 

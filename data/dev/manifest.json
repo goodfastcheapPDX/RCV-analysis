@@ -66,7 +66,7 @@
           },
           "rank_distribution": {
             "uri": "data/dev/portland-20241105-gen/d1-3seat/rank_distribution/rank_distribution.parquet",
-            "sha256": "75721a0a2568c0473bb3ca1944b2d741d6ebd4b0d16c906caa057556fa282401",
+            "sha256": "07d28d0ca4081542fbbb35af9c2d41c14714836d322a345ac2068e9bdc349ac5",
             "rows": 120
           },
           "stv": {
@@ -124,7 +124,7 @@
           },
           "rank_distribution": {
             "uri": "data/dev/portland-20241105-gen/d2-3seat/rank_distribution/rank_distribution.parquet",
-            "sha256": "0f2813cc3dbf22267851fc7ff6d90f9eb9563452e49fc808002eb83602d7b2a8",
+            "sha256": "74720afde3df94a28159a20d9a13aacb4cc79b15de48b6443b49b0ae209997cd",
             "rows": 156
           },
           "stv": {
@@ -171,7 +171,7 @@
             },
             "ballots_long": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/ingest/ballots_long.parquet",
-              "sha256": "b145124042a7a0122892dbc0db22849d5388275c82fd05f9af7e9f473d264744",
+              "sha256": "29c525290dcdcafc83be931cc749d3587b6e11e1f9022192f593ed084237027f",
               "rows": 378275
             }
           },
@@ -182,18 +182,18 @@
           },
           "rank_distribution": {
             "uri": "data/dev/portland-20241105-gen/d3-3seat/rank_distribution/rank_distribution.parquet",
-            "sha256": "3390c6b2165993c245639aec6f9458a7b765bdf149ba8187fdebe9005a47a38d",
+            "sha256": "39ab66b23efa580f267a80c9be0fec7e77d2dd068836baae18165b2bd42ccbc1",
             "rows": 204
           },
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/rounds.parquet",
-              "sha256": "51c36fafe018848a89c7d1beb206f452b962cd0921f67e3081948fc36ac6e04e",
+              "sha256": "68d702569c5b0d0fcf93fccf23aa1cf9969e751e6dc53d5d062740aab0ebcde2",
               "rows": 1088
             },
             "meta": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/meta.parquet",
-              "sha256": "375c4f302f3639539c696fd3667884e59b4d0f358c3436f4d521878f4761a67d",
+              "sha256": "3dc7ff8c55176353f4af1ec93ee8ec0193054034d40ded359e5584b897f3434b",
               "rows": 32
             },
             "stats": {
@@ -229,7 +229,7 @@
             },
             "ballots_long": {
               "uri": "data/dev/portland-20241105-gen/d4-3seat/ingest/ballots_long.parquet",
-              "sha256": "dbe512c4e4dea30173b5212e9d3e7a9d7cf9c7b3cdc7208377f57e4bc6588d9a",
+              "sha256": "51ed59a1da276eb1538a4c13e8cba30f7b0d2557c81c65f9e1f75b77b354f7e1",
               "rows": 338645
             }
           },
@@ -240,18 +240,18 @@
           },
           "rank_distribution": {
             "uri": "data/dev/portland-20241105-gen/d4-3seat/rank_distribution/rank_distribution.parquet",
-            "sha256": "1e3653aea1d8978c38f3febb55764c2f85a5aa6cee8276314fef130eeb1cb27c",
+            "sha256": "0bd1dd82f22f31ff71643fdca1ac9947ad4edbf22e27d86dda558ed1a46d7a01",
             "rows": 204
           },
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d4-3seat/stv/rounds.parquet",
-              "sha256": "4e2bea97be148f11dbfb0f8c7808c31e487f2ede1bf8e16d1c96b5f37d493705",
+              "sha256": "abc0ca9521af9590bf264195f119e2735280b0bbb4b04ce9f91d3a7f7b13cfc8",
               "rows": 1156
             },
             "meta": {
               "uri": "data/dev/portland-20241105-gen/d4-3seat/stv/meta.parquet",
-              "sha256": "f76cd6ef89638d089c3b29e6b216e735c0f1720430e4cd22708ceb9335c05863",
+              "sha256": "d16678a8162e97572d1a7aca59eb46406436def87438140d4266325fbd4d783b",
               "rows": 34
             },
             "stats": {
