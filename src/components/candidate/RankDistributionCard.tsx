@@ -1,8 +1,11 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Info } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useForm } from "react-hook-form";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -17,7 +20,15 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Toggle } from "@/components/ui/toggle";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Tooltip,
   TooltipContent,
@@ -31,14 +42,31 @@ interface RankDistributionCardProps {
   data: RankDistributionOutput[];
 }
 
-type MetricType = "pct_all_ballots" | "pct_among_rankers";
+type MetricType =
+  | "pct_all_ballots"
+  | "pct_among_rankers"
+  | "pct_among_position_rankers";
+
+const formSchema = z.object({
+  metric: z.enum([
+    "pct_all_ballots",
+    "pct_among_rankers",
+    "pct_among_position_rankers",
+  ]),
+});
 
 export function RankDistributionCard({
   candidateName,
   data,
 }: RankDistributionCardProps) {
-  const [selectedMetric, setSelectedMetric] =
-    useState<MetricType>("pct_all_ballots");
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      metric: "pct_all_ballots",
+    },
+  });
+
+  const selectedMetric = form.watch("metric");
 
   // Check if candidate has any ranking data
   const hasRankers = useMemo(() => {
@@ -48,10 +76,20 @@ export function RankDistributionCard({
   // Prepare chart data with percentage formatting
   const chartData = useMemo(() => {
     return data.map((row) => {
-      const value =
-        selectedMetric === "pct_all_ballots"
-          ? row.pct_all_ballots
-          : row.pct_among_rankers;
+      let value: number;
+      switch (selectedMetric) {
+        case "pct_all_ballots":
+          value = row.pct_all_ballots;
+          break;
+        case "pct_among_rankers":
+          value = row.pct_among_rankers;
+          break;
+        case "pct_among_position_rankers":
+          value = row.pct_among_position_rankers;
+          break;
+        default:
+          value = row.pct_all_ballots;
+      }
 
       return {
         rank: `Rank ${row.rank_position}`,
@@ -60,18 +98,29 @@ export function RankDistributionCard({
         count: row.count,
         pct_all_ballots: row.pct_all_ballots * 100,
         pct_among_rankers: row.pct_among_rankers * 100,
+        pct_among_position_rankers: row.pct_among_position_rankers * 100,
         fill: "#3b82f6", // blue-500
       };
     });
   }, [data, selectedMetric]);
 
   // Chart configuration
+  const getMetricLabel = (metric: MetricType): string => {
+    switch (metric) {
+      case "pct_all_ballots":
+        return "% of All Ballots";
+      case "pct_among_rankers":
+        return "% Among Candidate's Rankers";
+      case "pct_among_position_rankers":
+        return "% Among Position Rankers";
+      default:
+        return "% of All Ballots";
+    }
+  };
+
   const chartConfig: ChartConfig = {
     value: {
-      label:
-        selectedMetric === "pct_all_ballots"
-          ? "% of All Ballots"
-          : "% Among Rankers",
+      label: getMetricLabel(selectedMetric),
     },
   } satisfies ChartConfig;
 
@@ -153,27 +202,75 @@ export function RankDistributionCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Toggle for metric selection */}
-        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-          <Toggle
-            pressed={selectedMetric === "pct_all_ballots"}
-            onPressedChange={() => setSelectedMetric("pct_all_ballots")}
-            variant="outline"
-            size="sm"
-            className="data-[state=on]:bg-background data-[state=on]:shadow-sm"
-          >
-            % of All Ballots
-          </Toggle>
-          <Toggle
-            pressed={selectedMetric === "pct_among_rankers"}
-            onPressedChange={() => setSelectedMetric("pct_among_rankers")}
-            variant="outline"
-            size="sm"
-            className="data-[state=on]:bg-background data-[state=on]:shadow-sm"
-          >
-            % Among Rankers
-          </Toggle>
-        </div>
+        {/* Form with radio group for metric selection */}
+        <Form {...form}>
+          <FormField
+            control={form.control}
+            name="metric"
+            render={({ field }) => (
+              <FormItem className="space-y-2">
+                <FormLabel className="text-sm font-medium">
+                  Percentage Type
+                </FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col gap-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="pct_all_ballots"
+                        id="all-ballots"
+                      />
+                      <Label
+                        htmlFor="all-ballots"
+                        className="text-sm cursor-pointer"
+                      >
+                        % of All Ballots
+                        <span className="block text-xs text-muted-foreground">
+                          What percentage of all ballots ranked this candidate
+                          at each position
+                        </span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="pct_among_rankers"
+                        id="candidate-rankers"
+                      />
+                      <Label
+                        htmlFor="candidate-rankers"
+                        className="text-sm cursor-pointer"
+                      >
+                        % Among Candidate's Rankers
+                        <span className="block text-xs text-muted-foreground">
+                          How this candidate's supporters distributed their
+                          rankings
+                        </span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem
+                        value="pct_among_position_rankers"
+                        id="position-rankers"
+                      />
+                      <Label
+                        htmlFor="position-rankers"
+                        className="text-sm cursor-pointer"
+                      >
+                        % Among Position Rankers
+                        <span className="block text-xs text-muted-foreground">
+                          What share this candidate got of each ranking position
+                        </span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </Form>
 
         {/* Chart */}
         <div className="min-h-[280px] md:min-h-[280px] mobile:min-h-[220px]">
@@ -224,7 +321,13 @@ export function RankDistributionCard({
                           </div>
                           <div className="text-sm text-foreground/80">
                             {props.payload?.pct_among_rankers.toFixed(1)}% among
-                            rankers
+                            candidate's rankers
+                          </div>
+                          <div className="text-sm text-foreground/80">
+                            {props.payload?.pct_among_position_rankers.toFixed(
+                              1,
+                            )}
+                            % among position rankers
                           </div>
                         </div>,
                       ]}
@@ -244,10 +347,7 @@ export function RankDistributionCard({
 
         {/* Live region for accessibility */}
         <div className="sr-only" aria-live="polite">
-          Current metric:{" "}
-          {selectedMetric === "pct_all_ballots"
-            ? "Percentage of all ballots"
-            : "Percentage among rankers"}
+          Current metric: {getMetricLabel(selectedMetric)}
         </div>
       </CardContent>
     </Card>

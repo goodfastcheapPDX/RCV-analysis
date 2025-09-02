@@ -12,6 +12,7 @@ const mockCandidateData = [
     count: 1250,
     pct_all_ballots: 0.35,
     pct_among_rankers: 0.42,
+    pct_among_position_rankers: 0.38,
   }),
   createOutputFixture({
     candidate_id: candidateId,
@@ -19,6 +20,7 @@ const mockCandidateData = [
     count: 890,
     pct_all_ballots: 0.25,
     pct_among_rankers: 0.3,
+    pct_among_position_rankers: 0.28,
   }),
   createOutputFixture({
     candidate_id: candidateId,
@@ -26,6 +28,7 @@ const mockCandidateData = [
     count: 534,
     pct_all_ballots: 0.15,
     pct_among_rankers: 0.18,
+    pct_among_position_rankers: 0.16,
   }),
 ];
 
@@ -36,6 +39,7 @@ const mockZeroRankData = [
     count: 0,
     pct_all_ballots: 0,
     pct_among_rankers: 0,
+    pct_among_position_rankers: 0,
   }),
   createOutputFixture({
     candidate_id: candidateId,
@@ -43,6 +47,7 @@ const mockZeroRankData = [
     count: 0,
     pct_all_ballots: 0,
     pct_among_rankers: 0,
+    pct_among_position_rankers: 0,
   }),
 ];
 
@@ -83,55 +88,64 @@ describe("RankDistributionCard", () => {
     expect(container.querySelector("[data-chart]")).not.toBeInTheDocument();
   });
 
-  it("should render toggle buttons for metric selection", () => {
+  it("should render radio buttons for metric selection", () => {
     const { container } = render(
       <RankDistributionCard
-        candidateName="ALICE TOGGLE TEST"
+        candidateName="ALICE RADIO TEST"
         data={mockCandidateData}
       />,
     );
 
     expect(container.textContent).toContain("% of All Ballots");
-    expect(container.textContent).toContain("% Among Rankers");
+    expect(container.textContent).toContain("% Among Candidate's Rankers");
+    expect(container.textContent).toContain("% Among Position Rankers");
+    expect(container.textContent).toContain("Percentage Type");
   });
 
-  it("should toggle between metrics when buttons are clicked", () => {
+  it("should switch between metrics when radio buttons are clicked", () => {
     const { container } = render(
       <RankDistributionCard
-        candidateName="ALICE TOGGLE CLICK TEST"
+        candidateName="ALICE RADIO CLICK TEST"
         data={mockCandidateData}
       />,
     );
 
-    // Find toggle buttons within this specific container
-    const toggles = container.querySelectorAll("button[aria-pressed]");
-    expect(toggles.length).toBe(2);
+    // Find radio buttons within this specific container
+    const radioButtons = container.querySelectorAll("button[role='radio']");
+    expect(radioButtons.length).toBe(3);
 
-    const allBallotsToggle = Array.from(toggles).find((btn) =>
-      btn.textContent?.includes("% of All Ballots"),
-    ) as HTMLElement;
-    const amongRankersToggle = Array.from(toggles).find((btn) =>
-      btn.textContent?.includes("% Among Rankers"),
-    ) as HTMLElement;
+    const allBallotsRadio = container.querySelector(
+      "button[value='pct_all_ballots']",
+    ) as HTMLButtonElement;
+    const candidateRankersRadio = container.querySelector(
+      "button[value='pct_among_rankers']",
+    ) as HTMLButtonElement;
+    const positionRankersRadio = container.querySelector(
+      "button[value='pct_among_position_rankers']",
+    ) as HTMLButtonElement;
 
-    expect(allBallotsToggle).toBeTruthy();
-    expect(amongRankersToggle).toBeTruthy();
+    expect(allBallotsRadio).toBeTruthy();
+    expect(candidateRankersRadio).toBeTruthy();
+    expect(positionRankersRadio).toBeTruthy();
 
-    // Initially, "% of All Ballots" should be pressed (default)
-    expect(allBallotsToggle).toHaveAttribute("aria-pressed", "true");
-    expect(amongRankersToggle).toHaveAttribute("aria-pressed", "false");
+    // Initially, "% of All Ballots" should be selected (default)
+    expect(allBallotsRadio.getAttribute("aria-checked")).toBe("true");
+    expect(candidateRankersRadio.getAttribute("aria-checked")).toBe("false");
+    expect(positionRankersRadio.getAttribute("aria-checked")).toBe("false");
 
-    // Click "% Among Rankers"
-    fireEvent.click(amongRankersToggle);
+    // Click "% Among Candidate's Rankers"
+    fireEvent.click(candidateRankersRadio);
 
-    expect(allBallotsToggle).toHaveAttribute("aria-pressed", "false");
-    expect(amongRankersToggle).toHaveAttribute("aria-pressed", "true");
+    expect(allBallotsRadio.getAttribute("aria-checked")).toBe("false");
+    expect(candidateRankersRadio.getAttribute("aria-checked")).toBe("true");
+    expect(positionRankersRadio.getAttribute("aria-checked")).toBe("false");
 
-    // Click back to "% of All Ballots"
-    fireEvent.click(allBallotsToggle);
+    // Click "% Among Position Rankers"
+    fireEvent.click(positionRankersRadio);
 
-    expect(allBallotsToggle).toHaveAttribute("aria-pressed", "true");
-    expect(amongRankersToggle).toHaveAttribute("aria-pressed", "false");
+    expect(allBallotsRadio.getAttribute("aria-checked")).toBe("false");
+    expect(candidateRankersRadio.getAttribute("aria-checked")).toBe("false");
+    expect(positionRankersRadio.getAttribute("aria-checked")).toBe("true");
   });
 
   it("should display significantly different values when toggling between percentage modes", () => {
@@ -143,6 +157,7 @@ describe("RankDistributionCard", () => {
         count: 100,
         pct_all_ballots: 0.05, // 5% of all ballots
         pct_among_rankers: 0.5, // 50% among rankers (candidate only ranked on 20% of ballots)
+        pct_among_position_rankers: 0.33, // 33% among position rankers
       }),
       createOutputFixture({
         candidate_id: candidateId,
@@ -150,6 +165,7 @@ describe("RankDistributionCard", () => {
         count: 100,
         pct_all_ballots: 0.05, // 5% of all ballots
         pct_among_rankers: 0.5, // 50% among rankers
+        pct_among_position_rankers: 0.33, // 33% among position rankers
       }),
     ];
 
@@ -160,28 +176,27 @@ describe("RankDistributionCard", () => {
       />,
     );
 
-    // Find toggle buttons
-    const toggles = container.querySelectorAll("button[aria-pressed]");
-    const allBallotsToggle = Array.from(toggles).find((btn) =>
-      btn.textContent?.includes("% of All Ballots"),
-    ) as HTMLElement;
-    const amongRankersToggle = Array.from(toggles).find((btn) =>
-      btn.textContent?.includes("% Among Rankers"),
-    ) as HTMLElement;
+    // Find radio buttons
+    const allBallotsRadio = container.querySelector(
+      "button[value='pct_all_ballots']",
+    ) as HTMLButtonElement;
+    const amongRankersRadio = container.querySelector(
+      "button[value='pct_among_rankers']",
+    ) as HTMLButtonElement;
 
-    expect(allBallotsToggle).toBeTruthy();
-    expect(amongRankersToggle).toBeTruthy();
+    expect(allBallotsRadio).toBeTruthy();
+    expect(amongRankersRadio).toBeTruthy();
 
-    // Initially, "% of All Ballots" should be pressed (default)
-    expect(allBallotsToggle).toHaveAttribute("aria-pressed", "true");
-    expect(amongRankersToggle).toHaveAttribute("aria-pressed", "false");
+    // Initially, "% of All Ballots" should be selected (default)
+    expect(allBallotsRadio.getAttribute("aria-checked")).toBe("true");
+    expect(amongRankersRadio.getAttribute("aria-checked")).toBe("false");
 
-    // Click "% Among Rankers" toggle
-    fireEvent.click(amongRankersToggle);
+    // Click "% Among Rankers" radio
+    fireEvent.click(amongRankersRadio);
 
-    // Verify the toggle state changed
-    expect(allBallotsToggle).toHaveAttribute("aria-pressed", "false");
-    expect(amongRankersToggle).toHaveAttribute("aria-pressed", "true");
+    // Verify the radio state changed
+    expect(allBallotsRadio.getAttribute("aria-checked")).toBe("false");
+    expect(amongRankersRadio.getAttribute("aria-checked")).toBe("true");
 
     // The chart container should be present and functional
     const chartContainer = container.querySelector("[data-chart]");
@@ -200,9 +215,9 @@ describe("RankDistributionCard", () => {
     expect(container.textContent).toContain("Rank Distribution");
     expect(container.textContent).toContain("CALCULATION TEST");
 
-    // Check that both toggle options are available
+    // Check that all radio options are available
     expect(container.textContent).toContain("% of All Ballots");
-    expect(container.textContent).toContain("% Among Rankers");
+    expect(container.textContent).toContain("% Among Candidate's Rankers");
 
     // The chart container should be present
     const chartContainer = container.querySelector("[data-chart]");
@@ -224,6 +239,7 @@ describe("RankDistributionCard", () => {
         count: 200,
         pct_all_ballots: 0.1, // 10%
         pct_among_rankers: 0.8, // 80%
+        pct_among_position_rankers: 0.75, // 75%
       }),
     ];
 
@@ -235,9 +251,9 @@ describe("RankDistributionCard", () => {
     const chartContainer = container.querySelector("[data-chart]");
     expect(chartContainer).toBeInTheDocument();
 
-    // Both toggles should be present and functional
-    const toggles = container.querySelectorAll("button[aria-pressed]");
-    expect(toggles.length).toBe(2);
+    // All radio buttons should be present and functional
+    const radioButtons = container.querySelectorAll("button[role='radio']");
+    expect(radioButtons.length).toBe(3);
   });
 
   it("should handle empty data array", () => {

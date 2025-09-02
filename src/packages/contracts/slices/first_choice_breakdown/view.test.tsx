@@ -51,11 +51,13 @@ const mockLongCandidateName: Output[] = [
 
 describe("FirstChoiceBreakdownView", () => {
   it("renders the card with correct title and description", () => {
-    render(<FirstChoiceBreakdownView data={mockData} />);
+    const { container } = render(<FirstChoiceBreakdownView data={mockData} />);
 
-    expect(screen.getByText("First Choice Breakdown")).toBeInTheDocument();
     expect(
-      screen.getByText(
+      within(container).getByText("First Choice Breakdown"),
+    ).toBeInTheDocument();
+    expect(
+      within(container).getByText(
         /Candidate preferences in first round \(4,200 total ballots\)/,
       ),
     ).toBeInTheDocument();
@@ -74,36 +76,42 @@ describe("FirstChoiceBreakdownView", () => {
   });
 
   it("shows the leading candidate information", () => {
-    render(<FirstChoiceBreakdownView data={mockData} />);
+    const { container } = render(<FirstChoiceBreakdownView data={mockData} />);
 
     // Text is now split due to candidate link, so check for parts
-    expect(screen.getByText("John Smith")).toBeInTheDocument();
-    expect(screen.getByText(/leads with 35.7%/)).toBeInTheDocument();
+    expect(within(container).getByText("John Smith")).toBeInTheDocument();
+    expect(within(container).getByText(/leads with 35.7%/)).toBeInTheDocument();
     expect(
-      screen.getByText("7.1 percentage point lead over second place"),
+      within(container).getByText(
+        "7.1 percentage point lead over second place",
+      ),
     ).toBeInTheDocument();
   });
 
   it("handles single candidate data without showing lead margin", () => {
-    render(<FirstChoiceBreakdownView data={mockSingleCandidate} />);
+    const { container } = render(
+      <FirstChoiceBreakdownView data={mockSingleCandidate} />,
+    );
 
     // Text is now split due to candidate link, so check for parts
-    expect(screen.getByText("Only Candidate")).toBeInTheDocument();
-    expect(screen.getByText(/leads with 100.0%/)).toBeInTheDocument();
+    expect(within(container).getByText("Only Candidate")).toBeInTheDocument();
     expect(
-      screen.queryByText(/percentage point lead over second place/),
+      within(container).getByText(/leads with 100.0%/),
+    ).toBeInTheDocument();
+    expect(
+      within(container).queryByText(/percentage point lead over second place/),
     ).not.toBeInTheDocument();
   });
 
   it("displays correct total vote count", () => {
-    render(<FirstChoiceBreakdownView data={mockData} />);
+    const { container } = render(<FirstChoiceBreakdownView data={mockData} />);
 
     const totalVotes = mockData.reduce(
       (sum, item) => sum + item.first_choice_votes,
       0,
     );
     expect(
-      screen.getByText(
+      within(container).getByText(
         new RegExp(`\\(${totalVotes.toLocaleString()} total ballots\\)`),
       ),
     ).toBeInTheDocument();
@@ -123,34 +131,42 @@ describe("FirstChoiceBreakdownView", () => {
       }),
     ];
 
-    render(<FirstChoiceBreakdownView data={unsortedData} />);
+    const { container } = render(
+      <FirstChoiceBreakdownView data={unsortedData} />,
+    );
 
     // The leading candidate should be the one with higher votes
-    expect(screen.getByText(/lead over second place/)).toBeInTheDocument();
+    expect(
+      within(container).getByText(/lead over second place/),
+    ).toBeInTheDocument();
   });
 
   it("truncates long candidate names in chart data", () => {
-    render(<FirstChoiceBreakdownView data={mockLongCandidateName} />);
+    const { container } = render(
+      <FirstChoiceBreakdownView data={mockLongCandidateName} />,
+    );
 
     // The long name should still appear in the tooltip data structure
     // but we can't easily test the chart rendering without more complex setup
     expect(
-      screen.getByText(/This is a very long candidate name/),
+      within(container).getByText(/This is a very long candidate name/),
     ).toBeInTheDocument();
   });
 
   it("handles empty data gracefully", () => {
-    render(<FirstChoiceBreakdownView data={[]} />);
+    const { container } = render(<FirstChoiceBreakdownView data={[]} />);
 
-    expect(screen.getByText("First Choice Breakdown")).toBeInTheDocument();
     expect(
-      screen.getByText(
+      within(container).getByText("First Choice Breakdown"),
+    ).toBeInTheDocument();
+    expect(
+      within(container).getByText(
         /Candidate preferences in first round \(0 total ballots\)/,
       ),
     ).toBeInTheDocument();
 
     // Should not show footer with candidate info when no data
-    expect(screen.queryByText(/leads with/)).not.toBeInTheDocument();
+    expect(within(container).queryByText(/leads with/)).not.toBeInTheDocument();
   });
 
   it("calculates percentage lead correctly with tied candidates", () => {
@@ -167,25 +183,14 @@ describe("FirstChoiceBreakdownView", () => {
       }),
     ];
 
-    render(<FirstChoiceBreakdownView data={tiedData} />);
+    const { container } = render(<FirstChoiceBreakdownView data={tiedData} />);
 
-    expect(screen.getByText("Candidate A")).toBeInTheDocument();
-    expect(screen.getByText(/leads with 50.0%/)).toBeInTheDocument();
+    expect(within(container).getByText("Candidate A")).toBeInTheDocument();
+    expect(within(container).getByText(/leads with 50.0%/)).toBeInTheDocument();
     // When tied, no lead percentage is shown (leadPercentage === 0)
     expect(
-      screen.queryByText(/percentage point lead over second place/),
+      within(container).queryByText(/percentage point lead over second place/),
     ).not.toBeInTheDocument();
-  });
-
-  it("uses correct chart accessibility features", () => {
-    render(<FirstChoiceBreakdownView data={mockData} />);
-
-    // The ResponsiveContainer and BarChart should have accessibility layer
-    const container = document.querySelector(".recharts-responsive-container");
-    expect(container).toBeInTheDocument();
-
-    // The chart should render the title and description
-    expect(screen.getByText("First Choice Breakdown")).toBeInTheDocument();
   });
 
   it("formats vote numbers with locale string", () => {
@@ -197,18 +202,22 @@ describe("FirstChoiceBreakdownView", () => {
       }),
     ];
 
-    render(<FirstChoiceBreakdownView data={largeNumberData} />);
+    const { container } = render(
+      <FirstChoiceBreakdownView data={largeNumberData} />,
+    );
 
-    expect(screen.getByText(/\(15,000 total ballots\)/)).toBeInTheDocument();
+    expect(
+      within(container).getByText(/\(15,000 total ballots\)/),
+    ).toBeInTheDocument();
   });
 
   it("creates proper chart configuration for multiple candidates", () => {
-    render(<FirstChoiceBreakdownView data={mockData} />);
+    const { container } = render(<FirstChoiceBreakdownView data={mockData} />);
 
     // We can't directly test the chartConfig object, but we can verify
     // that the component renders without errors with multiple candidates
-    expect(screen.getByText("John Smith")).toBeInTheDocument();
-    expect(screen.getByText(/leads with 35.7%/)).toBeInTheDocument();
+    expect(within(container).getByText("John Smith")).toBeInTheDocument();
+    expect(within(container).getByText(/leads with 35.7%/)).toBeInTheDocument();
 
     // Check that the chart container is present
     const chartContainer = document.querySelector('[data-slot="chart"]');

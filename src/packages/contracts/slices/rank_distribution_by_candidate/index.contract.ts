@@ -8,6 +8,7 @@ export const Output = IdentitySchema.extend({
   count: z.number().int().nonnegative(),
   pct_all_ballots: z.number().min(0).max(1), // Proportion, not percentage
   pct_among_rankers: z.number().min(0).max(1), // Proportion, not percentage
+  pct_among_position_rankers: z.number().min(0).max(1), // Proportion, not percentage
 });
 
 // Stats schema - defines the structure of manifest stats section
@@ -75,6 +76,13 @@ export const SQL_QUERIES = {
       FROM rank_rows
       GROUP BY candidate_id, rank_position
     ),
+    rankers AS (
+      SELECT 
+        candidate_id,
+        COUNT(DISTINCT BallotID) AS total_rankers
+      FROM rank_rows
+      GROUP BY candidate_id
+    ),
     rankers_by_position AS (
       SELECT 
         rank_position,
@@ -99,12 +107,14 @@ export const SQL_QUERIES = {
         rg.candidate_id,
         rg.rank_position,
         COALESCE(c.count, 0) AS count,
+        COALESCE(r.total_rankers, 0) AS total_rankers,
         COALESCE(rbp.total_rankers_at_position, 0) AS total_rankers_at_position,
         cb.total_ballots
       FROM rank_grid rg
       LEFT JOIN counts c 
         ON rg.candidate_id = c.candidate_id 
         AND rg.rank_position = c.rank_position
+      LEFT JOIN rankers r ON rg.candidate_id = r.candidate_id
       LEFT JOIN rankers_by_position rbp ON rg.rank_position = rbp.rank_position
       CROSS JOIN contest_ballots cb
     )
@@ -117,9 +127,13 @@ export const SQL_QUERIES = {
         ELSE 0.0 
       END AS pct_all_ballots,
       CASE 
+        WHEN total_rankers > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers AS DOUBLE)
+        ELSE 0.0 
+      END AS pct_among_rankers,
+      CASE 
         WHEN total_rankers_at_position > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers_at_position AS DOUBLE)
         ELSE 0.0 
-      END AS pct_among_rankers
+      END AS pct_among_position_rankers
     FROM complete_counts
     ORDER BY candidate_id, rank_position;
   `,
@@ -208,6 +222,13 @@ export const SQL_QUERIES = {
       FROM rank_rows
       GROUP BY candidate_id, rank_position
     ),
+    rankers AS (
+      SELECT 
+        candidate_id,
+        COUNT(DISTINCT BallotID) AS total_rankers
+      FROM rank_rows
+      GROUP BY candidate_id
+    ),
     rankers_by_position AS (
       SELECT 
         rank_position,
@@ -232,12 +253,14 @@ export const SQL_QUERIES = {
         rg.candidate_id,
         rg.rank_position,
         COALESCE(c.count, 0) AS count,
+        COALESCE(r.total_rankers, 0) AS total_rankers,
         COALESCE(rbp.total_rankers_at_position, 0) AS total_rankers_at_position,
         cb.total_ballots
       FROM rank_grid rg
       LEFT JOIN counts c 
         ON rg.candidate_id = c.candidate_id 
         AND rg.rank_position = c.rank_position
+      LEFT JOIN rankers r ON rg.candidate_id = r.candidate_id
       LEFT JOIN rankers_by_position rbp ON rg.rank_position = rbp.rank_position
       CROSS JOIN contest_ballots cb
     )
@@ -250,9 +273,13 @@ export const SQL_QUERIES = {
         ELSE 0.0 
       END AS pct_all_ballots,
       CASE 
+        WHEN total_rankers > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers AS DOUBLE)
+        ELSE 0.0 
+      END AS pct_among_rankers,
+      CASE 
         WHEN total_rankers_at_position > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers_at_position AS DOUBLE)
         ELSE 0.0 
-      END AS pct_among_rankers
+      END AS pct_among_position_rankers
     FROM complete_counts
     ORDER BY candidate_id, rank_position;
   `,
@@ -296,6 +323,7 @@ export const createOutputFixture = (
   count: 5,
   pct_all_ballots: 0.25,
   pct_among_rankers: 0.5,
+  pct_among_position_rankers: 0.33,
   ...overrides,
 });
 

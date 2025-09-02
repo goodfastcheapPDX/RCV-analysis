@@ -133,7 +133,8 @@ describe("SQL Integration Tests", () => {
           rank_position,
           count,
           pct_all_ballots,
-          pct_among_rankers
+          pct_among_rankers,
+          pct_among_position_rankers
         FROM rank_distribution_tmp;
       `);
 
@@ -165,7 +166,8 @@ describe("SQL Integration Tests", () => {
         rank_position: 1,
         count: 3,
         pct_all_ballots: 0.5, // 3/6 total ballots
-        pct_among_rankers: 0.5, // 3/6 rank-1 rankers
+        pct_among_rankers: 0.6, // 3/5 candidate's total rankers
+        pct_among_position_rankers: 0.5, // 3/6 rank-1 rankers
       }),
     );
 
@@ -178,7 +180,8 @@ describe("SQL Integration Tests", () => {
         rank_position: 2,
         count: 1,
         pct_all_ballots: 1 / 6, // 1/6 total ballots
-        pct_among_rankers: 1 / 3, // 1/3 rank-2 rankers
+        pct_among_rankers: 0.2, // 1/5 candidate's total rankers
+        pct_among_position_rankers: 1 / 3, // 1/3 rank-2 rankers
       }),
     );
 
@@ -192,7 +195,8 @@ describe("SQL Integration Tests", () => {
         rank_position: 1,
         count: 3,
         pct_all_ballots: 0.5, // 3/6 total ballots
-        pct_among_rankers: 0.5, // 3/6 rank-1 rankers
+        pct_among_rankers: 0.6, // 3/5 candidate's total rankers (Bob has 5 total rankers: 3@rank1 + 2@rank2)
+        pct_among_position_rankers: 0.5, // 3/6 rank-1 rankers
       }),
     );
 
@@ -207,6 +211,7 @@ describe("SQL Integration Tests", () => {
         count: 0,
         pct_all_ballots: 0,
         pct_among_rankers: 0,
+        pct_among_position_rankers: 0,
       }),
     );
 
@@ -276,7 +281,8 @@ describe("SQL Integration Tests", () => {
           rank_position,
           count,
           pct_all_ballots,
-          pct_among_rankers
+          pct_among_rankers,
+          pct_among_position_rankers
         FROM rank_distribution_tmp;
       `);
 
