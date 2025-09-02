@@ -175,3 +175,13 @@ export const createElectionFixture = (
   contests: [createContestFixture()],
   ...overrides,
 });
+
+export const createManifestFixture = (
+  overrides: Partial<Manifest> = {},
+): Manifest => ({
+  env: "test",
+  version: 2,
+  inputs: {},
+  elections: [createElectionFixture()],
+  ...overrides,
+});
