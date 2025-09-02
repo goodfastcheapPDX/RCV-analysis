@@ -93,6 +93,7 @@ export async function setupTestData() {
       testEnv,
     );
     await runCommand("npm", ["run", "build:data:firstchoice"], testEnv);
+    await runCommand("npm", ["run", "build:data:rankdist"], testEnv);
     await runCommand("npm", ["run", "build:data:stv"], testEnv);
 
     console.log(`\n🎉 Global test data setup complete!`);

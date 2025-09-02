@@ -11,8 +11,11 @@ export async function handleStvDataRequest(params: StvDataParams = {}) {
     const electionId = params.electionId || "portland-20241105-gen";
     const contestId = params.contestId || "d2-3seat";
 
+    // Use DATA_ENV from environment variables
+    const env = process.env.DATA_ENV;
+
     // Load contest data using new loader
-    const result = await loadStvForContest(electionId, contestId);
+    const result = await loadStvForContest(electionId, contestId, env);
 
     return {
       success: true,

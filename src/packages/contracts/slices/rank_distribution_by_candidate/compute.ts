@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
-import type { Manifest } from "@/contracts/manifest";
+import { findContest, Manifest } from "@/contracts/manifest";
 import {
   assertManifestSection,
   assertTableColumns,
@@ -13,7 +13,7 @@ import {
   Output,
   type RankDistributionByCandidateOutput,
   SQL_QUERIES,
-  Stats,
+  type Stats,
   version,
 } from "./index.contract";
 
@@ -66,10 +66,12 @@ export async function computeRankDistributionByCandidate(
   }
 
   const manifestData = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const manifest = manifestData as Manifest;
+  const initialManifest = Manifest.parse(manifestData);
 
   // Find the contest in manifest
-  const election = manifest.elections.find((e) => e.election_id === electionId);
+  const election = initialManifest.elections.find(
+    (e) => e.election_id === electionId,
+  );
   if (!election) {
     throw new Error(`Election ${electionId} not found in manifest`);
   }
@@ -146,26 +148,25 @@ export async function computeRankDistributionByCandidate(
   console.log(`- Output rows: ${data.rows}`);
   console.log(`- File hash: ${fileHash.substring(0, 16)}...`);
 
-  // Update manifest
+  // Update manifest - follow same pattern as first_choice
   console.log("Updating manifest...");
-  const sliceManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const sliceKey = `rank_distribution_by_candidate@${version}`;
+  const manifestData2 = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const manifest = Manifest.parse(manifestData2);
+  const existingContest = findContest(manifest, electionId, contestId);
+  if (!existingContest) {
+    throw new Error(
+      `Contest ${electionId}/${contestId} disappeared from manifest`,
+    );
+  }
 
-  sliceManifest[sliceKey] = {
-    version,
-    sliceKey: "rank_distribution_by_candidate",
-    stats,
-    data,
-    artifactPaths: [
-      `${electionId}/${contestId}/rank_distribution/rank_distribution.parquet`,
-    ],
-    rank_distribution_hash: fileHash,
+  // Update contest with rank distribution artifact
+  existingContest.rank_distribution = {
+    uri: parquetPath,
+    sha256: fileHash,
+    rows: parsedRows.length,
   };
 
-  writeFileSync(manifestPath, JSON.stringify(sliceManifest, null, 2));
-
-  // Validate manifest section
-  await assertManifestSection(manifestPath, sliceKey, Stats);
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
   console.log("Build completed successfully!");
 

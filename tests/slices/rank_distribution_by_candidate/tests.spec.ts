@@ -125,31 +125,24 @@ describe("Rank Distribution by Candidate Integration", () => {
     const manifestPath = `data/${env}/manifest.json`;
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 
-    const sliceKey = "rank_distribution_by_candidate@1.0.0";
-    expect(manifest).toHaveProperty(sliceKey);
+    // Find the correct contest in the nested structure
+    const election = manifest.elections.find(
+      (e: any) => e.election_id === electionId,
+    );
+    expect(election).toBeDefined();
 
-    const entry = manifest[sliceKey];
-    expect(entry).toEqual({
-      version: "1.0.0",
-      sliceKey: "rank_distribution_by_candidate",
-      stats: {
-        max_rank: expect.any(Number),
-        total_ballots: expect.any(Number),
-        candidate_count: expect.any(Number),
-        zero_rank_candidates: expect.any(Number),
-      },
-      data: {
-        rows: expect.any(Number),
-      },
-      artifactPaths: [
-        `${electionId}/${contestId}/rank_distribution/rank_distribution.parquet`,
-      ],
-      rank_distribution_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
+    const contest = election.contests.find(
+      (c: any) => c.contest_id === contestId,
+    );
+    expect(contest).toBeDefined();
+
+    // Check that rank_distribution artifact was added to the contest
+    expect(contest.rank_distribution).toBeDefined();
+    expect(contest.rank_distribution).toEqual({
+      uri: expect.stringContaining("rank_distribution.parquet"),
+      sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      rows: expect.any(Number),
     });
-
-    // Validate stats schema
-    expect(() => Stats.parse(entry.stats)).not.toThrow();
-    expect(() => Data.parse(entry.data)).not.toThrow();
   });
 
   test("handles edge cases correctly", async () => {

@@ -26,6 +26,7 @@ fix issues as they arise, commit often to surface the issues quickly.
 - do not comment out or delete tests just to get commit hooks to succeed. failing tests should always be resolved before proceeding.
 - every commit requires a 100% passing test run. do not consider work done if any test is failing. if a failing test is unrelated, solve that problem before proceeding
 - mocks cause more trouble than they're worth. use in memory database setups and dependency injection where necessary rather than building mock objects for tests.
+- for DOM isolation in tests, use container-scoped queries instead of global screen queries. Instead of `screen.getByText()`, use: `import {within} from '@testing-library/react'; const { container } = render(<Component/>); within(container).getByText()`. This prevents DOM pollution between tests.
 
 **Mathematical Accuracy**: This is electoral analysis - mathematical correctness is critical. Use existing validation patterns and add appropriate tests.
 

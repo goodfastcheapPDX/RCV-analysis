@@ -1,13 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { createIdentity } from "@/contracts/ids";
 import type { BallotData } from "./engine";
 import { runSTV } from "./engine";
-import {
-  createStvMetaOutputFixture,
-  createStvRoundsOutputFixture,
-  createStvRoundsStatsFixture,
-  RulesSchema,
-} from "./index.contract";
+import { createStvRoundsOutputFixture, RulesSchema } from "./index.contract";
 
 describe("STV Engine Functional Tests", () => {
   const defaultRules = RulesSchema.parse({
@@ -19,7 +14,6 @@ describe("STV Engine Functional Tests", () => {
   });
 
   // Use fixture to generate consistent test identity
-  const testFixture = createStvRoundsOutputFixture({ seat_count: 2 });
   const testIdentity = createIdentity(
     "test-20241105-gen" as const,
     "d1-2seat" as const,

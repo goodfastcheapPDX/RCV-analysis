@@ -29,9 +29,9 @@ async function main() {
       })
       .option("env", {
         type: "string",
-        description: "Environment (dev, prod)",
-        default: "dev",
-        choices: ["dev", "prod"],
+        description: "Environment (dev, prod, test)",
+        default: process.env.DATA_ENV || "dev",
+        choices: ["dev", "prod", "test"],
       })
       .help()
       .strict()

@@ -13,8 +13,11 @@ export async function handleFirstChoiceDataRequest(
     const electionId = params.electionId || "portland-20241105-gen";
     const contestId = params.contestId || "d2-3seat";
 
+    // Use DATA_ENV from environment variables
+    const env = process.env.DATA_ENV;
+
     // Load contest data using new loader
-    const result = await loadFirstChoiceForContest(electionId, contestId);
+    const result = await loadFirstChoiceForContest(electionId, contestId, env);
 
     return {
       success: true,
