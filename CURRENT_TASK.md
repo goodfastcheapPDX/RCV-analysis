@@ -10,12 +10,69 @@ Reorganize project structure to match documented conventions in CLAUDE.md:
 5. **Update import paths**: Fix all imports affected by the reorganization
 6. **Verify**: Run full test suite to ensure nothing breaks
 
+## Progress Update - Manifest Files Analysis
+
+### Current Manifest File Structure
+
+1. **`src/contracts/manifest.ts`** (177 lines) - **DATA CONTRACTS**
+   ```typescript
+   // Zod schemas defining data structures
+   export const ArtifactRef = z.object({ uri: ..., sha256: ... })
+   export const Contest = z.object({ contest_id: ..., cvr: ... })
+   export const Manifest = z.object({ elections: ... })
+   
+   // Pure utility functions for working with manifest data
+   export function findContest(manifest, id) { ... }
+   export function getArtifactUri(contest, type) { ... }
+   ```
+
+2. **`src/lib/manifest.ts`** (62 lines) - **FILE LOADING**
+   ```typescript
+   // Simple file I/O operations
+   export async function loadManifest(env?: string): Promise<Manifest> {
+     const raw = await fs.readFile(`data/${env}/manifest.json`, "utf8")
+     return Manifest.parse(JSON.parse(raw))
+   }
+   export function loadManifestSync(env?: string): Manifest { ... }
+   ```
+
+3. **`src/lib/manifest/contest-resolver.ts`** (127 lines) - **BUSINESS LOGIC**
+   ```typescript
+   // Higher-level operations and convenience methods
+   export class ContestResolver {
+     getElection(id) { ... }
+     getContest(electionId, contestId) { ... }
+     getFirstChoiceUri(electionId, contestId) { ... }
+     getStvRoundsUri(electionId, contestId) { ... }
+   }
+   ```
+
+4. **`src/lib/manifest/loaders.ts`** (224 lines) - **DATA LOADING**
+   ```typescript
+   // Specific data loading functions that combine manifest + DuckDB
+   export async function loadFirstChoiceForContest(...) { ... }
+   export async function loadStvForContest(...) { ... }
+   export async function loadCandidatesForContest(...) { ... }
+   ```
+
+### The Key Differences
+- **`/contracts/manifest.ts`** = Pure data definitions & schemas (no I/O)
+- **`/lib/manifest.ts`** = Basic file reading (just loads JSON from disk)  
+- **`/lib/manifest/`** = Business logic & data operations (uses both above)
+
+### Consolidation Options
+**Option A: Keep separate** (current structure is logical)
+**Option B: Merge loaders** - move `src/lib/manifest.ts` → `src/lib/manifest/index.ts`
+
+Recommend **Option B** for consistency with other index patterns.
+
 ## Done When
-- [ ] All slice files follow `src/lib/contracts/slices/` pattern
-- [ ] All test files are neighbors of their source files
-- [ ] No files remain in standalone `tests/` directories
-- [ ] All imports use correct absolute paths
-- [ ] All tests pass after reorganization
+- [x] All slice files follow `src/contracts/slices/` pattern  
+- [x] All test files are neighbors of their source files
+- [x] No files remain in standalone `tests/` directories
+- [x] All imports use correct absolute paths
+- [x] All tests pass after reorganization
+- [ ] Convert src/lib/manifest.ts to index file structure
 - [ ] Structure matches CLAUDE.md conventions exactly
 
 ## Constraints

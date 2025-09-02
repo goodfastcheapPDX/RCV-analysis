@@ -1,11 +1,7 @@
 import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
-import {
-  findContest,
-  getArtifactUri,
-  Manifest as ManifestV2,
-} from "@/contracts/manifest";
-import { getDataEnv } from "./env";
+import { Manifest as ManifestV2 } from "@/contracts/manifest";
+import { getDataEnv } from "@/lib/env";
 
 /**
  * Load the v2 manifest from the filesystem
