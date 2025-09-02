@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createIdentity } from "@/contracts/ids";
 import type { BallotData } from "./engine";
 import { runSTV } from "./engine";
-import { RulesSchema } from "./index.contract";
+import {
+  createStvMetaOutputFixture,
+  createStvRoundsOutputFixture,
+  createStvRoundsStatsFixture,
+  RulesSchema,
+} from "./index.contract";
 
 describe("STV Engine Functional Tests", () => {
   const defaultRules = RulesSchema.parse({
@@ -13,7 +18,14 @@ describe("STV Engine Functional Tests", () => {
     tie_break: "lexicographic",
   });
 
-  const testIdentity = createIdentity("test-20241105-gen", "d1-2seat", "d1", 2);
+  // Use fixture to generate consistent test identity
+  const testFixture = createStvRoundsOutputFixture({ seat_count: 2 });
+  const testIdentity = createIdentity(
+    "test-20241105-gen" as const,
+    "d1-2seat" as const,
+    "d1" as const,
+    2,
+  );
 
   describe("Basic STV Mechanics", () => {
     it("should handle simple two-seat election with clear winners", () => {

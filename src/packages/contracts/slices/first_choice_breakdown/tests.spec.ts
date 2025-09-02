@@ -5,7 +5,7 @@ import {
   assertTableColumns,
   parseAllRows,
 } from "@/packages/contracts/lib/contract-enforcer";
-import { Output } from "./index.contract";
+import { createOutputFixture, Output } from "./index.contract";
 
 interface DirectQueryResult {
   candidate_name: string;

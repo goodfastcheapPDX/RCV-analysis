@@ -1,28 +1,31 @@
 import { describe, expect, it } from "vitest";
+import { createStvRoundsOutputFixture } from "@/packages/contracts/slices/stv_rounds/index.contract";
 import { handleStvDataRequest } from "../handler";
 
 describe("handleStvDataRequest", () => {
   it("should return success with STV data using defaults", async () => {
     const result = await handleStvDataRequest();
+    const defaultFixture = createStvRoundsOutputFixture();
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
-    expect(result.data?.electionId).toBe("portland-20241105-gen");
-    expect(result.data?.contestId).toBe("d2-3seat");
+    expect(result.data?.electionId).toBe(defaultFixture.election_id);
+    expect(result.data?.contestId).toBe(defaultFixture.contest_id);
     expect(result.data?.roundsData).toBeDefined();
     expect(result.data?.metaData).toBeDefined();
     expect(result.data?.metadata).toBeDefined();
   });
 
   it("should return success with specific election and contest IDs", async () => {
+    const testFixture = createStvRoundsOutputFixture();
     const result = await handleStvDataRequest({
-      electionId: "portland-20241105-gen",
-      contestId: "d2-3seat",
+      electionId: testFixture.election_id,
+      contestId: testFixture.contest_id,
     });
 
     expect(result.success).toBe(true);
-    expect(result.data?.electionId).toBe("portland-20241105-gen");
-    expect(result.data?.contestId).toBe("d2-3seat");
+    expect(result.data?.electionId).toBe(testFixture.election_id);
+    expect(result.data?.contestId).toBe(testFixture.contest_id);
   });
 
   it("should return valid rounds data structure", async () => {

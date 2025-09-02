@@ -4,6 +4,11 @@ import { join } from "node:path";
 import * as duck from "@duckdb/node-api";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Manifest } from "@/contracts/manifest";
+import { createOutputFixture } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
+import {
+  createStvMetaOutputFixture,
+  createStvRoundsOutputFixture,
+} from "@/packages/contracts/slices/stv_rounds/index.contract";
 import { ContestResolver } from "../contest-resolver";
 import { loadFirstChoiceForContest, loadStvForContest } from "../loaders";
 
@@ -27,112 +32,107 @@ describe("loaders", () => {
     db = await duck.DuckDBInstance.create();
     conn = await db.connect();
 
-    // Create test first choice data (note: schema expects first_choice_votes and pct, not votes and percentage)
-    const firstChoiceData = [
-      {
-        election_id: electionId,
-        contest_id: contestId,
-        district_id: districtId,
-        seat_count: 1,
-        candidate_name: "Alice",
-        first_choice_votes: 100,
-        pct: 40.0,
-      },
-      {
-        election_id: electionId,
-        contest_id: contestId,
-        district_id: districtId,
-        seat_count: 1,
-        candidate_name: "Bob",
-        first_choice_votes: 150,
-        pct: 60.0,
-      },
-    ];
+    // Create test first choice data using fixtures
+    const aliceFixture = createOutputFixture({
+      election_id: electionId,
+      contest_id: contestId,
+      district_id: districtId,
+      seat_count: 1,
+      candidate_name: "Alice",
+      first_choice_votes: 100,
+      pct: 40.0,
+    });
 
-    // Create test STV rounds data
-    const stvRoundsData = [
-      {
-        election_id: electionId,
-        contest_id: contestId,
-        district_id: districtId,
-        seat_count: 1,
-        round: 1,
-        candidate_name: "Alice",
-        votes: 100.0,
-        status: "standing",
-      },
-      {
-        election_id: electionId,
-        contest_id: contestId,
-        district_id: districtId,
-        seat_count: 1,
-        round: 2,
-        candidate_name: "Alice",
-        votes: 120.0,
-        status: "elected",
-      },
-    ];
+    const bobFixture = createOutputFixture({
+      election_id: electionId,
+      contest_id: contestId,
+      district_id: districtId,
+      seat_count: 1,
+      candidate_name: "Bob",
+      first_choice_votes: 150,
+      pct: 60.0,
+    });
 
-    // Create test STV meta data
-    const stvMetaData = [
-      {
-        election_id: electionId,
-        contest_id: contestId,
-        district_id: districtId,
-        seat_count: 1,
-        round: 1,
-        quota: 134.0,
-        exhausted: 0.0,
-        elected_this_round: null,
-        eliminated_this_round: null,
-      },
-    ];
+    // Create test STV rounds data using fixtures
+    const stvRound1Fixture = createStvRoundsOutputFixture({
+      election_id: electionId,
+      contest_id: contestId,
+      district_id: districtId,
+      seat_count: 1,
+      round: 1,
+      candidate_name: "Alice",
+      votes: 100.0,
+      status: "standing",
+    });
 
-    // Create temporary tables and export to parquet
+    const stvRound2Fixture = createStvRoundsOutputFixture({
+      election_id: electionId,
+      contest_id: contestId,
+      district_id: districtId,
+      seat_count: 1,
+      round: 2,
+      candidate_name: "Alice",
+      votes: 120.0,
+      status: "elected",
+    });
+    // Create test STV meta data using fixtures
+    const stvMetaFixture = createStvMetaOutputFixture({
+      election_id: electionId,
+      contest_id: contestId,
+      district_id: districtId,
+      seat_count: 1,
+      round: 1,
+      quota: 134.0,
+      exhausted: 0.0,
+      elected_this_round: null,
+      eliminated_this_round: null,
+    });
+
+    // Create temporary tables and export to parquet using fixture data
     await conn.run(`CREATE TEMP TABLE first_choice_temp AS SELECT 
-      '${electionId}' as election_id,
-      '${contestId}' as contest_id,
-      '${districtId}' as district_id,
-      ${firstChoiceData[0].seat_count} as seat_count,
-      'Alice' as candidate_name,
-      100 as first_choice_votes,
-      CAST(40.0 AS DOUBLE) as pct
+      '${aliceFixture.election_id}' as election_id,
+      '${aliceFixture.contest_id}' as contest_id,
+      '${aliceFixture.district_id}' as district_id,
+      ${aliceFixture.seat_count} as seat_count,
+      '${aliceFixture.candidate_name}' as candidate_name,
+      ${aliceFixture.first_choice_votes} as first_choice_votes,
+      CAST(${aliceFixture.pct} AS DOUBLE) as pct
       UNION ALL SELECT
-      '${electionId}' as election_id,
-      '${contestId}' as contest_id,
-      '${districtId}' as district_id,
-      ${firstChoiceData[1].seat_count} as seat_count,
-      'Bob' as candidate_name,
-      150 as first_choice_votes,
-      CAST(60.0 AS DOUBLE) as pct`);
+      '${bobFixture.election_id}' as election_id,
+      '${bobFixture.contest_id}' as contest_id,
+      '${bobFixture.district_id}' as district_id,
+      ${bobFixture.seat_count} as seat_count,
+      '${bobFixture.candidate_name}' as candidate_name,
+      ${bobFixture.first_choice_votes} as first_choice_votes,
+      CAST(${bobFixture.pct} AS DOUBLE) as pct`);
 
     await conn.run(`CREATE TEMP TABLE stv_rounds_temp AS SELECT
-      '${electionId}' as election_id,
-      '${contestId}' as contest_id,
-      '${districtId}' as district_id,
-      ${stvRoundsData[0].seat_count} as seat_count,
-      1 as round,
-      'Alice' as candidate_name,
-      CAST(100.0 AS DOUBLE) as votes,
-      'standing' as status
+      '${stvRound1Fixture.election_id}' as election_id,
+      '${stvRound1Fixture.contest_id}' as contest_id,
+      '${stvRound1Fixture.district_id}' as district_id,
+      ${stvRound1Fixture.seat_count} as seat_count,
+      ${stvRound1Fixture.round} as round,
+      '${stvRound1Fixture.candidate_name}' as candidate_name,
+      CAST(${stvRound1Fixture.votes} AS DOUBLE) as votes,
+      '${stvRound1Fixture.status}' as status
       UNION ALL SELECT
-      '${electionId}' as election_id,
-      '${contestId}' as contest_id,
-      '${districtId}' as district_id,
-      ${stvRoundsData[1].seat_count} as seat_count,
-      2 as round,
-      'Alice' as candidate_name,
-      CAST(120.0 AS DOUBLE) as votes,
-      'elected' as status`);
+      '${stvRound2Fixture.election_id}' as election_id,
+      '${stvRound2Fixture.contest_id}' as contest_id,
+      '${stvRound2Fixture.district_id}' as district_id,
+      ${stvRound2Fixture.seat_count} as seat_count,
+      ${stvRound2Fixture.round} as round,
+      '${stvRound2Fixture.candidate_name}' as candidate_name,
+      CAST(${stvRound2Fixture.votes} AS DOUBLE) as votes,
+      '${stvRound2Fixture.status}' as status`);
 
     await conn.run(`CREATE TEMP TABLE stv_meta_temp AS SELECT
-      '${electionId}' as election_id,
-      '${contestId}' as contest_id,
-      '${districtId}' as district_id,
-      ${stvMetaData[0].seat_count} as seat_count,
-      1 as round,
-      CAST(134.0 AS DOUBLE) as quota,
-      CAST(0.0 AS DOUBLE) as exhausted,
+      '${stvMetaFixture.election_id}' as election_id,
+      '${stvMetaFixture.contest_id}' as contest_id,
+      '${stvMetaFixture.district_id}' as district_id,
+      ${stvMetaFixture.seat_count} as seat_count,
+      ${stvMetaFixture.round} as round,
+      CAST(${stvMetaFixture.quota} AS DOUBLE) as quota,
+      CAST(${stvMetaFixture.exhausted} AS DOUBLE) as exhausted,
       NULL as elected_this_round,
       NULL as eliminated_this_round`);
 
@@ -217,6 +217,17 @@ describe("loaders", () => {
 
   describe("loadFirstChoiceForContest", () => {
     it("should load and validate first choice data successfully", async () => {
+      // Create expected fixtures for comparison
+      const expectedAliceFixture = createOutputFixture({
+        election_id: electionId,
+        contest_id: contestId,
+        district_id: districtId,
+        seat_count: 1,
+        candidate_name: "Alice",
+        first_choice_votes: 100,
+        pct: 40.0,
+      });
+
       const result = await loadFirstChoiceForContest(
         electionId,
         contestId,
@@ -226,9 +237,9 @@ describe("loaders", () => {
 
       expect(result.data).toHaveLength(2);
       expect(result.data[0]).toMatchObject({
-        candidate_name: "Alice",
-        first_choice_votes: 100,
-        pct: 40.0,
+        candidate_name: expectedAliceFixture.candidate_name,
+        first_choice_votes: expectedAliceFixture.first_choice_votes,
+        pct: expectedAliceFixture.pct,
       });
       expect(result.contest.contest_id).toBe(contestId);
       expect(result.election.election_id).toBe(electionId);
@@ -243,6 +254,30 @@ describe("loaders", () => {
 
   describe("loadStvForContest", () => {
     it("should load and validate STV data successfully", async () => {
+      // Create expected fixtures for comparison
+      const expectedStvRound1Fixture = createStvRoundsOutputFixture({
+        election_id: electionId,
+        contest_id: contestId,
+        district_id: districtId,
+        seat_count: 1,
+        round: 1,
+        candidate_name: "Alice",
+        votes: 100.0,
+        status: "standing",
+      });
+
+      const expectedStvMetaFixture = createStvMetaOutputFixture({
+        election_id: electionId,
+        contest_id: contestId,
+        district_id: districtId,
+        seat_count: 1,
+        round: 1,
+        quota: 134.0,
+        exhausted: 0.0,
+        elected_this_round: null,
+        eliminated_this_round: null,
+      });
+
       const result = await loadStvForContest(
         electionId,
         contestId,
@@ -253,16 +288,16 @@ describe("loaders", () => {
       expect(result.roundsData).toHaveLength(2);
       expect(result.metaData).toHaveLength(1);
       expect(result.roundsData[0]).toMatchObject({
-        candidate_name: "Alice",
-        round: 1,
-        votes: 100.0,
-        status: "standing",
+        candidate_name: expectedStvRound1Fixture.candidate_name,
+        round: expectedStvRound1Fixture.round,
+        votes: expectedStvRound1Fixture.votes,
+        status: expectedStvRound1Fixture.status,
       });
       expect(result.stats).toMatchObject({
         number_of_rounds: 2,
-        winners: ["Alice"],
-        seats: 1,
-        first_round_quota: 134.0,
+        winners: [expectedStvRound1Fixture.candidate_name], // Alice
+        seats: expectedStvRound1Fixture.seat_count,
+        first_round_quota: expectedStvMetaFixture.quota,
         precision: 0.000001,
       });
       expect(result.contest.contest_id).toBe(contestId);

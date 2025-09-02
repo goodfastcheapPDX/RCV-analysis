@@ -6,7 +6,12 @@ import {
   assertTableColumns,
   parseAllRows,
 } from "../../lib/contract-enforcer.js";
-import { StvMetaOutput, StvRoundsOutput } from "./index.contract";
+import {
+  createStvMetaOutputFixture,
+  createStvRoundsOutputFixture,
+  StvMetaOutput,
+  StvRoundsOutput,
+} from "./index.contract";
 
 describe("STV Rounds Contract Tests", () => {
   // Tests rely on global test setup for data
@@ -64,24 +69,20 @@ describe("STV Rounds Contract Tests", () => {
       expect(roundsRows.length).toBeGreaterThan(0);
       expect(metaRows.length).toBeGreaterThan(0);
 
-      // All rows should conform to schemas
+      // All rows should conform to schemas - validate using fixture parsing
       roundsRows.forEach((row) => {
-        expect(typeof row.candidate_name).toBe("string");
-        expect(row.candidate_name.length).toBeGreaterThan(0);
-        expect(typeof row.votes).toBe("number");
-        expect(row.votes).toBeGreaterThanOrEqual(0);
-        expect(typeof row.round).toBe("number");
-        expect(row.round).toBeGreaterThan(0);
-        expect(["standing", "elected", "eliminated"]).toContain(row.status);
+        const validatedRow = StvRoundsOutput.parse(row); // This will throw if invalid
+        expect(validatedRow.candidate_name).toBe(row.candidate_name);
+        expect(validatedRow.votes).toBe(row.votes);
+        expect(validatedRow.round).toBe(row.round);
+        expect(validatedRow.status).toBe(row.status);
       });
 
       metaRows.forEach((row) => {
-        expect(typeof row.quota).toBe("number");
-        expect(row.quota).toBeGreaterThan(0);
-        expect(typeof row.exhausted).toBe("number");
-        expect(row.exhausted).toBeGreaterThanOrEqual(0);
-        expect(typeof row.round).toBe("number");
-        expect(row.round).toBeGreaterThan(0);
+        const validatedRow = StvMetaOutput.parse(row); // This will throw if invalid
+        expect(validatedRow.quota).toBe(row.quota);
+        expect(validatedRow.exhausted).toBe(row.exhausted);
+        expect(validatedRow.round).toBe(row.round);
       });
     } finally {
       await conn.closeSync();
@@ -93,21 +94,48 @@ describe("STV Rounds Contract Tests", () => {
     expect(existsSync(manifestPath)).toBe(true);
 
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as Manifest;
+    const testFixture = createStvRoundsOutputFixture();
 
-    // Verify v2 manifest structure
+    // Verify v2 manifest structure using fixture data
     expect(manifest.version).toBe(2);
     expect(manifest.elections).toBeInstanceOf(Array);
     expect(manifest.elections.length).toBeGreaterThan(0);
 
     const election = manifest.elections.find(
-      (e) => e.election_id === "portland-20241105-gen",
+      (e) => e.election_id === testFixture.election_id,
     );
     expect(election).toBeDefined();
 
-    const contest = election?.contests.find((c) => c.contest_id === "d2-3seat");
+    const contest = election?.contests.find(
+      (c) => c.contest_id === testFixture.contest_id,
+    );
     expect(contest).toBeDefined();
     expect(contest?.stv).toBeDefined();
     expect(contest?.stv.rounds).toBeDefined();
     expect(contest?.stv.meta).toBeDefined();
+  });
+
+  it("should validate fixture-generated test data", () => {
+    // Test that our fixture generators produce valid schema-compliant data
+    const roundsFixture = createStvRoundsOutputFixture({
+      candidate_name: "Test Candidate",
+      votes: 150.75,
+      status: "elected",
+    });
+
+    const metaFixture = createStvMetaOutputFixture({
+      quota: 200.0,
+      exhausted: 5.25,
+      elected_this_round: ["Test Candidate"],
+    });
+
+    // Should not throw
+    const validatedRounds = StvRoundsOutput.parse(roundsFixture);
+    const validatedMeta = StvMetaOutput.parse(metaFixture);
+
+    expect(validatedRounds.candidate_name).toBe("Test Candidate");
+    expect(validatedRounds.status).toBe("elected");
+    expect(validatedMeta.quota).toBe(200.0);
+    expect(validatedMeta.elected_this_round).toEqual(["Test Candidate"]);
   });
 });
