@@ -75,12 +75,12 @@ export const SQL_QUERIES = {
       FROM rank_rows
       GROUP BY candidate_id, rank_position
     ),
-    rankers AS (
+    rankers_by_position AS (
       SELECT 
-        candidate_id,
-        COUNT(DISTINCT BallotID) AS total_rankers
+        rank_position,
+        COUNT(DISTINCT BallotID) AS total_rankers_at_position
       FROM rank_rows
-      GROUP BY candidate_id
+      GROUP BY rank_position
     ),
     -- Generate dense grid of all candidates × all ranks (1..max_rank)
     rank_grid AS (
@@ -99,13 +99,13 @@ export const SQL_QUERIES = {
         rg.candidate_id,
         rg.rank_position,
         COALESCE(c.count, 0) AS count,
-        COALESCE(r.total_rankers, 0) AS total_rankers,
+        COALESCE(rbp.total_rankers_at_position, 0) AS total_rankers_at_position,
         cb.total_ballots
       FROM rank_grid rg
       LEFT JOIN counts c 
         ON rg.candidate_id = c.candidate_id 
         AND rg.rank_position = c.rank_position
-      LEFT JOIN rankers r ON rg.candidate_id = r.candidate_id
+      LEFT JOIN rankers_by_position rbp ON rg.rank_position = rbp.rank_position
       CROSS JOIN contest_ballots cb
     )
     SELECT 
@@ -117,7 +117,7 @@ export const SQL_QUERIES = {
         ELSE 0.0 
       END AS pct_all_ballots,
       CASE 
-        WHEN total_rankers > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers AS DOUBLE)
+        WHEN total_rankers_at_position > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers_at_position AS DOUBLE)
         ELSE 0.0 
       END AS pct_among_rankers
     FROM complete_counts
@@ -208,12 +208,12 @@ export const SQL_QUERIES = {
       FROM rank_rows
       GROUP BY candidate_id, rank_position
     ),
-    rankers AS (
+    rankers_by_position AS (
       SELECT 
-        candidate_id,
-        COUNT(DISTINCT BallotID) AS total_rankers
+        rank_position,
+        COUNT(DISTINCT BallotID) AS total_rankers_at_position
       FROM rank_rows
-      GROUP BY candidate_id
+      GROUP BY rank_position
     ),
     -- Generate dense grid of all candidates × all ranks (1..max_rank)
     rank_grid AS (
@@ -232,13 +232,13 @@ export const SQL_QUERIES = {
         rg.candidate_id,
         rg.rank_position,
         COALESCE(c.count, 0) AS count,
-        COALESCE(r.total_rankers, 0) AS total_rankers,
+        COALESCE(rbp.total_rankers_at_position, 0) AS total_rankers_at_position,
         cb.total_ballots
       FROM rank_grid rg
       LEFT JOIN counts c 
         ON rg.candidate_id = c.candidate_id 
         AND rg.rank_position = c.rank_position
-      LEFT JOIN rankers r ON rg.candidate_id = r.candidate_id
+      LEFT JOIN rankers_by_position rbp ON rg.rank_position = rbp.rank_position
       CROSS JOIN contest_ballots cb
     )
     SELECT 
@@ -250,7 +250,7 @@ export const SQL_QUERIES = {
         ELSE 0.0 
       END AS pct_all_ballots,
       CASE 
-        WHEN total_rankers > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers AS DOUBLE)
+        WHEN total_rankers_at_position > 0 THEN CAST(count AS DOUBLE) / CAST(total_rankers_at_position AS DOUBLE)
         ELSE 0.0 
       END AS pct_among_rankers
     FROM complete_counts

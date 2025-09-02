@@ -149,9 +149,9 @@ describe("SQL Integration Tests", () => {
 
     // Expected results:
     // Total ballots with votes: 6
-    // Alice: rank 1 = 3 ballots, rank 2 = 1 ballot, rank 3 = 1 ballot (total rankers: 5)
-    // Bob: rank 1 = 3 ballots, rank 2 = 3 ballots, rank 3 = 0 ballots (total rankers: 6)
-    // Charlie: rank 1 = 0, rank 2 = 0, rank 3 = 0 (total rankers: 0, zero-rank candidate)
+    // Rank 1 rankers: 6 ballots (Alice: 3, Bob: 3, Charlie: 0)
+    // Rank 2 rankers: 3 ballots (Alice: 1, Bob: 2, Charlie: 0)
+    // Rank 3 rankers: 1 ballot (Alice: 1, Bob: 0, Charlie: 0)
 
     expect(rows).toHaveLength(9); // 3 candidates × 3 ranks
 
@@ -164,8 +164,8 @@ describe("SQL Integration Tests", () => {
         candidate_id: 1,
         rank_position: 1,
         count: 3,
-        pct_all_ballots: 0.5, // 3/6
-        pct_among_rankers: 0.6, // 3/5
+        pct_all_ballots: 0.5, // 3/6 total ballots
+        pct_among_rankers: 0.5, // 3/6 rank-1 rankers
       }),
     );
 
@@ -177,8 +177,8 @@ describe("SQL Integration Tests", () => {
         candidate_id: 1,
         rank_position: 2,
         count: 1,
-        pct_all_ballots: 1 / 6,
-        pct_among_rankers: 0.2, // 1/5
+        pct_all_ballots: 1 / 6, // 1/6 total ballots
+        pct_among_rankers: 1 / 3, // 1/3 rank-2 rankers
       }),
     );
 
@@ -191,8 +191,8 @@ describe("SQL Integration Tests", () => {
         candidate_id: 2,
         rank_position: 1,
         count: 3,
-        pct_all_ballots: 0.5, // 3/6
-        pct_among_rankers: 0.6, // 3/5 (since only 5 ballots ranked Bob)
+        pct_all_ballots: 0.5, // 3/6 total ballots
+        pct_among_rankers: 0.5, // 3/6 rank-1 rankers
       }),
     );
 
