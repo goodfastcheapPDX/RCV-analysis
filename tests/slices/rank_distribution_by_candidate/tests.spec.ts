@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, test } from "vitest";
+import { Manifest } from "@/contracts/manifest";
 import { computeRankDistributionByCandidate } from "@/packages/contracts/slices/rank_distribution_by_candidate/compute";
 import {
   Data,
@@ -123,22 +124,22 @@ describe("Rank Distribution by Candidate Integration", () => {
 
     // Check manifest was updated
     const manifestPath = `data/${env}/manifest.json`;
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const manifest = Manifest.parse(
+      JSON.parse(readFileSync(manifestPath, "utf8")),
+    );
 
     // Find the correct contest in the nested structure
     const election = manifest.elections.find(
-      (e: any) => e.election_id === electionId,
+      (e) => e.election_id === electionId,
     );
     expect(election).toBeDefined();
 
-    const contest = election.contests.find(
-      (c: any) => c.contest_id === contestId,
-    );
+    const contest = election?.contests.find((c) => c.contest_id === contestId);
     expect(contest).toBeDefined();
 
     // Check that rank_distribution artifact was added to the contest
-    expect(contest.rank_distribution).toBeDefined();
-    expect(contest.rank_distribution).toEqual({
+    expect(contest?.rank_distribution).toBeDefined();
+    expect(contest?.rank_distribution).toEqual({
       uri: expect.stringContaining("rank_distribution.parquet"),
       sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       rows: expect.any(Number),

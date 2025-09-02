@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { selectCandidateRankDistribution } from "@/lib/slices/rankDistribution";
 import { createOutputFixture } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 import { RankDistributionCard } from "./RankDistributionCard";
 
@@ -15,17 +14,9 @@ const meta = {
       control: "text",
       description: "Name of the candidate",
     },
-    candidateId: {
-      control: "number",
-      description: "ID of the candidate",
-    },
-    loading: {
-      control: "boolean",
-      description: "Loading state",
-    },
-    error: {
-      control: "text",
-      description: "Error message",
+    data: {
+      control: "object",
+      description: "Array of rank distribution data",
     },
   },
 } satisfies Meta<typeof RankDistributionCard>;
@@ -211,12 +202,7 @@ const createMockRankData = (
 export const Default: Story = {
   args: {
     candidateName: "ALICE HARDESTY",
-    candidateId: 1,
-    data: selectCandidateRankDistribution(
-      createMockRankData(1, "HappyPath"),
-      1,
-    ),
-    loading: false,
+    data: createMockRankData(1, "HappyPath"),
   },
 };
 
@@ -224,12 +210,7 @@ export const Default: Story = {
 export const ZeroRank: Story = {
   args: {
     candidateName: "UNRANKED CANDIDATE",
-    candidateId: 99,
-    data: selectCandidateRankDistribution(
-      createMockRankData(99, "ZeroRank"),
-      99,
-    ),
-    loading: false,
+    data: createMockRankData(99, "ZeroRank"),
   },
 };
 
@@ -237,9 +218,7 @@ export const ZeroRank: Story = {
 export const SparseRanks: Story = {
   args: {
     candidateName: "CANDACE AVALOS",
-    candidateId: 2,
-    data: selectCandidateRankDistribution(createMockRankData(2, "Sparse"), 2),
-    loading: false,
+    data: createMockRankData(2, "Sparse"),
   },
 };
 
@@ -247,9 +226,7 @@ export const SparseRanks: Story = {
 export const SkewedHead: Story = {
   args: {
     candidateName: "OLIVIA CLARK",
-    candidateId: 3,
-    data: selectCandidateRankDistribution(createMockRankData(3, "SkewHead"), 3),
-    loading: false,
+    data: createMockRankData(3, "SkewHead"),
   },
 };
 
@@ -257,9 +234,7 @@ export const SkewedHead: Story = {
 export const SkewedTail: Story = {
   args: {
     candidateName: "STEVE NOVICK",
-    candidateId: 4,
-    data: selectCandidateRankDistribution(createMockRankData(4, "SkewTail"), 4),
-    loading: false,
+    data: createMockRankData(4, "SkewTail"),
   },
 };
 
@@ -267,12 +242,7 @@ export const SkewedTail: Story = {
 export const ToggleModes: Story = {
   args: {
     candidateName: "TIFFANY KOYAMA LANE",
-    candidateId: 5,
-    data: selectCandidateRankDistribution(
-      createMockRankData(5, "HappyPath"),
-      5,
-    ),
-    loading: false,
+    data: createMockRankData(5, "HappyPath"),
   },
   play: async ({ canvasElement }) => {
     console.log(canvasElement);
@@ -281,38 +251,11 @@ export const ToggleModes: Story = {
   },
 };
 
-// Loading state
-export const Loading: Story = {
-  args: {
-    candidateName: "LOADING CANDIDATE",
-    candidateId: 6,
-    loading: true,
-  },
-};
-
-// Error state
-export const ErrorCandidate: Story = {
-  args: {
-    candidateName: "ERROR CANDIDATE",
-    candidateId: 7,
-    error:
-      "Rank distribution artifact not available for contest portland-20241105-gen/d2-3seat",
-    onRetry: () => {
-      console.log("Retry clicked");
-    },
-  },
-};
-
 // Long candidate name
 export const LongCandidateName: Story = {
   args: {
     candidateName: "ALICE MARIE HARDESTY-JOHNSON-WILLIAMSON",
-    candidateId: 8,
-    data: selectCandidateRankDistribution(
-      createMockRankData(8, "HappyPath"),
-      8,
-    ),
-    loading: false,
+    data: createMockRankData(8, "HappyPath"),
   },
 };
 
@@ -320,15 +263,14 @@ export const LongCandidateName: Story = {
 export const SingleRank: Story = {
   args: {
     candidateName: "SINGLE RANK",
-    candidateId: 9,
     data: [
-      {
-        rank: 1,
+      createOutputFixture({
+        candidate_id: 9,
+        rank_position: 1,
         count: 1500,
         pct_all_ballots: 0.5,
         pct_among_rankers: 1.0,
-      },
+      }),
     ],
-    loading: false,
   },
 };

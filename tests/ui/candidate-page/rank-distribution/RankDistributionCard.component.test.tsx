@@ -1,54 +1,56 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 import { RankDistributionCard } from "@/components/candidate/RankDistributionCard";
+import { createOutputFixture } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 
-// Only mock the skeleton component to avoid rendering complexity
-vi.mock("@/components/ui/skeleton", () => ({
-  Skeleton: ({ className }: { className?: string }) => (
-    <div data-testid="skeleton" className={className} />
-  ),
-}));
-
+// Generate test data using contract fixtures
+const candidateId = 42;
 const mockCandidateData = [
-  {
-    rank: 1,
+  createOutputFixture({
+    candidate_id: candidateId,
+    rank_position: 1,
     count: 1250,
     pct_all_ballots: 0.35,
     pct_among_rankers: 0.42,
-  },
-  {
-    rank: 2,
+  }),
+  createOutputFixture({
+    candidate_id: candidateId,
+    rank_position: 2,
     count: 890,
     pct_all_ballots: 0.25,
     pct_among_rankers: 0.3,
-  },
-  {
-    rank: 3,
+  }),
+  createOutputFixture({
+    candidate_id: candidateId,
+    rank_position: 3,
     count: 534,
     pct_all_ballots: 0.15,
     pct_among_rankers: 0.18,
-  },
+  }),
 ];
 
 const mockZeroRankData = [
-  {
-    rank: 1,
+  createOutputFixture({
+    candidate_id: candidateId,
+    rank_position: 1,
     count: 0,
     pct_all_ballots: 0,
     pct_among_rankers: 0,
-  },
-  {
-    rank: 2,
+  }),
+  createOutputFixture({
+    candidate_id: candidateId,
+    rank_position: 2,
     count: 0,
     pct_all_ballots: 0,
     pct_among_rankers: 0,
-  },
+  }),
 ];
 
 describe("RankDistributionCard", () => {
   afterEach(() => {
     cleanup();
   });
+
   it("should render chart with data", () => {
     const { container } = render(
       <RankDistributionCard
@@ -64,53 +66,6 @@ describe("RankDistributionCard", () => {
     expect(container.textContent).toContain("rank_distribution_by_candidate");
     // Check for actual chart elements instead of mocked test IDs
     expect(container.querySelector("[data-chart]")).toBeInTheDocument();
-  });
-
-  it("should show loading state with skeletons", () => {
-    const { container } = render(
-      <RankDistributionCard candidateName="LOADING CANDIDATE" loading={true} />,
-    );
-
-    expect(container.textContent).toContain("Rank Distribution");
-    expect(container.textContent).toContain(
-      "Visual breakdown of ranking patterns for LOADING CANDIDATE",
-    );
-    // Check for skeleton elements - there should be at least one
-    const skeletons = screen.getAllByTestId("skeleton");
-    expect(skeletons.length).toBeGreaterThan(0);
-  });
-
-  it("should show error state with retry button", () => {
-    const mockRetry = vi.fn();
-    const { container } = render(
-      <RankDistributionCard
-        candidateName="ERROR CANDIDATE"
-        error="Data not available"
-        onRetry={mockRetry}
-      />,
-    );
-
-    expect(container.textContent).toContain("Data Unavailable");
-    expect(container.textContent).toContain("Data not available");
-
-    const retryButton = screen.getByRole("button", { name: /retry/i });
-    expect(retryButton).toBeInTheDocument();
-
-    fireEvent.click(retryButton);
-    expect(mockRetry).toHaveBeenCalledTimes(1);
-  });
-
-  it("should show error state without retry button when onRetry not provided", () => {
-    const { container } = render(
-      <RankDistributionCard
-        candidateName="ERROR CANDIDATE NO RETRY"
-        error="Data not available"
-      />,
-    );
-
-    expect(container.textContent).toContain("Data Unavailable");
-    // Check that there's no retry text in this specific container
-    expect(container.textContent).not.toContain("Retry");
   });
 
   it("should show empty state for zero-rank candidate", () => {

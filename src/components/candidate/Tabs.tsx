@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 import { RankDistributionCard } from "./RankDistributionCard";
 
 interface CandidateTabsProps {
@@ -11,6 +12,7 @@ interface CandidateTabsProps {
   candidateId: string;
   candidateName: string;
   currentTab: string;
+  rankDistributionData: RankDistributionOutput[];
 }
 
 export function CandidateTabs({
@@ -19,6 +21,7 @@ export function CandidateTabs({
   candidateId,
   candidateName,
   currentTab,
+  rankDistributionData,
 }: CandidateTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -69,7 +72,10 @@ export function CandidateTabs({
       </TabsContent>
 
       <TabsContent value="rank" className="space-y-4">
-        <RankDistributionCard candidateName={candidateName} />
+        <RankDistributionCard
+          candidateName={candidateName}
+          data={rankDistributionData}
+        />
       </TabsContent>
 
       <TabsContent value="rounds" className="space-y-4">

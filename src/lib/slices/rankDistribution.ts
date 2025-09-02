@@ -33,14 +33,6 @@ export type RankDistributionResult =
   | { success: true; data: RankDistributionOutput[] }
   | { success: false; error: RankDistributionError };
 
-// Selected candidate data type
-export type CandidateRankDistribution = {
-  rank: number;
-  count: number;
-  pct_all_ballots: number;
-  pct_among_rankers: number;
-};
-
 /**
  * Load rank distribution data for a specific contest
  * Returns all candidates' rank distribution data from the precomputed artifact
@@ -116,65 +108,4 @@ export async function loadRankDistribution(
       },
     };
   }
-}
-
-/**
- * Filter rank distribution data for a specific candidate
- * Fills in missing ranks with zero values and sorts by rank position
- */
-export function selectCandidateRankDistribution(
-  rows: RankDistributionOutput[],
-  candidateId: number,
-): CandidateRankDistribution[] {
-  // Filter rows for this candidate
-  const candidateRows = rows.filter((row) => row.candidate_id === candidateId);
-
-  if (candidateRows.length === 0) {
-    return [];
-  }
-
-  // Find the maximum rank position in the data to ensure we fill gaps
-  const maxRank = Math.max(...rows.map((row) => row.rank_position));
-
-  // Create a complete sequence from 1 to maxRank
-  const result: CandidateRankDistribution[] = [];
-
-  for (let rank = 1; rank <= maxRank; rank++) {
-    const existing = candidateRows.find((row) => row.rank_position === rank);
-
-    if (existing) {
-      result.push({
-        rank: existing.rank_position,
-        count: existing.count,
-        pct_all_ballots: existing.pct_all_ballots,
-        pct_among_rankers: existing.pct_among_rankers,
-      });
-    } else {
-      // Fill in missing rank with zeros
-      result.push({
-        rank,
-        count: 0,
-        pct_all_ballots: 0,
-        pct_among_rankers: 0,
-      });
-    }
-  }
-
-  return result.sort((a, b) => a.rank - b.rank);
-}
-
-/**
- * Check if a candidate has any ranking data (not zero-rank)
- */
-export function candidateHasRankers(
-  distribution: CandidateRankDistribution[],
-): boolean {
-  return distribution.some((row) => row.count > 0);
-}
-
-/**
- * Get the maximum rank position in the distribution data
- */
-export function getMaxRank(rows: RankDistributionOutput[]): number {
-  return Math.max(...rows.map((row) => row.rank_position), 0);
 }

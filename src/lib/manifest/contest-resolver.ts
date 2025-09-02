@@ -98,6 +98,14 @@ export class ContestResolver {
     const contest = this.getContest(electionId, contestId);
     return contest.cvr.ballots_long?.uri ?? null;
   }
+
+  /**
+   * Get rank distribution URI for contest
+   */
+  getRankDistributionUri(electionId: string, contestId: string): string | null {
+    const contest = this.getContest(electionId, contestId);
+    return contest.rank_distribution?.uri ?? null;
+  }
 }
 
 /**
