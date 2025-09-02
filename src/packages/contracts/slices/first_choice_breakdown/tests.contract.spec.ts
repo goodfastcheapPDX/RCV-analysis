@@ -183,7 +183,7 @@ describe("first_choice_breakdown contract enforcement", () => {
         const rows = await parseAllRows(conn, "first_choice", Output);
         expect(rows.length).toBeGreaterThan(0);
 
-        // Verify data consistency
+        // Verify data consistency using validated fixtures
         const totalVotes = rows.reduce(
           (sum, row) => sum + row.first_choice_votes,
           0,
@@ -192,6 +192,12 @@ describe("first_choice_breakdown contract enforcement", () => {
 
         expect(totalVotes).toBeGreaterThan(0);
         expect(Math.abs(totalPct - 100)).toBeLessThan(0.01); // Should sum to ~100%
+
+        // Validate each row matches fixture schema
+        rows.forEach((row) => {
+          const validatedRow = Output.parse(row);
+          expect(validatedRow).toBeTruthy();
+        });
       } finally {
         await conn.closeSync();
       }

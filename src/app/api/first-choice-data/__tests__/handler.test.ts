@@ -1,16 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
-import type { Output } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
+import {
+  createOutputFixture,
+  Output,
+} from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
 import { handleFirstChoiceDataRequest } from "../handler";
 
 describe("handleFirstChoiceDataRequest", () => {
   it("should return success with first choice data using defaults", async () => {
     const result = await handleFirstChoiceDataRequest();
+    const defaultFixture = createOutputFixture();
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
-    expect(result.data?.electionId).toBe("portland-20241105-gen");
-    expect(result.data?.contestId).toBe("d2-3seat");
+    expect(result.data?.electionId).toBe(defaultFixture.election_id);
+    expect(result.data?.contestId).toBe(defaultFixture.contest_id);
     expect(result.data?.data).toBeDefined();
     expect(Array.isArray(result.data?.data)).toBe(true);
     expect(result.data?.metadata).toBeDefined();
@@ -19,14 +23,15 @@ describe("handleFirstChoiceDataRequest", () => {
   });
 
   it("should return success with custom election and contest params", async () => {
+    const testFixture = createOutputFixture();
     const result = await handleFirstChoiceDataRequest({
-      electionId: "portland-20241105-gen",
-      contestId: "d2-3seat",
+      electionId: testFixture.election_id,
+      contestId: testFixture.contest_id,
     });
 
     expect(result.success).toBe(true);
-    expect(result.data?.electionId).toBe("portland-20241105-gen");
-    expect(result.data?.contestId).toBe("d2-3seat");
+    expect(result.data?.electionId).toBe(testFixture.election_id);
+    expect(result.data?.contestId).toBe(testFixture.contest_id);
   });
 
   it("should return 404 when contest not found", async () => {
@@ -61,17 +66,12 @@ describe("handleFirstChoiceDataRequest", () => {
 
     expect(result.success).toBe(true);
 
-    // Each row should match the Output schema
+    // Each row should match the Output schema - validate using fixture parsing
     result.data?.data.forEach((row: z.infer<typeof Output>) => {
-      expect(row).toHaveProperty("candidate_name");
-      expect(row).toHaveProperty("first_choice_votes");
-      expect(row).toHaveProperty("pct");
-      expect(typeof row.candidate_name).toBe("string");
-      expect(typeof row.first_choice_votes).toBe("number");
-      expect(typeof row.pct).toBe("number");
-      expect(row.first_choice_votes).toBeGreaterThanOrEqual(0);
-      expect(row.pct).toBeGreaterThanOrEqual(0);
-      expect(row.pct).toBeLessThanOrEqual(100);
+      const validatedRow = Output.parse(row); // This will throw if invalid
+      expect(validatedRow.candidate_name).toBe(row.candidate_name);
+      expect(validatedRow.first_choice_votes).toBe(row.first_choice_votes);
+      expect(validatedRow.pct).toBe(row.pct);
     });
   });
 });
