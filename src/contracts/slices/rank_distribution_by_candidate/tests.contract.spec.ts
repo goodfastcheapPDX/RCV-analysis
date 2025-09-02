@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, test } from "vitest";
-import { assertTableColumns, parseAllRows } from "@/lib/contract-enforcer";
 import {
   createDataFixture,
   createOutputFixture,
@@ -11,7 +10,8 @@ import {
   Output,
   SQL_QUERIES,
   Stats,
-} from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
+} from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
+import { assertTableColumns, parseAllRows } from "@/lib/contract-enforcer";
 
 describe("Rank Distribution by Candidate Contract", () => {
   test("Output schema validates correctly", () => {

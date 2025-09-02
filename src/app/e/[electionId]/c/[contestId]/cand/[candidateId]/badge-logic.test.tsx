@@ -12,15 +12,15 @@ import {
   createContestFixture,
   createElectionFixture,
 } from "@/contracts/manifest";
+import { createCandidatesOutputFixture } from "@/contracts/slices/ingest_cvr/index.contract";
+import {
+  createStvRoundsOutputFixture,
+  createStvRoundsStatsFixture,
+} from "@/contracts/slices/stv_rounds/index.contract";
 import {
   loadCandidatesForContest,
   loadStvForContest,
 } from "@/lib/manifest/loaders";
-import { createCandidatesOutputFixture } from "@/packages/contracts/slices/ingest_cvr/index.contract";
-import {
-  createStvRoundsOutputFixture,
-  createStvRoundsStatsFixture,
-} from "@/packages/contracts/slices/stv_rounds/index.contract";
 
 // Mock the environment to use test data
 vi.mock("@/lib/env", () => ({

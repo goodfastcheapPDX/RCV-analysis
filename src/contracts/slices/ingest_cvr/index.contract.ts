@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IdentitySchema } from "../../../../contracts/ids";
+import { IdentitySchema } from "@/contracts/ids";
 
 // Candidates output schema - defines structure of candidates.parquet
 export const CandidatesOutput = IdentitySchema.extend({

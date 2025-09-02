@@ -4,11 +4,11 @@ import { join } from "node:path";
 import * as duck from "@duckdb/node-api";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Manifest } from "@/contracts/manifest";
-import { createOutputFixture } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
+import { createOutputFixture } from "@/contracts/slices/first_choice_breakdown/index.contract";
 import {
   createStvMetaOutputFixture,
   createStvRoundsOutputFixture,
-} from "@/packages/contracts/slices/stv_rounds/index.contract";
+} from "@/contracts/slices/stv_rounds/index.contract";
 import { ContestResolver } from "../contest-resolver";
 import { loadFirstChoiceForContest, loadStvForContest } from "../loaders";
 

@@ -35,7 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
+import type { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 
 interface RankDistributionCardProps {
   candidateName: string;

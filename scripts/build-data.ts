@@ -9,8 +9,8 @@ import {
   type ElectionId,
   electionIdFrom,
 } from "../src/contracts/ids";
+import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { validateEnv } from "../src/lib/env";
-import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
 
 // Load environment variables and validate
 dotenv();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStvRoundsOutputFixture } from "@/packages/contracts/slices/stv_rounds/index.contract";
+import { createStvRoundsOutputFixture } from "@/contracts/slices/stv_rounds/index.contract";
 import { handleStvDataRequest } from "../handler";
 
 describe("handleStvDataRequest", () => {

@@ -1,10 +1,7 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, it } from "vitest";
-import {
-  assertTableColumns,
-  parseAllRows,
-} from "../../../../lib/contract-enforcer.js";
+import { assertTableColumns, parseAllRows } from "@/lib/contract-enforcer";
 import { Output } from "./index.contract";
 
 describe("first_choice_breakdown contract enforcement", () => {

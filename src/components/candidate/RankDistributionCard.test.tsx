@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { RankDistributionCard } from "@/components/candidate/RankDistributionCard";
-import { createOutputFixture } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
+import { createOutputFixture } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 
 // Generate test data using contract fixtures
 const candidateId = 42;

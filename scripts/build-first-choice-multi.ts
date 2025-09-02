@@ -8,7 +8,7 @@ import {
   type ElectionId,
   electionIdFrom,
 } from "../src/contracts/ids";
-import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
+import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choice_breakdown/compute";
 
 interface BuildFirstChoiceMultiArgs {
   election?: string;

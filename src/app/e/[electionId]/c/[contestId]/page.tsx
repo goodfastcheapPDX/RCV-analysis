@@ -12,12 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
+import { StvRoundsView } from "@/contracts/slices/stv_rounds/view";
 import {
   loadCandidatesForContest,
   loadStvForContest,
 } from "@/lib/manifest/loaders";
-import type { CandidatesOutput } from "@/packages/contracts/slices/ingest_cvr/index.contract";
-import { StvRoundsView } from "@/packages/contracts/slices/stv_rounds/view";
 
 interface ContestPageProps {
   params: Promise<{ electionId: string; contestId: string }>;

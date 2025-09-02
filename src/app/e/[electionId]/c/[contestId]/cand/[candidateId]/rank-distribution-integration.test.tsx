@@ -18,14 +18,11 @@ vi.mock("@/lib/manifest/loaders", () => ({
 }));
 
 // Mock the data loading functionality from the correct location
-vi.mock(
-  "@/packages/contracts/slices/rank_distribution_by_candidate/loader",
-  () => ({
-    loadRankDistribution: vi.fn(),
-    selectCandidateRankDistribution: vi.fn(),
-    candidateHasRankers: vi.fn(),
-  }),
-);
+vi.mock("@/contracts/slices/rank_distribution_by_candidate/loader", () => ({
+  loadRankDistribution: vi.fn(),
+  selectCandidateRankDistribution: vi.fn(),
+  candidateHasRankers: vi.fn(),
+}));
 
 // No mocking needed - let Recharts render naturally
 

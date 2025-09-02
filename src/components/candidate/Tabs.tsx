@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
+import type { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 import { RankDistributionCard } from "./RankDistributionCard";
 
 interface CandidateTabsProps {

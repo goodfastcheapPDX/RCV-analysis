@@ -3,7 +3,7 @@ import type { z } from "zod";
 import {
   createOutputFixture,
   Output,
-} from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
+} from "@/contracts/slices/first_choice_breakdown/index.contract";
 import { handleFirstChoiceDataRequest } from "../handler";
 
 describe("handleFirstChoiceDataRequest", () => {

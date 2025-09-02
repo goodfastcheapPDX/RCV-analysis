@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Output } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
-import type { CandidatesOutput } from "@/packages/contracts/slices/ingest_cvr/index.contract";
+import type { Output } from "@/contracts/slices/first_choice_breakdown/index.contract";
+import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
 import FirstChoicePage from "../page";
 
 // Mock the environment to use test data
@@ -10,7 +10,7 @@ vi.mock("@/lib/env", () => ({
 }));
 
 // Mock the FirstChoiceBreakdownView component to avoid complex rendering in tests
-vi.mock("@/packages/contracts/slices/first_choice_breakdown/view", () => ({
+vi.mock("@/contracts/slices/first_choice_breakdown/view", () => ({
   FirstChoiceBreakdownView: ({
     data,
   }: {

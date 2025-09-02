@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, test } from "vitest";
 import { Manifest } from "@/contracts/manifest";
-import { computeRankDistributionByCandidate } from "@/packages/contracts/slices/rank_distribution_by_candidate/compute";
+import { computeRankDistributionByCandidate } from "@/contracts/slices/rank_distribution_by_candidate/compute";
 import {
   Data,
   Output,
   Stats,
-} from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
+} from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 
 describe("Rank Distribution by Candidate Integration", () => {
   test("computes rank distribution correctly using test data", async () => {

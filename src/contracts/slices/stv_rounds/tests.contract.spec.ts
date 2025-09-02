@@ -2,10 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, it } from "vitest";
 import type { Manifest } from "@/contracts/manifest";
-import {
-  assertTableColumns,
-  parseAllRows,
-} from "../../../../lib/contract-enforcer.js";
+import { assertTableColumns, parseAllRows } from "@/lib/contract-enforcer";
 import {
   createStvMetaOutputFixture,
   createStvRoundsOutputFixture,

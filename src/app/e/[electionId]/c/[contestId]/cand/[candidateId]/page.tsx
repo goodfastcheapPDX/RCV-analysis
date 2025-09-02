@@ -14,12 +14,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import type { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 import {
   loadCandidatesForContest,
   loadRankDistributionForContest,
   loadStvForContest,
 } from "@/lib/manifest/loaders";
-import type { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 
 interface CandidatePageProps {
   params: Promise<{

@@ -10,7 +10,7 @@
     "build:data:all": "npx tsx scripts/build-all-districts.ts",
     "build:data:firstchoice": "npx tsx scripts/build-first-choice.ts",
     "build:data:rankdist": "npx tsx scripts/build-rank-distribution.ts",
-    "build:data:stv": "npx tsx src/packages/contracts/slices/stv_rounds/compute.ts",
+    "build:data:stv": "npx tsx src/contracts/slices/stv_rounds/compute.ts",
     "validate:firstchoice": " npx tsx scripts/validateFirstChoice.ts",
     "validate:stv": "npx tsx scripts/validateStvRounds.ts",
     "start": "next start",

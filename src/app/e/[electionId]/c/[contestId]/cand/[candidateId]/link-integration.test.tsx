@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { FirstChoiceBreakdownView } from "@/packages/contracts/slices/first_choice_breakdown/view";
-import { StvRoundsView } from "@/packages/contracts/slices/stv_rounds/view";
+import { FirstChoiceBreakdownView } from "@/contracts/slices/first_choice_breakdown/view";
+import { StvRoundsView } from "@/contracts/slices/stv_rounds/view";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({

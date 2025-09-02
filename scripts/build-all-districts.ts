@@ -10,10 +10,10 @@ import {
   type ElectionId,
   electionIdFrom,
 } from "@/contracts/ids";
-import { computeFirstChoiceBreakdown } from "../src/packages/contracts/slices/first_choice_breakdown/compute";
-import { ingestCvr } from "../src/packages/contracts/slices/ingest_cvr/compute";
-import { computeRankDistributionByCandidate } from "../src/packages/contracts/slices/rank_distribution_by_candidate/compute";
-import { computeStvRounds } from "../src/packages/contracts/slices/stv_rounds/compute";
+import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choice_breakdown/compute";
+import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
+import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
+import { computeStvRounds } from "../src/contracts/slices/stv_rounds/compute";
 
 interface DistrictConfig {
   districtId: DistrictId;

@@ -1,12 +1,12 @@
-import { parseAllRows } from "@/lib/contract-enforcer";
-import { Output as FirstChoiceOutput } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
-import { CandidatesOutput } from "@/packages/contracts/slices/ingest_cvr/index.contract";
-import { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
+import { Output as FirstChoiceOutput } from "@/contracts/slices/first_choice_breakdown/index.contract";
+import { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
+import { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 import {
   StvMetaOutput,
   StvRoundsOutput,
   type StvRoundsStats,
-} from "@/packages/contracts/slices/stv_rounds/index.contract";
+} from "@/contracts/slices/stv_rounds/index.contract";
+import { parseAllRows } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
   createContestResolverSync,

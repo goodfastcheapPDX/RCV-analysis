@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { createOutputFixture } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
+import { createOutputFixture } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 import { RankDistributionCard } from "./RankDistributionCard";
 
 const meta = {

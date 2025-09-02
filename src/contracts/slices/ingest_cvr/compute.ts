@@ -7,16 +7,16 @@ import {
   createIdentity,
   type DistrictId,
   type ElectionId,
-} from "../../../../contracts/ids";
-import { ArtifactRef, type Manifest } from "../../../../contracts/manifest";
+} from "@/contracts/ids";
+import { ArtifactRef, type Manifest } from "@/contracts/manifest";
 import {
   assertManifestSection,
   assertTableColumns,
   parseAllRows,
   preprocessDuckDBRow,
   sha256,
-} from "../../../../lib/contract-enforcer";
-import { type DataEnv, getDataEnv } from "../../../../lib/env";
+} from "@/lib/contract-enforcer";
+import { type DataEnv, getDataEnv } from "@/lib/env";
 import {
   BallotsLongOutput,
   CandidatesOutput,
