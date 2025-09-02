@@ -22,8 +22,8 @@ export default defineConfig({
   test: {
     env: {
       NODE_ENV: 'test',
-      ...dotenv.config({ path: '.env.test' }).parsed,
       ...dotenv.config().parsed,
+      ...dotenv.config({ path: '.env.test' }).parsed,
     },
     // Global setup to generate test data before all tests run
     globalSetup: ["./scripts/global-test-setup.ts"],

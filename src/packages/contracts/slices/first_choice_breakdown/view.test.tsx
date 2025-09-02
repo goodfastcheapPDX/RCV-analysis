@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { createOutputFixture, type Output } from "./index.contract";
@@ -62,17 +62,15 @@ describe("FirstChoiceBreakdownView", () => {
   });
 
   it("displays educational information about the chart", () => {
-    render(<FirstChoiceBreakdownView data={mockData} />);
+    const { container } = render(<FirstChoiceBreakdownView data={mockData} />);
 
-    expect(screen.getAllByText("About this chart:")[0]).toBeInTheDocument();
-    expect(
-      screen.getByText(/This shows how many voters selected each candidate/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /votes may transfer to other candidates during tabulation rounds/,
-      ),
-    ).toBeInTheDocument();
+    expect(container.textContent).toContain("About this chart:");
+    expect(container.textContent).toContain(
+      "This shows how many voters selected each candidate",
+    );
+    expect(container.textContent).toContain(
+      "votes may transfer to other candidates during tabulation rounds",
+    );
   });
 
   it("shows the leading candidate information", () => {
@@ -231,16 +229,24 @@ describe("FirstChoiceBreakdownView", () => {
       }),
     ];
 
-    render(<FirstChoiceBreakdownView data={dataWithZeroVotes} />);
+    const { container } = render(
+      <FirstChoiceBreakdownView data={dataWithZeroVotes} />,
+    );
 
-    expect(screen.getByText("Winner")).toBeInTheDocument();
-    expect(screen.getByText(/leads with 100.0%/)).toBeInTheDocument();
+    expect(within(container).getByText("Winner")).toBeInTheDocument();
+    expect(
+      within(container).getByText(/leads with 100.0%/),
+    ).toBeInTheDocument();
 
     // Verify the total vote count is correct (1000 + 0 = 1000)
-    expect(screen.getByText(/\(1,000 total ballots\)/)).toBeInTheDocument();
+    expect(
+      within(container).getByText(/\(1,000 total ballots\)/),
+    ).toBeInTheDocument();
 
     // The component should render without errors even with zero vote candidates
-    expect(screen.getByText("First Choice Breakdown")).toBeInTheDocument();
+    expect(
+      within(container).getByText("First Choice Breakdown"),
+    ).toBeInTheDocument();
   });
 
   it("maintains consistent color assignment through chart colors array", () => {
@@ -253,10 +259,13 @@ describe("FirstChoiceBreakdownView", () => {
       }),
     );
 
-    render(<FirstChoiceBreakdownView data={manyCandidate} />);
-
+    const { container } = render(
+      <FirstChoiceBreakdownView data={manyCandidate} />,
+    );
     // Should render without errors even with more candidates than colors
-    expect(screen.getByText(/lead over second place/)).toBeInTheDocument();
+    expect(
+      within(container).getByText(/lead over second place/),
+    ).toBeInTheDocument();
 
     // Check the total vote count calculation
     const totalVotes = manyCandidate.reduce(
@@ -264,7 +273,7 @@ describe("FirstChoiceBreakdownView", () => {
       0,
     );
     expect(
-      screen.getByText(
+      within(container).getByText(
         new RegExp(`\\(${totalVotes.toLocaleString()} total ballots\\)`),
       ),
     ).toBeInTheDocument();

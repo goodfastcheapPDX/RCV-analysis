@@ -1,157 +1,161 @@
-Title: Add per-candidate page scaffold + routing (rank distribution placeholder)
+Title: Implement Rank Distribution Visualization (horizontal bars) + Storybook with goldens & edge cases
 Context (spec packet)
 
-Multi-election routes exist at /e/[electionId]/c/[contestId] with first-choice + STV visualizations.
+Per-candidate page scaffold exists at /e/[electionId]/c/[contestId]/cand/[candidateId].
 
-We need a canonical page per candidate to host upcoming visuals (starting with rank-distribution).
+Slice rank_distribution_by_candidate provides rows:
+{ election_id, contest_id, candidate_id, rank, count, pct_all_ballots, pct_among_rankers }.
 
-Contracts-first policy: no changes to compute/artifacts in this task; consume what exists.
+Charting/UI: Recharts + shadcn/ui. Prefer horizontal bars (rank on Y, percent on X).
 
-Decisions (to unblock):
+Add Storybook stories to visualize:
 
-candidateId format: use the existing candidate_id value from artifacts as the canonical string id in URLs (cast numerics to strings).
+“Golden” (real artifact rows for a known contest/candidate).
 
-Slug policy: skip slug support for now - deal directly with canonical candidate IDs until it becomes necessary.
-
-Badge logic:
-
-“Elected” if candidate appears in STV meta as elected for this (electionId, contestId).
-
-“Eliminated” if present in any elimination event.
-
-If neither, show no status badge.
-
-Tab persistence: keep ?tab=rank (default) in the query string; when navigating between candidates within the same contest, preserve the current tab value; when moving to a different contest or election, reset to default (rank).
+Hand-coded fixtures for critical cases (zero-rank, sparse ranks, skewed tails).
 
 Scope
 
-Routing
+Data access (UI)
 
-New route: /e/[electionId]/c/[contestId]/cand/[candidateId].
+src/lib/slices/rankDistribution.ts
 
-On load:
+loadRankDistribution(eid, cid): Promise<Row[]>
 
-Detect if the param matches a known candidate_id (string compare).
+selectCandidateRankDistribution(rows, candidateId): Row[]
 
-If no match → render Not Found.
+Lightweight Zod guard mirroring the slice output; log + throw typed error on mismatch.
 
-Canonical URL shape:
-/e/{eid}/c/{cid}/cand/{candidateId}?tab=rank
+Manifest lookup by sliceKey="rank_distribution_by_candidate"; if no artifact, return a typed error { code:"MISSING_ARTIFACT" }.
 
-Data access (read-only)
+Chart component
 
-Use existing manifest lookups to obtain:
+components/candidate/RankDistributionCard.tsx
 
-Contest candidates list (id, display_name at minimum).
+Recharts <ResponsiveContainer><BarChart layout="vertical">.
 
-STV meta/rounds for badge derivation (elected vs eliminated).
+YAxis: rank (1..max).
 
-Skip utils layer for now - implement candidate lookup and badge logic directly in the page component until complexity requires abstraction.
+XAxis: percentage (0..1; % formatter).
 
-No new fetch endpoints; use whatever manifest/file helpers already exist. If candidates live in Parquet, call the existing data loader that reads it (or temporary manifest cache if present).
+Toggle (shadcn) for metric: pct_all_ballots (default) vs pct_among_rankers.
 
-Page shell
+Tooltip: rank, count, both percentages.
 
-Server component page renders:
+Empty state: when all counts = 0.
 
-Header with candidate name + badge chip (elected / eliminated / none).
+Loading: shadcn Skeleton.
 
-Breadcrumbs: Election › Contest › Candidate.
+Error: “Data unavailable” with Retry button (re-calls loader).
 
-Local tabs (client component): Overview (stub), Rank distribution (default), Rounds (stub).
+Storybook
 
-RankDistributionCard placeholder component:
+New story file: components/candidate/RankDistributionCard.stories.tsx
 
-Clear explanatory text stating this is a placeholder for the upcoming rank distribution visualization.
+Stories:
 
-Expected data contract documentation: { rank: number; count: number; pct_all_ballots: number; pct_among_rankers: number }[]
+Golden/HappyPath: Loads real rows from a dev fixture loader (see #4).
 
-NO VISUALIZATION IMPLEMENTATION - this task only creates the placeholder, not the actual chart/bars.
+Edge_ZeroRank: All counts 0; chart shows empty state.
 
-Navigation wiring
+Edge_SparseRanks: Only ranks {1,3,5} present; ensure gaps render correctly in order 1..max.
 
-Make candidate labels in first-choice and STV rounds views link to the new page:
+Edge_SkewedHead: 1st-rank heavy distribution (tests axis scaling).
 
-Preserve ?tab when staying within same contest; otherwise omit.
+Edge_SkewedTail: Higher ranks dominate (tests legibility on small values at rank=1).
 
-Use the canonical candidate ID in URLs.
+ToggleModes: Preloads same data and initializes in “% among rankers”.
 
-Provide a “Back to contest” link in page header secondary actions.
+Loading: Simulated delay with skeleton.
 
-404 / validation
+Error: Simulated loader throw (missing artifact).
 
-Validate candidate existence within the (electionId, contestId) scope (not globally).
+Controls/Args:
 
-Unknown candidate → friendly Not Found with link back to contest page.
+metric: "pct_all_ballots" | "pct_among_rankers" (default "pct_all_ballots").
 
-UX polish
+maxRank (optional override to stress axis).
 
-Responsive layout; chart container with sensible min-height.
+candidateName (for aria-label/title).
 
-Tooltip “What is rank distribution?” short explainer.
+Decorators:
 
-“Data source” chip showing slice key it will use later: rank_distribution_by_candidate.
+withContainer to constrain width/height.
+
+Optional theme decorator to match app tokens.
+
+Golden plumbing for stories
+
+Add a small dev-only helper under /.storybook/fixtures/:
+
+rankDistribution.dev.fixture.ts exposing:
+
+loadGolden(eid, cid, candidateId): Promise<Row[]> (reads local Parquet/JSON test fixture or a trimmed JSON snapshot exported during build).
+
+handCoded(fixtype: 'ZeroRank'|'Sparse'|'SkewHead'|'SkewTail'|'HappyPath'): Row[]
+
+Keep no cross-env coupling: the golden used by Storybook is a small JSON snapshot, not the full Parquet, to keep stories instant.
+
+Add a script pnpm fixtures:rankdist that exports a minimal JSON for one known (eid,cid,candidateId) from Parquet into .storybook/fixtures/rankdist.golden.json. (This script is dev-only; not part of runtime.)
+
+Accessibility & responsiveness
+
+aria-label="Rank distribution bar chart for {candidateName}".
+
+Live region below chart that updates with selected metric name.
+
+Minimum heights: desktop min-h-[280px], mobile min-h-[220px].
+
+Keyboardable toggle; tooltip content summarized in accessible text (counts + selected metric value for focused bar, if feasible).
+
+Performance
+
+Memoize filtered candidate rows and computed max_rank.
+
+Do not prefetch all charts—the page loads only the contest-level artifact and filters for the current candidate.
 
 Tests
 
-Route resolution:
+Unit (lib): selection + sorting, zero-rank detection, Zod guard rejects malformed rows.
 
-valid candidate id → renders candidate header.
+Component: default renders horizontal bars; toggle switches metric; empty, loading, and error states.
 
-unknown candidate id → Not Found.
+Integration (page): visiting /cand/{candidateId}?tab=rank shows chart from a seeded manifest/artifact stub.
 
-Badge logic unit test with a tiny in-memory STV meta fixture.
-
-Link integration:
-
-First-choice table candidate name points to canonical URL.
-
-STV rounds candidate link points to canonical URL.
-
-Tab persistence across candidate nav within same contest.
+Storybook smoke: stories mount without errors (CI storyshots optional).
 
 Guardrails
 
-No data-pipeline changes (no new artifacts, no compute).
+Do not modify slice compute/artifacts.
 
-No API routes; use existing file/manifest loaders.
+No new API routes; manifest/file reads only.
 
-No refactors outside: new route folder, minimal link wrappers in existing views, shared nav/breadcrumb components.
+Keep Storybook fixtures tiny and checked in (JSON), not large Parquet blobs.
 
-Absolute imports only.
-
-Keep changes small; no visual chart implementation here.
+No global styling or theming refactors; scope to the card.
 
 Done When
 
-Visiting /e/{eid}/c/{cid}/cand/{candidateId} renders header, breadcrumbs, tabs, and rank-distribution placeholder.
+Candidate Rank tab renders horizontal bar chart with metric toggle and proper states.
 
-First-choice + STV views link correctly to the canonical candidate page.
+Storybook shows:
 
-Not Found renders for invalid candidate within the contest.
+Golden/HappyPath (from JSON snapshot),
 
-Tests pass for routing, badge logic, 404, and link wiring (no slug tests needed).
+ZeroRank, SparseRanks, SkewedHead, SkewedTail, ToggleModes, Loading, Error.
 
-No changes to compute or artifacts.
+All tests pass (unit, component, integration); Storybook stories mount cleanly.
 
 Output
 
 PR including:
 
-app/e/[electionId]/c/[contestId]/cand/[candidateId]/page.tsx (server)
+src/lib/slices/rankDistribution.ts (loader + selectors + Zod guard)
 
-components/candidate/Tabs.tsx (client) and components/candidate/RankDistributionCard.tsx
+components/candidate/RankDistributionCard.tsx (chart, toggle, states)
 
-Minimal updates to first-choice & STV components to wrap names with links
+components/candidate/RankDistributionCard.stories.tsx
 
-Tests under tests/ui/candidate-page/*
+Tests under tests/ui/candidate-page/rank-distribution/*
 
-PR summary (3–5 lines) describing:
-
-Canonical URL shape (candidate ID only, no slug support)
-
-Badge derivation source (STV meta)
-
-Tab persistence rules
-
-What's stubbed (rank distribution viz) vs complete (routing + scaffold)
+PR summary (3–5 lines) covering: Recharts horizontal bar viz, Storybook goldens + edge cases, defensive row validation, and resilient loading/error handling.

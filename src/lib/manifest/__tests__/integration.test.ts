@@ -6,8 +6,8 @@ import { ContestResolver } from "@/lib/manifest/contest-resolver";
 describe("Manifest Integration Tests", () => {
   describe("Real filesystem integration", () => {
     it("should load production manifest and resolve contest artifacts", () => {
-      // Test loading the manifest from dev environment
-      const manifest = loadManifestSync("dev");
+      // Test loading the manifest from test environment
+      const manifest = loadManifestSync("test");
 
       expect(manifest).toBeDefined();
       expect(manifest.version).toBe(2);
@@ -16,7 +16,7 @@ describe("Manifest Integration Tests", () => {
     });
 
     it("should resolve contest and verify artifact URIs", () => {
-      const manifest = loadManifestSync("dev");
+      const manifest = loadManifestSync("test");
       const resolver = new ContestResolver(manifest);
 
       // Test resolving a known contest
@@ -30,7 +30,7 @@ describe("Manifest Integration Tests", () => {
     });
 
     it("should provide valid URIs for all artifact types", () => {
-      const manifest = loadManifestSync("dev");
+      const manifest = loadManifestSync("test");
       const resolver = new ContestResolver(manifest);
 
       // Get URIs for different artifact types
@@ -71,7 +71,7 @@ describe("Manifest Integration Tests", () => {
     });
 
     it("should have artifacts that exist on filesystem (when available)", () => {
-      const manifest = loadManifestSync("dev");
+      const manifest = loadManifestSync("test");
       const resolver = new ContestResolver(manifest);
 
       // Check if key artifacts exist (they may not always exist in CI/test environments)
@@ -117,10 +117,10 @@ describe("Manifest Integration Tests", () => {
     });
 
     it("should validate manifest structure matches expected format", () => {
-      const manifest = loadManifestSync("dev");
+      const manifest = loadManifestSync("test");
 
       // Validate top-level manifest structure
-      expect(manifest.env).toBe("dev");
+      expect(manifest.env).toBe("test");
       expect(manifest.version).toBe(2);
 
       // Validate elections structure
