@@ -1,9 +1,9 @@
 import { z } from "zod";
+import { parseAllRows } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
   createContestResolverSync,
 } from "@/lib/manifest/contest-resolver";
-import { parseAllRows } from "@/packages/contracts/lib/contract-enforcer";
 import { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";
 
 // Error types for better error handling

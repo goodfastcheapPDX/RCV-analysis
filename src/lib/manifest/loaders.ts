@@ -1,4 +1,4 @@
-import { parseAllRows } from "@/packages/contracts/lib/contract-enforcer";
+import { parseAllRows } from "@/lib/contract-enforcer";
 import { Output as FirstChoiceOutput } from "@/packages/contracts/slices/first_choice_breakdown/index.contract";
 import { CandidatesOutput } from "@/packages/contracts/slices/ingest_cvr/index.contract";
 import { Output as RankDistributionOutput } from "@/packages/contracts/slices/rank_distribution_by_candidate/index.contract";

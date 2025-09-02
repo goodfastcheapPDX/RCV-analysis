@@ -7,7 +7,7 @@ import {
   assertTableColumns,
   parseAllRows,
   sha256,
-} from "@/packages/contracts/lib/contract-enforcer";
+} from "@/lib/contract-enforcer";
 import {
   type Data,
   Output,

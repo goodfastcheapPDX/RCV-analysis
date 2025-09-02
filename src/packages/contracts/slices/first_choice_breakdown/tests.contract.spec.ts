@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertTableColumns,
   parseAllRows,
-} from "../../lib/contract-enforcer.js";
+} from "../../../../lib/contract-enforcer.js";
 import { Output } from "./index.contract";
 
 describe("first_choice_breakdown contract enforcement", () => {

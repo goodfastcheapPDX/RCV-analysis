@@ -2,10 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DuckDBInstance } from "@duckdb/node-api";
 import { describe, expect, test } from "vitest";
-import {
-  assertTableColumns,
-  parseAllRows,
-} from "@/packages/contracts/lib/contract-enforcer";
+import { assertTableColumns, parseAllRows } from "@/lib/contract-enforcer";
 import {
   createDataFixture,
   createOutputFixture,

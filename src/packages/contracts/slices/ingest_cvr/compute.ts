@@ -9,14 +9,14 @@ import {
   type ElectionId,
 } from "../../../../contracts/ids";
 import { ArtifactRef, type Manifest } from "../../../../contracts/manifest";
-import { type DataEnv, getDataEnv } from "../../../../lib/env";
 import {
   assertManifestSection,
   assertTableColumns,
   parseAllRows,
   preprocessDuckDBRow,
   sha256,
-} from "../../lib/contract-enforcer";
+} from "../../../../lib/contract-enforcer";
+import { type DataEnv, getDataEnv } from "../../../../lib/env";
 import {
   BallotsLongOutput,
   CandidatesOutput,

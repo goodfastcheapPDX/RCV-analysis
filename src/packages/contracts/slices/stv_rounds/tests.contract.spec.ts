@@ -5,7 +5,7 @@ import type { Manifest } from "@/contracts/manifest";
 import {
   assertTableColumns,
   parseAllRows,
-} from "../../lib/contract-enforcer.js";
+} from "../../../../lib/contract-enforcer.js";
 import {
   createStvMetaOutputFixture,
   createStvRoundsOutputFixture,

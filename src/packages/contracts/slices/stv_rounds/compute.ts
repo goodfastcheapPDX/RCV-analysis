@@ -8,12 +8,12 @@ import {
   type ElectionId,
 } from "@/contracts/ids";
 import type { Manifest } from "@/contracts/manifest";
-import { getDataEnv } from "@/lib/env";
 import {
   assertTableColumns,
   parseAllRows,
   sha256,
-} from "@/packages/contracts/lib/contract-enforcer";
+} from "@/lib/contract-enforcer";
+import { getDataEnv } from "@/lib/env";
 import { type BallotData, runSTV } from "./engine";
 import {
   RulesSchema,

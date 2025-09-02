@@ -1,10 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Manifest } from "@/contracts/manifest";
-import {
-  assertTableColumns,
-  parseAllRows,
-} from "@/packages/contracts/lib/contract-enforcer";
+import { assertTableColumns, parseAllRows } from "@/lib/contract-enforcer";
 import { createOutputFixture, Output } from "./index.contract";
 
 interface DirectQueryResult {

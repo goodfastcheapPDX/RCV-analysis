@@ -12,13 +12,13 @@ import {
   getArtifactUri,
   type Manifest,
 } from "@/contracts/manifest";
-import { getDataEnv } from "@/lib/env";
 import {
   assertManifestSection,
   assertTableColumns,
   parseAllRows,
   sha256,
-} from "@/packages/contracts/lib/contract-enforcer";
+} from "@/lib/contract-enforcer";
+import { getDataEnv } from "@/lib/env";
 import {
   Data,
   type FirstChoiceBreakdownOutput,
