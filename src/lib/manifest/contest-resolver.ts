@@ -106,6 +106,16 @@ export class ContestResolver {
     const contest = this.getContest(electionId, contestId);
     return contest.rank_distribution?.uri ?? null;
   }
+
+  /**
+   * Get transfer matrix URI for contest
+   * Note: Transfer matrix is not yet in manifest, so we construct the path
+   */
+  getTransferMatrixUri(electionId: string, contestId: string): string | null {
+    // For now, construct the expected path since transfer matrix is not in manifest
+    // TODO: Add transfer_matrix to manifest schema
+    return `data/${this.manifest.env}/${electionId}/${contestId}/transfer_matrix/transfer_matrix.parquet`;
+  }
 }
 
 /**

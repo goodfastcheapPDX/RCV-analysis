@@ -6,6 +6,7 @@ import {
   StvRoundsOutput,
   type StvRoundsStats,
 } from "@/contracts/slices/stv_rounds/index.contract";
+import { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matrix/index.contract";
 import { parseAllRows } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,

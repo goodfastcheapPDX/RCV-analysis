@@ -4,7 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
+import type { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matrix/index.contract";
 import { RankDistributionCard } from "./RankDistributionCard";
+import { TransferMatrixCard } from "./TransferMatrixCard";
 
 interface CandidateTabsProps {
   electionId: string;
@@ -13,6 +15,7 @@ interface CandidateTabsProps {
   candidateName: string;
   currentTab: string;
   rankDistributionData: RankDistributionOutput[];
+  transferMatrixData: TransferMatrixOutput[];
 }
 
 export function CandidateTabs({
@@ -22,6 +25,7 @@ export function CandidateTabs({
   candidateName,
   currentTab,
   rankDistributionData,
+  transferMatrixData,
 }: CandidateTabsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,9 +50,10 @@ export function CandidateTabs({
 
   return (
     <Tabs value={currentTab} onValueChange={handleTabChange}>
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="rank">Rank Distribution</TabsTrigger>
+        <TabsTrigger value="transfers">Vote Transfers</TabsTrigger>
         <TabsTrigger value="rounds">Rounds</TabsTrigger>
       </TabsList>
 
@@ -75,6 +80,13 @@ export function CandidateTabs({
         <RankDistributionCard
           candidateName={candidateName}
           data={rankDistributionData}
+        />
+      </TabsContent>
+
+      <TabsContent value="transfers" className="space-y-4">
+        <TransferMatrixCard
+          candidateName={candidateName}
+          data={transferMatrixData}
         />
       </TabsContent>
 
