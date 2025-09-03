@@ -137,17 +137,13 @@ export const SQL_QUERIES = {
     ),
     elimination_transfers AS (
       -- Transfers from eliminated candidates
+      -- Only record the actual vote gains (not scaled to eliminated total)
       SELECT 
         rc.round,
         rc.candidate_name AS from_candidate_name,
-        -- Find candidates who gained votes (recipients)
         recipient.candidate_name AS to_candidate_name,
-        -- Approximate transfer amount based on vote gains
-        CASE 
-          WHEN SUM(CASE WHEN recipient.vote_change > 0 THEN recipient.vote_change ELSE 0 END) OVER (PARTITION BY rc.round) > 0
-          THEN recipient.vote_change * (ABS(rc.vote_change) / SUM(CASE WHEN recipient.vote_change > 0 THEN recipient.vote_change ELSE 0 END) OVER (PARTITION BY rc.round))
-          ELSE 0
-        END AS vote_count,
+        -- Record actual vote gains (conservation-preserving)
+        recipient.vote_change AS vote_count,
         'elimination' AS transfer_reason,
         1.0 AS transfer_weight
       FROM round_changes rc
@@ -157,19 +153,16 @@ export const SQL_QUERIES = {
         AND rc.current_status = 'eliminated'
     ),
     surplus_transfers AS (
-      -- Transfers from surplus of elected candidates  
+      -- Transfers from surplus of elected candidates
+      -- Only record the actual vote gains (not scaled to surplus total)
       SELECT 
         rc.round,
         rc.candidate_name AS from_candidate_name,
         recipient.candidate_name AS to_candidate_name,
-        -- Calculate surplus transfer proportionally
-        CASE 
-          WHEN SUM(CASE WHEN recipient.vote_change > 0 THEN recipient.vote_change ELSE 0 END) OVER (PARTITION BY rc.round) > 0
-          THEN recipient.vote_change * (ABS(rc.vote_change) / SUM(CASE WHEN recipient.vote_change > 0 THEN recipient.vote_change ELSE 0 END) OVER (PARTITION BY rc.round))
-          ELSE 0
-        END AS vote_count,
+        -- Record actual vote gains (conservation-preserving)
+        recipient.vote_change AS vote_count,
         'surplus' AS transfer_reason,
-        -- Approximate transfer weight (surplus / total votes)
+        -- Calculate transfer weight (surplus / total votes before transfer)
         CASE 
           WHEN rc.previous_votes > 0 THEN ABS(rc.vote_change) / rc.previous_votes
           ELSE 0
