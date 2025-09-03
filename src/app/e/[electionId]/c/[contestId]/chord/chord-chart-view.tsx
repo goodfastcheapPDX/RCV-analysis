@@ -48,6 +48,13 @@ interface ChordData {
 
 const EXHAUSTED_KEY = "EXHAUSTED";
 
+// Helper function to extract last name for chart labels
+const getLastName = (fullName: string): string => {
+  if (fullName === EXHAUSTED_KEY) return "Exhausted";
+  const parts = fullName.trim().split(/\s+/);
+  return parts.length > 1 ? parts[parts.length - 1] : fullName;
+};
+
 export function ChordChartView({
   transferData,
   roundsData,
@@ -125,6 +132,63 @@ export function ChordChartView({
     showAllCandidates,
     useAfterTransferStock,
   );
+
+  // Generate colors dynamically based on candidate count
+  const generateDistinctColors = (count: number): string[] => {
+    const colors: string[] = [];
+
+    // Base colors with good contrast
+    const baseColors = [
+      "#3b82f6",
+      "#ef4444",
+      "#10b981",
+      "#f59e0b",
+      "#8b5cf6",
+      "#06b6d4",
+      "#84cc16",
+      "#f97316",
+      "#ec4899",
+      "#14b8a6",
+    ];
+
+    // Use base colors first
+    for (let i = 0; i < Math.min(count, baseColors.length); i++) {
+      colors.push(baseColors[i]);
+    }
+
+    // Generate additional colors using HSL for better distribution
+    for (let i = baseColors.length; i < count; i++) {
+      const hue = (i * 137.508) % 360; // Golden angle for good distribution
+      const saturation = 70 + (i % 3) * 10; // Vary saturation 70-90%
+      const lightness = 45 + (i % 4) * 5; // Vary lightness 45-60%
+      colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+    }
+
+    return colors;
+  };
+
+  // Create consistent color mapping based on ALL candidates from ALL rounds
+  const createColorMapping = () => {
+    const colorMap: Record<string, string> = {};
+
+    // Special color for exhausted - always light grey and faded
+    colorMap[EXHAUSTED_KEY] = "#d1d5db"; // gray-300
+
+    // Get ALL unique candidates from ALL rounds (not just current round)
+    const allCandidates = [
+      ...new Set(roundsData.map((r) => r.candidate_name)),
+    ].sort();
+    const colors = generateDistinctColors(allCandidates.length);
+
+    // Assign colors based on alphabetical order of ALL candidates
+    allCandidates.forEach((candidate, index) => {
+      colorMap[candidate] = colors[index];
+    });
+
+    return colorMap;
+  };
+
+  const colorMapping = createColorMapping();
 
   const currentMeta = metaData.find((m) => m.round === currentRound);
   const totalTransfers = transferData
@@ -224,7 +288,7 @@ export function ChordChartView({
                   checked={showPercentage}
                   onCheckedChange={setShowPercentage}
                 />
-                <Label htmlFor="percentage">Show Percentages</Label>
+                <Label htmlFor="percentage">Show Changes as %</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
@@ -234,13 +298,20 @@ export function ChordChartView({
                 />
                 <Label htmlFor="all-candidates">Show All Candidates</Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="after-transfer"
-                  checked={useAfterTransferStock}
-                  onCheckedChange={setUseAfterTransferStock}
-                />
-                <Label htmlFor="after-transfer">After-Transfer Stock</Label>
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="after-transfer"
+                    checked={useAfterTransferStock}
+                    onCheckedChange={setUseAfterTransferStock}
+                  />
+                  <Label htmlFor="after-transfer">Show Final Vote Counts</Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6">
+                  {useAfterTransferStock
+                    ? "Arc thickness shows how many votes each candidate has after this round"
+                    : "Arc thickness shows how many votes each candidate had before this round"}
+                </p>
               </div>
             </div>
 
@@ -262,71 +333,111 @@ export function ChordChartView({
       {/* Chord Chart */}
       <Card>
         <CardContent className="pt-6">
-          <div className="h-screen w-full">
+          <div className="h-screen w-full flex">
             {chordData.keys.length > 1 ? (
-              <ResponsiveChord
-                data={chordData.matrix}
-                keys={chordData.keys}
-                margin={{ top: 60, right: 60, bottom: 90, left: 60 }}
-                padAngle={0.02}
-                innerRadiusRatio={0.96}
-                innerRadiusOffset={0.02}
-                arcOpacity={1}
-                arcBorderWidth={1}
-                arcBorderColor={{ from: "color", modifiers: [["darker", 0.4]] }}
-                ribbonBorderWidth={1}
-                ribbonBorderColor={{
-                  from: "color",
-                  modifiers: [["darker", 0.4]],
-                }}
-                motionConfig="gentle"
-                enableLabel={true}
-                label="id"
-                labelOffset={12}
-                labelRotation={-90}
-                labelTextColor={{ from: "color", modifiers: [["darker", 1]] }}
-                colors={{ scheme: "category10" }}
-                isInteractive={true}
-                ribbonOpacity={0.85}
-                activeRibbonOpacity={0.85}
-                inactiveRibbonOpacity={0.85}
-                arcTooltip={({ arc }) => (
-                  <strong style={{ color: arc.color }}>
-                    {arc.id}:{" "}
-                    {chordData.candidateStocks[
-                      arc.id as string
-                    ]?.toLocaleString() || 0}{" "}
-                    votes
-                  </strong>
-                )}
-                ribbonTooltip={({ ribbon }: { ribbon: any }) => {
-                  // Don't show tooltips for self-ribbons
-                  if (ribbon.source.index === ribbon.target.index) return null;
-                  return (
-                    <span style={{ color: ribbon.source.color }}>
-                      <strong>{ribbon.source.id}</strong> →{" "}
-                      <strong>{ribbon.target.id}</strong>:{" "}
-                      {ribbon.source.value.toLocaleString()} votes
-                    </span>
-                  );
-                }}
-                legends={[
-                  {
-                    anchor: "bottom",
-                    direction: "row",
-                    translateY: 70,
-                    itemWidth: 80,
-                    itemHeight: 14,
-                    itemsSpacing: 0,
-                    itemTextColor: "#999",
-                    itemDirection: "left-to-right",
-                    symbolSize: 12,
-                    symbolShape: "circle",
-                  },
-                ]}
-              />
+              <>
+                {/* Chart */}
+                <div className="flex-1">
+                  <ResponsiveChord
+                    key={currentRound}
+                    data={chordData.matrix}
+                    keys={chordData.keys}
+                    margin={{ top: 60, right: 60, bottom: 60, left: 60 }}
+                    padAngle={0.02}
+                    innerRadiusRatio={0.96}
+                    innerRadiusOffset={0.02}
+                    arcOpacity={1}
+                    arcBorderWidth={1}
+                    arcBorderColor={{
+                      from: "color",
+                      modifiers: [["darker", 0.4]],
+                    }}
+                    ribbonBorderWidth={1}
+                    ribbonBorderColor={{
+                      from: "color",
+                      modifiers: [["darker", 0.4]],
+                    }}
+                    animate={true}
+                    motionConfig="gentle"
+                    enableLabel={true}
+                    label={(d) => getLastName(d.id as string)}
+                    labelOffset={12}
+                    labelRotation={-90}
+                    labelTextColor={{
+                      from: "color",
+                      modifiers: [["darker", 1]],
+                    }}
+                    colors={(d) => colorMapping[d.id as string] || "#9ca3af"}
+                    isInteractive={false}
+                    ribbonOpacity={0.85}
+                  />
+                </div>
+                {/* Custom HTML Legend */}
+                <div className="w-64 ml-8 py-16">
+                  <div className="h-full overflow-y-auto space-y-3 pr-4">
+                    {chordData.keys.map((key) => {
+                      // Calculate vote delta for this candidate
+                      let delta = 0;
+                      let prevVotes = 0;
+                      let currentVotes = 0;
+
+                      if (key === EXHAUSTED_KEY) {
+                        const prevMeta = metaData.find(
+                          (m) => m.round === currentRound - 1,
+                        );
+                        const curMeta = metaData.find(
+                          (m) => m.round === currentRound,
+                        );
+                        prevVotes = prevMeta?.exhausted || 0;
+                        currentVotes = curMeta?.exhausted || 0;
+                      } else {
+                        const prevRound = roundsData.find(
+                          (r) =>
+                            r.round === currentRound - 1 &&
+                            r.candidate_name === key,
+                        );
+                        const curRound = roundsData.find(
+                          (r) =>
+                            r.round === currentRound &&
+                            r.candidate_name === key,
+                        );
+                        prevVotes = prevRound?.votes || 0;
+                        currentVotes = curRound?.votes || 0;
+                      }
+
+                      delta = currentVotes - prevVotes;
+
+                      return (
+                        <div key={key} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{
+                              backgroundColor: colorMapping[key] || "#9ca3af",
+                            }}
+                          />
+                          <span className="text-sm text-gray-600 truncate flex-1 min-w-0">
+                            {key === EXHAUSTED_KEY ? "Exhausted" : key}
+                          </span>
+                          {delta !== 0 && (
+                            <span
+                              className={`text-xs font-medium flex-shrink-0 ${
+                                delta > 0 ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {delta > 0 ? "+" : ""}
+                              {showPercentage
+                                ? `${((delta / Math.max(prevVotes, 1)) * 100).toFixed(1)}%`
+                                : delta.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
             ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
+              <div className="flex items-center justify-center h-full text-muted-foreground flex-1">
                 No transfer data available for round {currentRound} with current
                 threshold
               </div>
@@ -379,8 +490,10 @@ export function ChordChartView({
             <p className="font-medium">How to read the chord chart:</p>
             <ul className="space-y-1 list-disc list-inside">
               <li>Arc thickness represents candidate's current vote total</li>
-              <li>Ribbons show vote transfers between candidates</li>
-              <li>Hover over arcs and ribbons for detailed information</li>
+              <li>
+                Ribbons show vote transfers between candidates (always visible)
+              </li>
+              <li>Thicker ribbons = larger vote transfers</li>
               <li>Use threshold slider to hide small transfers</li>
               <li>Toggle between all candidates or active-only view</li>
             </ul>
