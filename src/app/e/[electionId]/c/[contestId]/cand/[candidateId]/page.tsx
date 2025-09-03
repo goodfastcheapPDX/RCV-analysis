@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import type { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
+import type { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matrix/index.contract";
 import {
   loadCandidatesForContest,
   loadRankDistributionForContest,
   loadStvForContest,
 } from "@/lib/manifest/loaders";
+import { loadTransferMatrixForContest } from "@/lib/manifest/transfer-matrix-loader";
 
 interface CandidatePageProps {
   params: Promise<{
@@ -70,6 +72,26 @@ export default async function CandidatePage({
     } catch (error) {
       // Rank distribution data may not be available, continue without it
       console.warn("Rank distribution data not available:", error);
+    }
+
+    // Load transfer matrix data
+    let transferMatrixData: TransferMatrixOutput[] = [];
+
+    try {
+      const { data: allTransferData } = await loadTransferMatrixForContest(
+        electionId,
+        contestId,
+      );
+
+      // Filter for transfers from or to this candidate
+      transferMatrixData = allTransferData.filter(
+        (row) =>
+          row.from_candidate_name === candidate.candidate_name ||
+          row.to_candidate_name === candidate.candidate_name,
+      );
+    } catch (error) {
+      // Transfer matrix data may not be available, continue without it
+      console.warn("Transfer matrix data not available:", error);
     }
 
     // Load STV data for badge logic
@@ -162,6 +184,7 @@ export default async function CandidatePage({
           candidateName={candidate.candidate_name}
           currentTab={currentTab}
           rankDistributionData={rankDistributionData}
+          transferMatrixData={transferMatrixData}
         />
       </div>
     );
