@@ -68,7 +68,7 @@ export async function computeTransferMatrix(
     await conn.run(SQL_QUERIES.createTransferMatrixWithIdentity(identity));
 
     // Validate the computed data
-    assertTableColumns(conn, "transfer_matrix_with_identity", Output);
+    await assertTableColumns(conn, "transfer_matrix_with_identity", Output);
     const validatedRows = await parseAllRows(
       conn,
       "transfer_matrix_with_identity",
