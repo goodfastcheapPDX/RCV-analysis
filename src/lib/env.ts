@@ -25,6 +25,7 @@ export const EnvSchema = z.object({
   CONTEST_ID: z.string().optional(),
   DISTRICT_ID: z.string().optional(),
   SEAT_COUNT: z.string().optional(),
+  DATA_BASE_URL: z.string(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

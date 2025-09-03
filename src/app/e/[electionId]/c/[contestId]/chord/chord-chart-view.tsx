@@ -644,6 +644,7 @@ function transformToChordData(
   // Set diagonals based on the timing toggle
   const epsilon = 1e-6;
   for (const key of keys) {
+    // biome-ignore lint/style/noNonNullAssertion: i don't care
     const i = keyToIndex.get(key)!;
     const stock = Math.max(0, candidateStocks[key] || 0);
 

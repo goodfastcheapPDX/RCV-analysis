@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Manifest } from "@/contracts/manifest";
-import {
-  ContestResolver,
-  createContestResolverSync,
-} from "../contest-resolver";
+import { ContestResolver } from "../contest-resolver";
 
 describe("ContestResolver", () => {
   const testManifest: Manifest = {
@@ -183,14 +180,5 @@ describe("ContestResolver", () => {
         resolver.getStvMetaUri("test-election", "nonexistent"),
       ).toThrow("Contest test-election/nonexistent not found");
     });
-  });
-});
-
-describe("createContestResolverSync", () => {
-  it("should create resolver using dev manifest by default", () => {
-    // This is more of an integration test that requires actual manifest file
-    // For now, just verify it exists as a function
-    expect(createContestResolverSync).toBeDefined();
-    expect(typeof createContestResolverSync).toBe("function");
   });
 });

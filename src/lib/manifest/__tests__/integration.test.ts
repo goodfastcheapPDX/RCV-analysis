@@ -1,13 +1,26 @@
-import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { loadManifestSync } from "@/lib/manifest";
-import { ContestResolver } from "@/lib/manifest/contest-resolver";
+import { loadManifest } from "@/lib/manifest";
+import {
+  ContestResolver,
+  createContestResolver,
+} from "@/lib/manifest/contest-resolver";
 
 describe("Manifest Integration Tests", () => {
+  console.log(`
+    
+    
+    
+    
+    
+    process.env.DATA_BASE_URL=${process.env.DATA_BASE_URL}
+    
+    
+    
+    `);
   describe("Real filesystem integration", () => {
-    it("should load production manifest and resolve contest artifacts", () => {
+    it("should load production manifest and resolve contest artifacts", async () => {
       // Test loading the manifest from test environment
-      const manifest = loadManifestSync("test");
+      const manifest = await loadManifest("test");
 
       expect(manifest).toBeDefined();
       expect(manifest.version).toBe(2);
@@ -15,8 +28,8 @@ describe("Manifest Integration Tests", () => {
       expect(manifest.elections[0].election_id).toBe("portland-20241105-gen");
     });
 
-    it("should resolve contest and verify artifact URIs", () => {
-      const manifest = loadManifestSync("test");
+    it("should resolve contest and verify artifact URIs", async () => {
+      const manifest = await loadManifest("test");
       const resolver = new ContestResolver(manifest);
 
       // Test resolving a known contest
@@ -29,8 +42,8 @@ describe("Manifest Integration Tests", () => {
       expect(contest.seat_count).toBe(3);
     });
 
-    it("should provide valid URIs for all artifact types", () => {
-      const manifest = loadManifestSync("test");
+    it("should provide valid URIs for all artifact types", async () => {
+      const manifest = await loadManifest("test");
       const resolver = new ContestResolver(manifest);
 
       // Get URIs for different artifact types
@@ -70,11 +83,11 @@ describe("Manifest Integration Tests", () => {
       expect(typeof stvMetaUri).toBe("string");
     });
 
-    it("should have artifacts that exist on filesystem (when available)", () => {
-      const manifest = loadManifestSync("test");
+    it("should have artifacts accessible via HTTP (when available)", async () => {
+      const manifest = await loadManifest("test");
       const resolver = new ContestResolver(manifest);
 
-      // Check if key artifacts exist (they may not always exist in CI/test environments)
+      // Check if key artifacts are accessible via HTTP
       const candidatesUri = resolver.getCandidatesUri(
         "portland-20241105-gen",
         "d2-3seat",
@@ -88,36 +101,46 @@ describe("Manifest Integration Tests", () => {
         "d2-3seat",
       );
 
-      // If the URIs exist, the files should be accessible
+      // If the URIs exist, they should be accessible via HTTP
       if (candidatesUri) {
-        // Only check if in a complete dev environment, skip if files don't exist
-        // This prevents test failures in environments without full data pipeline
-        const candidatesExists = existsSync(candidatesUri);
-        if (candidatesExists) {
-          expect(candidatesExists).toBe(true);
+        try {
+          const response = await fetch(candidatesUri);
+          if (response.ok) {
+            expect(response.status).toBe(200);
+          }
+        } catch {
+          // Skip if test server not available - this is integration test
         }
       }
 
       if (ballotsLongUri) {
-        const ballotsExists = existsSync(ballotsLongUri);
-        if (ballotsExists) {
-          expect(ballotsExists).toBe(true);
+        try {
+          const response = await fetch(ballotsLongUri);
+          if (response.ok) {
+            expect(response.status).toBe(200);
+          }
+        } catch {
+          // Skip if test server not available
         }
       }
 
       if (firstChoiceUri) {
-        const firstChoiceExists = existsSync(firstChoiceUri);
-        if (firstChoiceExists) {
-          expect(firstChoiceExists).toBe(true);
+        try {
+          const response = await fetch(firstChoiceUri);
+          if (response.ok) {
+            expect(response.status).toBe(200);
+          }
+        } catch {
+          // Skip if test server not available
         }
       }
 
-      // This test is designed to pass even when files don't exist,
-      // but validate the integration when they do exist
+      // This test is designed to pass even when server isn't available,
+      // but validate the integration when it is available
     });
 
-    it("should validate manifest structure matches expected format", () => {
-      const manifest = loadManifestSync("test");
+    it("should validate manifest structure matches expected format", async () => {
+      const manifest = await loadManifest("test");
 
       // Validate top-level manifest structure
       expect(manifest.env).toBe("test");

@@ -23,7 +23,7 @@ export async function loadFirstChoiceForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || await createContestResolver(env);
+  const contestResolver = resolver || (await createContestResolver(env));
 
   const contest = contestResolver.getContest(electionId, contestId);
   if (!contest.first_choice) {
@@ -38,7 +38,7 @@ export async function loadFirstChoiceForContest(
   const duck = await import("@duckdb/node-api");
   const instance = await duck.DuckDBInstance.create();
   const conn = await instance.connect();
-
+  console.log({ uri });
   try {
     // Create view directly from parquet file
     await conn.run(`CREATE VIEW first_choice_data AS SELECT * FROM '${uri}'`);
@@ -73,7 +73,7 @@ export async function loadStvForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || await createContestResolver(env);
+  const contestResolver = resolver || (await createContestResolver(env));
 
   const contest = contestResolver.getContest(electionId, contestId);
   if (!contest.stv.rounds) {
@@ -83,7 +83,9 @@ export async function loadStvForContest(
   }
 
   const roundsUri = contestResolver.resolveArtifactUrl(contest.stv.rounds);
-  const metaUri = contest.stv.meta ? contestResolver.resolveArtifactUrl(contest.stv.meta) : null;
+  const metaUri = contest.stv.meta
+    ? contestResolver.resolveArtifactUrl(contest.stv.meta)
+    : null;
 
   const election = contestResolver.getElection(electionId);
 
@@ -142,7 +144,7 @@ export async function loadCandidatesForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || await createContestResolver(env);
+  const contestResolver = resolver || (await createContestResolver(env));
 
   const contest = contestResolver.getContest(electionId, contestId);
   if (!contest.cvr.candidates) {
@@ -188,7 +190,7 @@ export async function loadRankDistributionForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || await createContestResolver(env);
+  const contestResolver = resolver || (await createContestResolver(env));
 
   const contest = contestResolver.getContest(electionId, contestId);
   if (!contest.rank_distribution) {

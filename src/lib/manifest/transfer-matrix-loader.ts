@@ -2,7 +2,7 @@ import { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matr
 import { parseAllRows } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
-  createContestResolverSync,
+  createContestResolver,
 } from "./contest-resolver";
 
 /**
@@ -15,14 +15,26 @@ export async function loadTransferMatrixForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || createContestResolverSync(env);
+  const contestResolver = resolver || (await createContestResolver(env));
 
-  const uri = contestResolver.getTransferMatrixUri(electionId, contestId);
-  if (!uri) {
+  const relativeUri = contestResolver.getTransferMatrixUri(
+    electionId,
+    contestId,
+  );
+  if (!relativeUri) {
     throw new Error(
       `Transfer matrix data not available for contest ${electionId}/${contestId}`,
     );
   }
+
+  // Convert relative URI to full HTTP URL using the same pattern as other loaders
+  const mockArtifact = {
+    uri: relativeUri.startsWith("/") ? relativeUri.slice(1) : relativeUri,
+    sha256: "",
+    rows: 0,
+  };
+  const uri = contestResolver.resolveArtifactUrl(mockArtifact);
+  console.log({ uri });
 
   // Dynamically import DuckDB to avoid SSG issues
   const duck = await import("@duckdb/node-api");

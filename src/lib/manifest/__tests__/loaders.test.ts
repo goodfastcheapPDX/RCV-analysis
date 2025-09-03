@@ -1,6 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { mkdir, rm } from "node:fs/promises";
 import * as duck from "@duckdb/node-api";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Manifest } from "@/contracts/manifest";
@@ -25,8 +23,10 @@ describe("loaders", () => {
   const districtId = "d1";
 
   beforeAll(async () => {
-    // Create temporary directory for test data
-    testDir = await mkdtemp(join(tmpdir(), "loaders-test-"));
+    // Use test data directory from environment
+    const testDataDir = process.env.TEST_DATA_DIRECTORY || "public/data/test";
+    testDir = `${testDataDir}/loaders-test`;
+    await mkdir(testDir, { recursive: true });
 
     // Setup test database and connection
     db = await duck.DuckDBInstance.create();
@@ -136,9 +136,9 @@ describe("loaders", () => {
       NULL as elected_this_round,
       NULL as eliminated_this_round`);
 
-    const firstChoicePath = join(testDir, "first_choice.parquet");
-    const stvRoundsPath = join(testDir, "stv_rounds.parquet");
-    const stvMetaPath = join(testDir, "stv_meta.parquet");
+    const firstChoicePath = `${testDir}/first_choice.parquet`;
+    const stvRoundsPath = `${testDir}/stv_rounds.parquet`;
+    const stvMetaPath = `${testDir}/stv_meta.parquet`;
 
     await conn.run(
       `COPY first_choice_temp TO '${firstChoicePath}' (FORMAT 'parquet')`,
@@ -179,18 +179,18 @@ describe("loaders", () => {
               },
               stv: {
                 rounds: {
-                  uri: stvRoundsPath,
+                  uri: "data/test/loaders-test/stv_rounds.parquet",
                   sha256: "ghi789",
                   rows: 2,
                 },
                 meta: {
-                  uri: stvMetaPath,
+                  uri: "data/test/loaders-test/stv_meta.parquet",
                   sha256: "jkl012",
                   rows: 1,
                 },
               },
               first_choice: {
-                uri: firstChoicePath,
+                uri: "data/test/loaders-test/first_choice.parquet",
                 sha256: "mno345",
                 rows: 2,
               },
