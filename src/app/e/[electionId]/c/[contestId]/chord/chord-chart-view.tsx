@@ -7,6 +7,7 @@ import {
   Pause,
   Play,
   RotateCcw,
+  SkipForward,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -243,6 +244,14 @@ export function ChordChartView({
                 className="p-1 hover:bg-muted rounded disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentRound(maxRound)}
+                className="p-1 hover:bg-muted rounded"
+                title="Jump to Final Round"
+              >
+                <SkipForward className="h-4 w-4" />
               </button>
             </div>
           </CardTitle>
@@ -556,9 +565,22 @@ function transformToChordData(
     candidates = [...new Set(roundsData.map((r) => r.candidate_name))].sort();
   } else {
     // Only candidates who are still "alive" (not eliminated) in the current round + those involved in transfers
+    // But if we have enough elected candidates to fill all seats, exclude remaining "standing" candidates
+    const electedCount = afterTransferData.filter(
+      (r) => r.status === "elected",
+    ).length;
+    const seatCount = afterTransferData[0]?.seat_count || 3; // Get seat count from data
+    const electionComplete = electedCount >= seatCount;
+
     const activeCandidates = new Set(
       afterTransferData
-        .filter((r) => r.status !== "eliminated") // Exclude eliminated candidates
+        .filter((r) => {
+          if (r.status === "eliminated") return false;
+          if (r.status === "elected") return true;
+          // If election is complete, exclude remaining "standing" candidates
+          if (electionComplete && r.status === "standing") return false;
+          return true;
+        })
         .map((r) => r.candidate_name),
     );
     const transferCandidates = new Set([
@@ -568,9 +590,22 @@ function transformToChordData(
         .filter((name) => name !== null),
     ]);
 
-    candidates = [
+    // If election is complete, filter out "standing" candidates from transfers too
+    let finalCandidates = [
       ...new Set([...activeCandidates, ...transferCandidates]),
-    ].sort();
+    ];
+    if (electionComplete) {
+      const standingCandidates = new Set(
+        afterTransferData
+          .filter((r) => r.status === "standing")
+          .map((r) => r.candidate_name),
+      );
+      finalCandidates = finalCandidates.filter(
+        (name) => !standingCandidates.has(name),
+      );
+    }
+
+    candidates = finalCandidates.sort();
   }
 
   // Add exhausted placeholder
@@ -606,12 +641,21 @@ function transformToChordData(
     }
   }
 
-  // Set diagonals to make row sum = stock (arc size = stock)
+  // Set diagonals based on the timing toggle
   const epsilon = 1e-6;
   for (const key of keys) {
     const i = keyToIndex.get(key)!;
     const stock = Math.max(0, candidateStocks[key] || 0);
-    const diagonal = Math.max(epsilon, stock - outgoingTotals[i]);
+
+    let diagonal: number;
+    if (useAfterTransferStock) {
+      // For post-transfer: arc size = final stock (eliminated candidates show thin arcs)
+      diagonal = Math.max(epsilon, stock);
+    } else {
+      // For pre-transfer: arc size = initial stock (traditional chord behavior)
+      diagonal = Math.max(epsilon, stock - outgoingTotals[i]);
+    }
+
     matrix[i][i] = diagonal;
   }
 
