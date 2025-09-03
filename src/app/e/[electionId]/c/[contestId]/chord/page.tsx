@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,60 +12,53 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
-import { StvRoundsView } from "@/contracts/slices/stv_rounds/view";
 import {
   loadCandidatesForContest,
   loadStvForContest,
 } from "@/lib/manifest/loaders";
+import { loadTransferMatrixForContest } from "@/lib/manifest/transfer-matrix-loader";
+import { ChordChartView } from "./chord-chart-view";
 
-interface ContestPageProps {
+interface ChordPageProps {
   params: Promise<{ electionId: string; contestId: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function ContestPage({ params }: ContestPageProps) {
+export default async function ChordPage({ params }: ChordPageProps) {
   const { electionId, contestId } = await params;
 
   try {
-    const { roundsData, metaData, stats, contest } = await loadStvForContest(
-      electionId,
-      contestId,
-    );
+    // Load all required data
+    const [
+      { roundsData, metaData, stats, contest },
+      { data: transferData },
+      candidatesResult,
+    ] = await Promise.all([
+      loadStvForContest(electionId, contestId),
+      loadTransferMatrixForContest(electionId, contestId),
+      loadCandidatesForContest(electionId, contestId).catch(() => ({
+        data: undefined,
+      })),
+    ]);
 
-    // Load candidates for linking
-    let candidates: CandidatesOutput[] | undefined;
-    try {
-      const candidatesResult = await loadCandidatesForContest(
-        electionId,
-        contestId,
-      );
-      candidates = candidatesResult.data;
-    } catch (error) {
-      // Candidates may not be available, continue without them
-      console.warn("Candidates data not available for links:", error);
-    }
+    const candidates = candidatesResult.data;
 
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">{contest.title}</h1>
+          <h1 className="text-3xl font-bold">Transfer Flow Chord Chart</h1>
           <p className="text-muted-foreground mt-2">
-            Interactive visualization of Single Transferable Vote election
-            rounds. Watch how votes transfer between candidates as the election
-            progresses.
+            Visualize vote transfers between candidates across STV rounds using
+            an interactive chord diagram. Each arc represents a candidate, and
+            ribbons show transfer flows.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <div className="flex gap-2">
             <Button variant="outline" asChild>
-              <Link href={`/e/${electionId}/c/${contestId}/first-choice`}>
-                First Choice Breakdown
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href={`/e/${electionId}/c/${contestId}/chord`}>
-                Transfer Flow Chart
+              <Link href={`/e/${electionId}/c/${contestId}`}>
+                Back to Contest
               </Link>
             </Button>
             <Button variant="outline" asChild>
@@ -77,27 +69,23 @@ export default async function ContestPage({ params }: ContestPageProps) {
             <Badge variant="outline">
               {contest.seat_count} seat{contest.seat_count !== 1 ? "s" : ""}
             </Badge>
-            {stats && (
-              <Badge variant="secondary">
-                {stats.number_of_rounds} round
-                {stats.number_of_rounds !== 1 ? "s" : ""}
-              </Badge>
-            )}
+            <Badge variant="secondary">
+              {stats.number_of_rounds} round
+              {stats.number_of_rounds !== 1 ? "s" : ""}
+            </Badge>
+            <Badge variant="secondary">{transferData.length} transfers</Badge>
           </div>
         </div>
 
-        {stats ? (
-          <StvRoundsView
-            roundsData={roundsData}
-            metaData={metaData}
-            stats={stats}
-            candidates={candidates}
-            electionId={electionId}
-            contestId={contestId}
-          />
-        ) : (
-          <p>No stats available.</p>
-        )}
+        <ChordChartView
+          transferData={transferData}
+          roundsData={roundsData}
+          metaData={metaData}
+          stats={stats}
+          candidates={candidates}
+          electionId={electionId}
+          contestId={contestId}
+        />
       </div>
     );
   } catch (error) {
@@ -107,9 +95,10 @@ export default async function ContestPage({ params }: ContestPageProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Contest Not Available</h1>
+          <h1 className="text-3xl font-bold">Chord Chart Not Available</h1>
           <p className="text-muted-foreground mt-2">
-            STV rounds data for this contest could not be loaded.
+            Transfer matrix or STV rounds data for this contest could not be
+            loaded.
           </p>
         </div>
 
@@ -127,7 +116,9 @@ export default async function ContestPage({ params }: ContestPageProps) {
 
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/e/${electionId}`}>Back to Election</Link>
+            <Link href={`/e/${electionId}/c/${contestId}`}>
+              Back to Contest
+            </Link>
           </Button>
         </div>
       </div>
