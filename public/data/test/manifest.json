@@ -1,0 +1,82 @@
+{
+  "env": "test",
+  "version": 2,
+  "inputs": {
+    "portland-20241105-gen/d2-3seat": {
+      "cvr_files": [
+        {
+          "path": "tests/golden/micro/cvr_small.csv",
+          "sha256": "8d2068f863d579e8dd4103ed0a469702ad99c2effa70d07856da1b6740eddcd6"
+        }
+      ]
+    }
+  },
+  "elections": [
+    {
+      "election_id": "portland-20241105-gen",
+      "date": "2024-11-05",
+      "jurisdiction": "portland",
+      "title": "Portland General Election 2024",
+      "contests": [
+        {
+          "contest_id": "d2-3seat",
+          "district_id": "d2",
+          "seat_count": 3,
+          "title": "City Council District 2 (3 seats)",
+          "cvr": {
+            "candidates": {
+              "uri": "data/test/portland-20241105-gen/d2-3seat/ingest/candidates.parquet",
+              "sha256": "6e6ad456ea7ef48a2a1da6b79f2cdd43729c66257dd47575c2f6071140c69c4d",
+              "rows": 5
+            },
+            "ballots_long": {
+              "uri": "data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
+              "sha256": "c4e164ccf862489d9f6faa692e6019ed8d75f712f2af1abd5d6eb6b4e31d8fe9",
+              "rows": 31
+            }
+          },
+          "first_choice": {
+            "uri": "data/test/portland-20241105-gen/d2-3seat/first_choice/first_choice.parquet",
+            "sha256": "7aee55c75e72642151ab6e0aabc43efc5c4d1c40d8032ca6653cda17e598b97e",
+            "rows": 5
+          },
+          "rank_distribution": {
+            "uri": "data/test/portland-20241105-gen/d2-3seat/rank_distribution/rank_distribution.parquet",
+            "sha256": "4db8e6792262514274ed88d59379834a3ec8d79b88f4ea717e38a5e1eb4a0df0",
+            "rows": 15
+          },
+          "stv": {
+            "rounds": {
+              "uri": "data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
+              "sha256": "7c47da5b1e510191b7d1052c13ce77d10f31f862bc9c10d5029b9d7440888d3d",
+              "rows": 20
+            },
+            "meta": {
+              "uri": "data/test/portland-20241105-gen/d2-3seat/stv/meta.parquet",
+              "sha256": "37ab8f8c091f1f91a938c63984857064bb83b0785c7d672efd85dc99c1bee24c",
+              "rows": 4
+            },
+            "stats": {
+              "number_of_rounds": 4,
+              "winners": [
+                "Bob",
+                "Charlie",
+                "Diana"
+              ],
+              "seats": 3,
+              "first_round_quota": 3,
+              "precision": 0.000001
+            }
+          },
+          "rules": {
+            "method": "meek",
+            "quota": "droop",
+            "precision": 0.000001,
+            "tie_break": "lexicographic",
+            "seats": 3
+          }
+        }
+      ]
+    }
+  ]
+}
