@@ -10,7 +10,7 @@ import { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matr
 import { parseAllRows } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
-  createContestResolverSync,
+  createContestResolver,
 } from "./contest-resolver";
 
 /**
@@ -23,14 +23,16 @@ export async function loadFirstChoiceForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || createContestResolverSync(env);
+  const contestResolver = resolver || await createContestResolver(env);
 
-  const uri = contestResolver.getFirstChoiceUri(electionId, contestId);
-  if (!uri) {
+  const contest = contestResolver.getContest(electionId, contestId);
+  if (!contest.first_choice) {
     throw new Error(
       `First-choice data not available for contest ${electionId}/${contestId}`,
     );
   }
+
+  const uri = contestResolver.resolveArtifactUrl(contest.first_choice);
 
   // Dynamically import DuckDB to avoid SSG issues
   const duck = await import("@duckdb/node-api");
@@ -71,18 +73,18 @@ export async function loadStvForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || createContestResolverSync(env);
+  const contestResolver = resolver || await createContestResolver(env);
 
-  const roundsUri = contestResolver.getStvRoundsUri(electionId, contestId);
-  const metaUri = contestResolver.getStvMetaUri(electionId, contestId);
-
-  if (!roundsUri) {
+  const contest = contestResolver.getContest(electionId, contestId);
+  if (!contest.stv.rounds) {
     throw new Error(
       `STV data not available for contest ${electionId}/${contestId}`,
     );
   }
 
-  const contest = contestResolver.getContest(electionId, contestId);
+  const roundsUri = contestResolver.resolveArtifactUrl(contest.stv.rounds);
+  const metaUri = contest.stv.meta ? contestResolver.resolveArtifactUrl(contest.stv.meta) : null;
+
   const election = contestResolver.getElection(electionId);
 
   // Dynamically import DuckDB to avoid SSG issues
@@ -140,14 +142,16 @@ export async function loadCandidatesForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || createContestResolverSync(env);
+  const contestResolver = resolver || await createContestResolver(env);
 
-  const uri = contestResolver.getCandidatesUri(electionId, contestId);
-  if (!uri) {
+  const contest = contestResolver.getContest(electionId, contestId);
+  if (!contest.cvr.candidates) {
     throw new Error(
       `Candidates data not available for contest ${electionId}/${contestId}`,
     );
   }
+
+  const uri = contestResolver.resolveArtifactUrl(contest.cvr.candidates);
 
   // Dynamically import DuckDB to avoid SSG issues
   const duck = await import("@duckdb/node-api");
@@ -184,14 +188,16 @@ export async function loadRankDistributionForContest(
   env?: string,
   resolver?: ContestResolver,
 ) {
-  const contestResolver = resolver || createContestResolverSync(env);
+  const contestResolver = resolver || await createContestResolver(env);
 
-  const uri = contestResolver.getRankDistributionUri(electionId, contestId);
-  if (!uri) {
+  const contest = contestResolver.getContest(electionId, contestId);
+  if (!contest.rank_distribution) {
     throw new Error(
       `Rank distribution data not available for contest ${electionId}/${contestId}`,
     );
   }
+
+  const uri = contestResolver.resolveArtifactUrl(contest.rank_distribution);
 
   // Dynamically import DuckDB to avoid SSG issues
   const duck = await import("@duckdb/node-api");

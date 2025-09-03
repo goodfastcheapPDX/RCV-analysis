@@ -78,6 +78,9 @@ export const Manifest = z.object({
   env: z.enum(["dev", "test", "prod"]),
   version: z.literal(2), // Bumped for multi-election support
 
+  // Base URL for artifact resolution (environment-specific)
+  base_url: z.string().optional(), // "/data/" for prod, "file://..." for dev
+
   // Input hashes for determinism checking
   inputs: z.record(
     z.string(),
