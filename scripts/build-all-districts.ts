@@ -14,6 +14,7 @@ import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choic
 import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
 import { computeStvRounds } from "../src/contracts/slices/stv_rounds/compute";
+import { computeTransferMatrix } from "../src/contracts/slices/transfer_matrix/compute";
 
 interface DistrictConfig {
   districtId: DistrictId;
@@ -118,6 +119,19 @@ async function processDistrict(district: DistrictConfig) {
 
     console.log(
       `   ✅ STV: ${stvResult.winners.length} winners elected from ${stvResult.seats} seats in ${stvResult.number_of_rounds} rounds`,
+    );
+
+    // Step 5: Transfer Matrix
+    console.log(`🔄 Computing transfer matrix for ${district.districtId}...`);
+    const transferResult = await computeTransferMatrix({
+      election_id: electionId,
+      contest_id: contestId,
+      district_id: district.districtId,
+      seat_count: district.seatCount,
+    });
+
+    console.log(
+      `   ✅ Transfers: ${transferResult.stats.total_transfers} transfers (${transferResult.stats.elimination_transfers} elimination, ${transferResult.stats.surplus_transfers} surplus)`,
     );
   } catch (error) {
     console.error(`   ❌ Failed to process ${district.districtId}:`);
