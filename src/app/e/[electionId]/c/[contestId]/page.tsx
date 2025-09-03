@@ -2,6 +2,7 @@ export const runtime = "nodejs";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SankeyTransferDiagram } from "@/components/contest/SankeyTransferDiagram";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,12 @@ import {
 } from "@/components/ui/card";
 import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
 import { StvRoundsView } from "@/contracts/slices/stv_rounds/view";
+import type { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matrix/index.contract";
 import {
   loadCandidatesForContest,
   loadStvForContest,
 } from "@/lib/manifest/loaders";
+import { loadTransferMatrixForContest } from "@/lib/manifest/transfer-matrix-loader";
 
 interface ContestPageProps {
   params: Promise<{ electionId: string; contestId: string }>;
@@ -44,6 +47,19 @@ export default async function ContestPage({ params }: ContestPageProps) {
     } catch (error) {
       // Candidates may not be available, continue without them
       console.warn("Candidates data not available for links:", error);
+    }
+
+    // Load transfer matrix data for Sankey diagram
+    let transferMatrixData: TransferMatrixOutput[] = [];
+    try {
+      const transferResult = await loadTransferMatrixForContest(
+        electionId,
+        contestId,
+      );
+      transferMatrixData = transferResult.data;
+    } catch (error) {
+      // Transfer matrix may not be available, continue without it
+      console.warn("Transfer matrix data not available:", error);
     }
 
     return (
@@ -80,6 +96,12 @@ export default async function ContestPage({ params }: ContestPageProps) {
             )}
           </div>
         </div>
+
+        {/* Transfer Flow Diagram */}
+        <SankeyTransferDiagram
+          data={transferMatrixData}
+          contestName={contest.title}
+        />
 
         {stats ? (
           <StvRoundsView
