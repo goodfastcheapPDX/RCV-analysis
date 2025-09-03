@@ -3,7 +3,7 @@ import { Output as RankDistributionOutput } from "@/contracts/slices/rank_distri
 import { parseAllRows } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
-  createContestResolverSync,
+  createContestResolver,
 } from "@/lib/manifest/contest-resolver";
 
 // Error types for better error handling
@@ -43,7 +43,7 @@ export async function loadRankDistribution(
   env?: string,
   resolver?: ContestResolver,
 ): Promise<RankDistributionResult> {
-  const contestResolver = resolver || createContestResolverSync(env);
+  const contestResolver = resolver || (await createContestResolver(env));
 
   try {
     // Get contest with rank distribution data

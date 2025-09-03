@@ -7,22 +7,14 @@ import { getDataEnv } from "@/lib/env";
 export async function loadManifest(env?: string): Promise<ManifestV2> {
   const dataEnv = env || getDataEnv();
   const manifestPath = `/data/${dataEnv}/manifest.json`;
-  
+
   // Determine base URL based on environment
-  let manifestUrl: string;
-  if (typeof window === "undefined") {
-    // Node.js context - use test server if available, otherwise dev server
-    const testBaseUrl = process.env.TEST_DATA_BASE_URL;
-    const baseUrl = testBaseUrl || "http://localhost:3001";
-    manifestUrl = `${baseUrl}${manifestPath}`;
-  } else {
-    // Browser context - relative paths work
-    manifestUrl = manifestPath;
-  }
+  const manifestUrl: string = `${process.env.DATA_BASE_URL}${manifestPath}`;
 
   try {
     // Use fetch for HTTP loading (works in Node.js and browser)
     const response = await fetch(manifestUrl);
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -39,16 +31,6 @@ export async function loadManifest(env?: string): Promise<ManifestV2> {
       `Failed to load manifest from ${manifestUrl}: Unknown error`,
     );
   }
-}
-
-/**
- * Load manifest synchronously - now deprecated since we use HTTP
- * TODO: Remove this once all callers are updated to use async loadManifest
- */
-export function loadManifestSync(env?: string): ManifestV2 {
-  throw new Error(
-    "loadManifestSync is no longer supported. Use async loadManifest() instead for HTTP-based loading."
-  );
 }
 
 // Re-export types and utilities from the contract

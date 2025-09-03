@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3001",
     "build": "next build --turbopack",
     "build:data": "npx tsx scripts/build-data.ts",
     "build:data:all": "npx tsx scripts/build-all-districts.ts",

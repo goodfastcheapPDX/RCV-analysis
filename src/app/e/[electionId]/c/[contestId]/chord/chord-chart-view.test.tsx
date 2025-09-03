@@ -62,7 +62,7 @@ describe("ChordChartView", () => {
     expect(screen.getByText("Round 2 of 2")).toBeInTheDocument();
     expect(
       screen.getByText(
-        (content, element) =>
+        (content) =>
           content.includes("Total Transfers") && content.includes("150"),
       ),
     ).toBeInTheDocument();
