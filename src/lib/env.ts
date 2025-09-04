@@ -25,7 +25,10 @@ export const EnvSchema = z.object({
   CONTEST_ID: z.string().optional(),
   DISTRICT_ID: z.string().optional(),
   SEAT_COUNT: z.string().optional(),
-  DATA_BASE_URL: z.string(),
+  DATA_BASE_URL: z.string().optional(),
+
+  // Build mode flag
+  STATIC_BUILD: z.enum(["true", "false", "1", "0"]).default("false"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -69,4 +72,13 @@ export function getDataEnv(): DataEnv {
 
 export function getArtifactRoot(env: DataEnv): string {
   return `data/${env}`;
+}
+
+/**
+ * Helper to check if we're in static build mode
+ */
+export function isStaticBuild(): boolean {
+  return (
+    process.env.STATIC_BUILD === "true" || process.env.STATIC_BUILD === "1"
+  );
 }
