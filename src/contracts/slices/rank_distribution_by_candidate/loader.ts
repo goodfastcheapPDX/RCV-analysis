@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
-import { parseAllRows } from "@/lib/contract-enforcer";
+import { parseAllRowsFromParquet } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
   createContestResolver,
@@ -61,31 +61,16 @@ export async function loadRankDistribution(
       };
     }
 
-    // Dynamically import DuckDB to avoid SSG issues
-    const duck = await import("@duckdb/node-api");
-    const instance = await duck.DuckDBInstance.create();
-    const conn = await instance.connect();
+    // Resolve artifact URI for hyparquet
+    const uri = contestResolver.resolveArtifactUrl(contest.rank_distribution);
 
-    try {
-      // Create view directly from parquet file
-      await conn.run(
-        `CREATE VIEW rank_distribution_data AS SELECT * FROM '${contest.rank_distribution.uri}'`,
-      );
+    // Use hyparquet to read parquet file directly with contract validation
+    const data = await parseAllRowsFromParquet(uri, RankDistributionOutput);
 
-      // Use contract enforcer to get validated data
-      const data = await parseAllRows(
-        conn,
-        "rank_distribution_data",
-        RankDistributionOutput,
-      );
-
-      return {
-        success: true,
-        data,
-      };
-    } finally {
-      await conn.closeSync();
-    }
+    return {
+      success: true,
+      data,
+    };
   } catch (error) {
     if (error instanceof z.ZodError) {
       return {

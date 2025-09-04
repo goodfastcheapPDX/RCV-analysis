@@ -1,5 +1,5 @@
 import { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matrix/index.contract";
-import { parseAllRows } from "@/lib/contract-enforcer";
+import { parseAllRowsFromParquet } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
   createContestResolver,
@@ -34,35 +34,16 @@ export async function loadTransferMatrixForContest(
     rows: 0,
   };
   const uri = contestResolver.resolveArtifactUrl(mockArtifact);
-  console.log({ uri });
 
-  // Dynamically import DuckDB to avoid SSG issues
-  const duck = await import("@duckdb/node-api");
-  const instance = await duck.DuckDBInstance.create();
-  const conn = await instance.connect();
+  // Use hyparquet to read parquet file directly with contract validation
+  const data = await parseAllRowsFromParquet(uri, TransferMatrixOutput);
 
-  try {
-    // Create view directly from parquet file
-    await conn.run(
-      `CREATE VIEW transfer_matrix_data AS SELECT * FROM '${uri}'`,
-    );
+  const contest = contestResolver.getContest(electionId, contestId);
+  const election = contestResolver.getElection(electionId);
 
-    // Use contract enforcer to get validated data
-    const data = await parseAllRows(
-      conn,
-      "transfer_matrix_data",
-      TransferMatrixOutput,
-    );
-
-    const contest = contestResolver.getContest(electionId, contestId);
-    const election = contestResolver.getElection(electionId);
-
-    return {
-      data,
-      contest,
-      election,
-    };
-  } finally {
-    await conn.closeSync();
-  }
+  return {
+    data,
+    contest,
+    election,
+  };
 }
