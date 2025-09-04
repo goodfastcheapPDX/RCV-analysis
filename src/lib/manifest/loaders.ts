@@ -6,8 +6,7 @@ import {
   StvRoundsOutput,
   type StvRoundsStats,
 } from "@/contracts/slices/stv_rounds/index.contract";
-import { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matrix/index.contract";
-import { parseAllRows } from "@/lib/contract-enforcer";
+import { parseAllRowsFromParquet } from "@/lib/contract-enforcer";
 import {
   type ContestResolver,
   createContestResolver,
@@ -34,33 +33,17 @@ export async function loadFirstChoiceForContest(
 
   const uri = contestResolver.resolveArtifactUrl(contest.first_choice);
 
-  // Dynamically import DuckDB to avoid SSG issues
-  const duck = await import("@duckdb/node-api");
-  const instance = await duck.DuckDBInstance.create();
-  const conn = await instance.connect();
-  console.log({ uri });
-  try {
-    // Create view directly from parquet file
-    await conn.run(`CREATE VIEW first_choice_data AS SELECT * FROM '${uri}'`);
+  // Use hyparquet to read parquet file directly with contract validation
+  const data = await parseAllRowsFromParquet(uri, FirstChoiceOutput);
 
-    // Use contract enforcer to get validated data
-    const data = await parseAllRows(
-      conn,
-      "first_choice_data",
-      FirstChoiceOutput,
-    );
+  const contestData = contestResolver.getContest(electionId, contestId);
+  const election = contestResolver.getElection(electionId);
 
-    const contest = contestResolver.getContest(electionId, contestId);
-    const election = contestResolver.getElection(electionId);
-
-    return {
-      data,
-      contest,
-      election,
-    };
-  } finally {
-    await conn.closeSync();
-  }
+  return {
+    data,
+    contest: contestData,
+    election,
+  };
 }
 
 /**
@@ -89,49 +72,34 @@ export async function loadStvForContest(
 
   const election = contestResolver.getElection(electionId);
 
-  // Dynamically import DuckDB to avoid SSG issues
-  const duck = await import("@duckdb/node-api");
-  const instance = await duck.DuckDBInstance.create();
-  const conn = await instance.connect();
+  // Use hyparquet to read parquet files directly with contract validation
+  const roundsData = await parseAllRowsFromParquet(roundsUri, StvRoundsOutput);
+  const metaData = metaUri
+    ? await parseAllRowsFromParquet(metaUri, StvMetaOutput)
+    : [];
 
-  try {
-    // Create views directly from parquet files
-    await conn.run(`CREATE VIEW stv_rounds AS SELECT * FROM '${roundsUri}'`);
-    if (metaUri) {
-      await conn.run(`CREATE VIEW stv_meta AS SELECT * FROM '${metaUri}'`);
-    }
+  // Calculate basic stats from rounds data
+  const stats: StvRoundsStats = {
+    number_of_rounds: Math.max(...roundsData.map((r) => r.round)),
+    winners: [
+      ...new Set(
+        roundsData
+          .filter((r) => r.status === "elected")
+          .map((r) => r.candidate_name),
+      ),
+    ],
+    seats: contest.seat_count,
+    first_round_quota: metaData.find((m) => m.round === 1)?.quota || 0,
+    precision: 0.000001,
+  };
 
-    // Use contract enforcer to get validated data
-    const roundsData = await parseAllRows(conn, "stv_rounds", StvRoundsOutput);
-    const metaData = metaUri
-      ? await parseAllRows(conn, "stv_meta", StvMetaOutput)
-      : [];
-
-    // Calculate basic stats from rounds data
-    const stats: StvRoundsStats = {
-      number_of_rounds: Math.max(...roundsData.map((r) => r.round)),
-      winners: [
-        ...new Set(
-          roundsData
-            .filter((r) => r.status === "elected")
-            .map((r) => r.candidate_name),
-        ),
-      ],
-      seats: contest.seat_count,
-      first_round_quota: metaData.find((m) => m.round === 1)?.quota || 0,
-      precision: 0.000001,
-    };
-
-    return {
-      roundsData,
-      metaData,
-      stats,
-      contest,
-      election,
-    };
-  } finally {
-    await conn.closeSync();
-  }
+  return {
+    roundsData,
+    metaData,
+    stats,
+    contest,
+    election,
+  };
 }
 
 /**
@@ -155,29 +123,17 @@ export async function loadCandidatesForContest(
 
   const uri = contestResolver.resolveArtifactUrl(contest.cvr.candidates);
 
-  // Dynamically import DuckDB to avoid SSG issues
-  const duck = await import("@duckdb/node-api");
-  const instance = await duck.DuckDBInstance.create();
-  const conn = await instance.connect();
+  // Use hyparquet to read parquet file directly with contract validation
+  const data = await parseAllRowsFromParquet(uri, CandidatesOutput);
 
-  try {
-    // Create view directly from parquet file
-    await conn.run(`CREATE VIEW candidates_data AS SELECT * FROM '${uri}'`);
+  const contestData = contestResolver.getContest(electionId, contestId);
+  const election = contestResolver.getElection(electionId);
 
-    // Use contract enforcer to get validated data
-    const data = await parseAllRows(conn, "candidates_data", CandidatesOutput);
-
-    const contest = contestResolver.getContest(electionId, contestId);
-    const election = contestResolver.getElection(electionId);
-
-    return {
-      data,
-      contest,
-      election,
-    };
-  } finally {
-    await conn.closeSync();
-  }
+  return {
+    data,
+    contest: contestData,
+    election,
+  };
 }
 
 /**
@@ -201,33 +157,15 @@ export async function loadRankDistributionForContest(
 
   const uri = contestResolver.resolveArtifactUrl(contest.rank_distribution);
 
-  // Dynamically import DuckDB to avoid SSG issues
-  const duck = await import("@duckdb/node-api");
-  const instance = await duck.DuckDBInstance.create();
-  const conn = await instance.connect();
+  // Use hyparquet to read parquet file directly with contract validation
+  const data = await parseAllRowsFromParquet(uri, RankDistributionOutput);
 
-  try {
-    // Create view directly from parquet file
-    await conn.run(
-      `CREATE VIEW rank_distribution_data AS SELECT * FROM '${uri}'`,
-    );
+  const contestData = contestResolver.getContest(electionId, contestId);
+  const election = contestResolver.getElection(electionId);
 
-    // Use contract enforcer to get validated data
-    const data = await parseAllRows(
-      conn,
-      "rank_distribution_data",
-      RankDistributionOutput,
-    );
-
-    const contest = contestResolver.getContest(electionId, contestId);
-    const election = contestResolver.getElection(electionId);
-
-    return {
-      data,
-      contest,
-      election,
-    };
-  } finally {
-    await conn.closeSync();
-  }
+  return {
+    data,
+    contest: contestData,
+    election,
+  };
 }

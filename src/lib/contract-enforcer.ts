@@ -1,6 +1,11 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import type { DuckDBConnection } from "@duckdb/node-api";
+import {
+  asyncBufferFromFile,
+  asyncBufferFromUrl,
+  parquetReadObjects,
+} from "hyparquet";
 import type { z } from "zod";
 
 /**
@@ -51,6 +56,53 @@ export async function parseAllRows<T extends z.ZodTypeAny>(
   } catch (error) {
     throw new Error(
       `Failed to parse rows from table '${table}': ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  }
+}
+
+/**
+ * Parse all rows from a parquet file through a Zod schema with runtime validation.
+ * This is the hyparquet-based version that works without DuckDB dependencies.
+ *
+ * @param uri - URI to parquet file (local path or HTTP URL)
+ * @param Output - Zod schema to validate each row against
+ * @returns Validated and parsed rows
+ */
+export async function parseAllRowsFromParquet<T extends z.ZodTypeAny>(
+  uri: string,
+  Output: T,
+): Promise<z.infer<T>[]> {
+  try {
+    // Create appropriate AsyncBuffer based on URI type
+    const file =
+      uri.startsWith("http://") || uri.startsWith("https://")
+        ? await asyncBufferFromUrl({ url: uri })
+        : await asyncBufferFromFile(uri);
+
+    // Read parquet file as objects
+    const rows = await parquetReadObjects({ file });
+
+    return rows.map((row, index) => {
+      try {
+        // Preprocess row to handle any type conversions (simpler than DuckDB version)
+        const processedRow = preprocessParquetRow(row);
+        return Output.parse(processedRow);
+      } catch (error) {
+        // Convert row to JSON safely
+        const safeRowJson = JSON.stringify(row, null, 2);
+
+        throw new Error(
+          `Row ${index} failed schema validation from parquet '${uri}': ${
+            error instanceof Error ? error.message : String(error)
+          }\nRow data: ${safeRowJson}`,
+        );
+      }
+    });
+  } catch (error) {
+    throw new Error(
+      `Failed to parse rows from parquet '${uri}': ${
         error instanceof Error ? error.message : String(error)
       }`,
     );
@@ -217,6 +269,31 @@ export function preprocessDuckDBRow(
     // Convert DuckDB LIST/ARRAY values to plain JavaScript arrays
     else if (value && typeof value === "object" && "items" in value) {
       processed[key] = (value as { items: unknown[] }).items;
+    } else {
+      processed[key] = value;
+    }
+  }
+
+  return processed;
+}
+
+/**
+ * Validate and convert parquet row data to handle type differences.
+ * This preprocessor handles hyparquet-specific types before Zod validation.
+ * Generally simpler than DuckDB since hyparquet returns native JS types.
+ *
+ * @param row - Raw row from hyparquet
+ * @returns Row with converted types
+ */
+export function preprocessParquetRow(
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  const processed: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(row)) {
+    // Convert bigint to number if present (though hyparquet should handle this)
+    if (typeof value === "bigint") {
+      processed[key] = Number(value);
     } else {
       processed[key] = value;
     }

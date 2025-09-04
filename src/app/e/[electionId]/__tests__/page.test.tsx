@@ -1,6 +1,5 @@
 import { render } from "@testing-library/react";
-import { notFound } from "next/navigation";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import ElectionPage from "../page";
 
 describe("Election Page", () => {
