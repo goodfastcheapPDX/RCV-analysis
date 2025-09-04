@@ -78,7 +78,16 @@ export async function parseAllRowsFromParquet<T extends z.ZodTypeAny>(
     // Create appropriate AsyncBuffer based on URI type
     const file =
       uri.startsWith("http://") || uri.startsWith("https://")
-        ? await asyncBufferFromUrl({ url: uri })
+        ? await (async () => {
+            // Manual fetch works better than asyncBufferFromUrl for Vercel static files
+            const response = await fetch(uri);
+            if (!response.ok) {
+              throw new Error(
+                `HTTP ${response.status}: ${response.statusText}`,
+              );
+            }
+            return await response.arrayBuffer();
+          })()
         : await asyncBufferFromFile(uri);
 
     // Read parquet file as objects
