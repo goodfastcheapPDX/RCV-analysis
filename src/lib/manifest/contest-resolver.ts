@@ -126,8 +126,21 @@ export class ContestResolver {
       uri = `/${uri}`;
     }
 
+    // Determine base URL with fallbacks
+    let baseUrl = process.env.DATA_BASE_URL;
+
+    // In production on Vercel, fallback to VERCEL_URL if DATA_BASE_URL isn't set
+    if (!baseUrl && process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    }
+
+    // If still no base URL, assume we're in browser context and use relative URLs
+    if (!baseUrl) {
+      baseUrl = "";
+    }
+
     // In Node.js (DuckDB), we need full HTTP URLs
-    return `${process.env.DATA_BASE_URL}${uri}`;
+    return `${baseUrl}${uri}`;
   }
 }
 
