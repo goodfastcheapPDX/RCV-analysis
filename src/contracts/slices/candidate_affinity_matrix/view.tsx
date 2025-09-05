@@ -50,6 +50,13 @@ export function CandidateAffinityMatrixView({
     return candidate ? candidate.candidate_name : candidateId.toString();
   };
 
+  // Helper to get last name only from candidate name
+  const getLastName = (candidateId: number): string => {
+    const fullName = getCandidateName(candidateId);
+    const nameParts = fullName.split(" ");
+    return nameParts.length > 1 ? nameParts[nameParts.length - 1] : fullName;
+  };
+
   // Get all unique candidates and sort by first-choice vote totals (descending)
   const allCandidates = Array.from(
     new Set([
@@ -97,7 +104,7 @@ export function CandidateAffinityMatrixView({
       if (candidateA === candidateB) {
         // Self-pairs are excluded - show as 0
         rowData.push({
-          x: getCandidateName(candidateB),
+          x: candidateB.toString(),
           y: 0,
         });
       } else {
@@ -110,65 +117,57 @@ export function CandidateAffinityMatrixView({
         );
 
         rowData.push({
-          x: getCandidateName(candidateB),
+          x: candidateB.toString(),
           y: pair ? pair.cooccurrence_frac : 0,
         });
       }
     }
 
     heatmapData.push({
-      id: getCandidateName(candidateA),
+      id: candidateA.toString(),
       data: rowData,
     });
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap props
   const formatTooltip = (props: any) => {
-    const { xKey, yKey, value } = props;
-    const candidateA = xKey;
-    const candidateB = yKey;
+    const { cell } = props;
+    const candidateAId = parseInt(cell.serieId); // Row candidate (y-axis)
+    const candidateBId = parseInt(cell.data.x); // Column candidate (x-axis)
+    const value = cell.value;
 
-    if (candidateA === candidateB) {
+    // Direct lookup using candidate IDs
+    const candidateAName = getCandidateName(candidateAId);
+    const candidateBName = getCandidateName(candidateBId);
+
+    if (candidateAId === candidateBId) {
+      // Self-pairs - just show the candidate name
       return (
         <div className="bg-background border rounded p-2 shadow-lg text-sm">
-          <strong>Self-pair excluded</strong>
-          <br />
-          {candidateA}
+          <strong>{candidateAName}</strong>
         </div>
       );
     }
 
-    // Find the actual data point to get the count by finding the original candidate IDs
-    const candidateAId = candidates?.find(
-      (c) => c.candidate_name === candidateA,
-    )?.candidate_id;
-    const candidateBId = candidates?.find(
-      (c) => c.candidate_name === candidateB,
-    )?.candidate_id;
-
-    if (!candidateAId || !candidateBId) return null;
-
-    const canonicalAId =
-      candidateAId < candidateBId ? candidateAId : candidateBId;
-    const canonicalBId =
-      candidateAId < candidateBId ? candidateBId : candidateAId;
+    // Find the actual pair data for ballot count
+    const canonicalAId = candidateAId < candidateBId ? candidateAId : candidateBId;
+    const canonicalBId = candidateAId < candidateBId ? candidateBId : candidateAId;
+    
     const pair = affinityData.find(
       (d) => d.candidate_a === canonicalAId && d.candidate_b === canonicalBId,
     );
 
     return (
       <div className="bg-background border rounded p-2 shadow-lg text-sm">
-        <strong>
-          {candidateA} ↔ {candidateB}
-        </strong>
-        <br />
-        Co-occurrence: {pair ? pair.cooccurrence_count.toLocaleString() : 0}
-        <br />
-        Fraction: {(value * 100).toFixed(1)}%
-        <br />
-        <span className="text-muted-foreground text-xs">
-          (of {stats.total_ballots_considered.toLocaleString()} ballots)
-        </span>
+        <div className="font-semibold">
+          {candidateAName} ↔ {candidateBName}
+        </div>
+        <div className="mt-1">
+          {pair ? pair.cooccurrence_count.toLocaleString() : 0} ballots
+        </div>
+        <div className="text-muted-foreground">
+          {(value * 100).toFixed(1)}% of all ballots
+        </div>
       </div>
     );
   };
@@ -181,11 +180,13 @@ export function CandidateAffinityMatrixView({
           <CardTitle>Candidate Affinity Matrix</CardTitle>
           <CardDescription>
             Heatmap showing how often pairs of candidates appear together on the
-            same ballot
+            same ballot. The <strong>co-occurrence fraction</strong> represents the 
+            percentage of ballots where both candidates were ranked together, 
+            regardless of their specific ranking positions.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div className="space-y-1">
               <div className="text-2xl font-bold text-blue-600">
                 {stats.total_ballots_considered.toLocaleString()}
@@ -208,12 +209,6 @@ export function CandidateAffinityMatrixView({
                 Max Pair Fraction
               </div>
             </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-bold text-amber-600">
-                {stats.compute_ms}ms
-              </div>
-              <div className="text-sm text-muted-foreground">Compute Time</div>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -227,11 +222,16 @@ export function CandidateAffinityMatrixView({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-3">
-            <Label htmlFor="threshold-slider">
-              Minimum Co-occurrence Fraction:{" "}
-              {(minThreshold[0] * 100).toFixed(1)}%
-            </Label>
+          <div className="space-y-3 max-w-lg">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="threshold-slider">
+                Minimum Co-occurrence Fraction:{" "}
+                <span className="font-mono">{(minThreshold[0] * 100).toFixed(1)}%</span>
+              </Label>
+              <span className="text-sm text-muted-foreground">
+                Max: {(stats.max_pair_frac * 100).toFixed(1)}%
+              </span>
+            </div>
             <Slider
               id="threshold-slider"
               min={0}
@@ -253,10 +253,15 @@ export function CandidateAffinityMatrixView({
           </div>
 
           {showTopK && (
-            <div className="space-y-3">
-              <Label htmlFor="top-k-slider">
-                Top {topK[0]} pairs by co-occurrence fraction
-              </Label>
+            <div className="space-y-3 max-w-lg">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="top-k-slider">
+                  Top <span className="font-mono">{topK[0]}</span> pairs by co-occurrence fraction
+                </Label>
+                <span className="text-sm text-muted-foreground">
+                  Max: {Math.min(500, stats.unique_pairs)}
+                </span>
+              </div>
               <Slider
                 id="top-k-slider"
                 min={10}
@@ -278,37 +283,40 @@ export function CandidateAffinityMatrixView({
       {/* Heatmap */}
       <Card>
         <CardContent className="pt-6">
-          <div className="h-[600px] w-full">
+          <div className="h-[600px] w-full p-8">
             <ResponsiveHeatMap
               data={heatmapData}
-              margin={{ top: 60, right: 90, bottom: 60, left: 90 }}
+              margin={{ top: 80, right: 80, bottom: 60, left: 160 }}
               valueFormat=" >-.3%"
               axisTop={{
                 tickSize: 5,
-                tickPadding: 5,
+                tickPadding: 8,
                 tickRotation: -45,
                 legend: "",
                 legendOffset: 46,
                 truncateTickAt: 0,
+                format: (candidateId: string) => getLastName(parseInt(candidateId)),
               }}
               axisRight={null}
               axisBottom={{
                 tickSize: 5,
-                tickPadding: 5,
+                tickPadding: 8,
                 tickRotation: 45,
-                legend: "Candidate",
+                legend: "",
                 legendPosition: "middle",
-                legendOffset: 46,
+                legendOffset: 0,
                 truncateTickAt: 0,
+                format: (candidateId: string) => getLastName(parseInt(candidateId)),
               }}
               axisLeft={{
                 tickSize: 5,
-                tickPadding: 5,
+                tickPadding: 8,
                 tickRotation: 0,
-                legend: "Candidate",
+                legend: "",
                 legendPosition: "middle",
-                legendOffset: -72,
+                legendOffset: 0,
                 truncateTickAt: 0,
+                format: (candidateId: string) => getLastName(parseInt(candidateId)),
               }}
               colors={{
                 type: "diverging",
