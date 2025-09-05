@@ -10,6 +10,7 @@ import {
   type ElectionId,
   electionIdFrom,
 } from "@/contracts/ids";
+import { computeCandidateAffinityMatrix } from "../src/contracts/slices/candidate_affinity_matrix/compute";
 import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
@@ -132,6 +133,19 @@ async function processDistrict(district: DistrictConfig) {
 
     console.log(
       `   ✅ Transfers: ${transferResult.stats.total_transfers} transfers (${transferResult.stats.elimination_transfers} elimination, ${transferResult.stats.surplus_transfers} surplus)`,
+    );
+
+    // Step 6: Candidate Affinity Matrix
+    console.log(
+      `🤝 Computing candidate affinity matrix for ${district.districtId}...`,
+    );
+    const affinityResult = await computeCandidateAffinityMatrix({
+      electionId,
+      contestId,
+    });
+
+    console.log(
+      `   ✅ Affinity: ${affinityResult.stats.unique_pairs} pairs from ${affinityResult.stats.total_ballots_considered} ballots (max: ${(affinityResult.stats.max_pair_frac * 100).toFixed(1)}%)`,
     );
   } catch (error) {
     console.error(`   ❌ Failed to process ${district.districtId}:`);

@@ -38,6 +38,7 @@ export const Contest = z.object({
   // Analysis artifacts
   first_choice: ArtifactRef.optional(), // first_choice.parquet
   rank_distribution: ArtifactRef.optional(), // rank_distribution.parquet
+  candidate_affinity_matrix: ArtifactRef.optional(), // candidate_affinity_matrix.parquet
   stv: z.object({
     rounds: ArtifactRef.optional(), // stv_rounds.parquet
     meta: ArtifactRef.optional(), // stv_meta.parquet
