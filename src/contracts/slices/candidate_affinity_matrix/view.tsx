@@ -42,6 +42,13 @@ export function CandidateAffinityMatrixView({
   const [minThreshold, setMinThreshold] = useState<number[]>([0]);
   const [showTopK, setShowTopK] = useState(false);
   const [topK, setTopK] = useState<number[]>([100]);
+  const [pinnedTooltip, setPinnedTooltip] = useState<{
+    candidateAId: number;
+    candidateBId: number;
+    value: number;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Helper to get candidate name from candidate_id
   const getCandidateName = (candidateId: number): string => {
@@ -129,6 +136,28 @@ export function CandidateAffinityMatrixView({
     });
   }
 
+  // Handle cell click to pin tooltip
+  const handleCellClick = (cell: any) => {
+    const candidateAId = parseInt(cell.serieId);
+    const candidateBId = parseInt(cell.data.x);
+    
+    // If clicking the same cell, unpin the tooltip
+    if (pinnedTooltip && 
+        pinnedTooltip.candidateAId === candidateAId && 
+        pinnedTooltip.candidateBId === candidateBId) {
+      setPinnedTooltip(null);
+    } else {
+      // Pin the new tooltip
+      setPinnedTooltip({
+        candidateAId,
+        candidateBId,
+        value: cell.value,
+        x: cell.x + cell.width / 2,
+        y: cell.y + cell.height / 2,
+      });
+    }
+  };
+
   // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap props
   const formatTooltip = (props: any) => {
     const { cell } = props;
@@ -143,7 +172,7 @@ export function CandidateAffinityMatrixView({
     if (candidateAId === candidateBId) {
       // Self-pairs - just show the candidate name
       return (
-        <div className="bg-background border rounded p-2 shadow-lg text-sm">
+        <div className="bg-background border rounded p-3 shadow-lg text-sm min-w-48">
           <strong>{candidateAName}</strong>
         </div>
       );
@@ -158,7 +187,7 @@ export function CandidateAffinityMatrixView({
     );
 
     return (
-      <div className="bg-background border rounded p-2 shadow-lg text-sm">
+      <div className="bg-background border rounded p-3 shadow-lg text-sm min-w-48">
         <div className="font-semibold">
           {candidateAName} ↔ {candidateBName}
         </div>
@@ -239,7 +268,7 @@ export function CandidateAffinityMatrixView({
               step={0.001}
               value={minThreshold}
               onValueChange={setMinThreshold}
-              className="w-full"
+              className="w-full [&>span[data-orientation=horizontal]]:bg-secondary"
             />
           </div>
 
@@ -269,7 +298,7 @@ export function CandidateAffinityMatrixView({
                 step={10}
                 value={topK}
                 onValueChange={setTopK}
-                className="w-full"
+                className="w-full [&>span[data-orientation=horizontal]]:bg-secondary"
               />
             </div>
           )}
@@ -282,8 +311,8 @@ export function CandidateAffinityMatrixView({
 
       {/* Heatmap */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="h-[600px] w-full p-8">
+        <CardContent className="pt-6 relative">
+          <div className="h-[800px] w-full p-8">
             <ResponsiveHeatMap
               data={heatmapData}
               margin={{ top: 80, right: 80, bottom: 60, left: 160 }}
@@ -332,10 +361,69 @@ export function CandidateAffinityMatrixView({
                 modifiers: [["darker", 1.8]],
               }}
               tooltip={formatTooltip}
+              onClick={handleCellClick}
               animate={true}
               motionConfig="gentle"
             />
           </div>
+
+          {/* Pinned Tooltip */}
+          {pinnedTooltip && (
+            <div 
+              className="absolute bg-background border rounded p-3 shadow-lg text-sm z-10 max-w-sm"
+              style={{ 
+                left: pinnedTooltip.x - 150, // Center approximately (wider)
+                top: pinnedTooltip.y + 10,
+                pointerEvents: 'auto'
+              }}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div className="font-semibold">
+                  {pinnedTooltip.candidateAId === pinnedTooltip.candidateBId ? (
+                    getCandidateName(pinnedTooltip.candidateAId)
+                  ) : (
+                    <>
+                      {getCandidateName(pinnedTooltip.candidateAId)} ↔{' '}
+                      {getCandidateName(pinnedTooltip.candidateBId)}
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={() => setPinnedTooltip(null)}
+                  className="text-muted-foreground hover:text-foreground ml-2"
+                  aria-label="Close tooltip"
+                >
+                  ×
+                </button>
+              </div>
+              
+              {pinnedTooltip.candidateAId !== pinnedTooltip.candidateBId && (
+                <>
+                  <div className="mt-1">
+                    {(() => {
+                      const canonicalAId = pinnedTooltip.candidateAId < pinnedTooltip.candidateBId 
+                        ? pinnedTooltip.candidateAId : pinnedTooltip.candidateBId;
+                      const canonicalBId = pinnedTooltip.candidateAId < pinnedTooltip.candidateBId 
+                        ? pinnedTooltip.candidateBId : pinnedTooltip.candidateAId;
+                      
+                      const pair = affinityData.find(
+                        (d) => d.candidate_a === canonicalAId && d.candidate_b === canonicalBId,
+                      );
+                      
+                      return `${pair ? pair.cooccurrence_count.toLocaleString() : 0} ballots`;
+                    })()}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {(pinnedTooltip.value * 100).toFixed(1)}% of all ballots
+                  </div>
+                </>
+              )}
+              
+              <div className="text-xs text-muted-foreground mt-2">
+                Click square again to unpin
+              </div>
+            </div>
+          )}
 
           {/* Legend */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
