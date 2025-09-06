@@ -137,14 +137,17 @@ export function CandidateAffinityMatrixView({
   }
 
   // Handle cell click to pin tooltip
+  // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap cell type
   const handleCellClick = (cell: any) => {
-    const candidateAId = parseInt(cell.serieId);
-    const candidateBId = parseInt(cell.data.x);
-    
+    const candidateAId = parseInt(cell.serieId, 10);
+    const candidateBId = parseInt(cell.data.x, 10);
+
     // If clicking the same cell, unpin the tooltip
-    if (pinnedTooltip && 
-        pinnedTooltip.candidateAId === candidateAId && 
-        pinnedTooltip.candidateBId === candidateBId) {
+    if (
+      pinnedTooltip &&
+      pinnedTooltip.candidateAId === candidateAId &&
+      pinnedTooltip.candidateBId === candidateBId
+    ) {
       setPinnedTooltip(null);
     } else {
       // Pin the new tooltip
@@ -161,8 +164,8 @@ export function CandidateAffinityMatrixView({
   // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap props
   const formatTooltip = (props: any) => {
     const { cell } = props;
-    const candidateAId = parseInt(cell.serieId); // Row candidate (y-axis)
-    const candidateBId = parseInt(cell.data.x); // Column candidate (x-axis)
+    const candidateAId = parseInt(cell.serieId, 10); // Row candidate (y-axis)
+    const candidateBId = parseInt(cell.data.x, 10); // Column candidate (x-axis)
     const value = cell.value;
 
     // Direct lookup using candidate IDs
@@ -179,9 +182,11 @@ export function CandidateAffinityMatrixView({
     }
 
     // Find the actual pair data for ballot count
-    const canonicalAId = candidateAId < candidateBId ? candidateAId : candidateBId;
-    const canonicalBId = candidateAId < candidateBId ? candidateBId : candidateAId;
-    
+    const canonicalAId =
+      candidateAId < candidateBId ? candidateAId : candidateBId;
+    const canonicalBId =
+      candidateAId < candidateBId ? candidateBId : candidateAId;
+
     const pair = affinityData.find(
       (d) => d.candidate_a === canonicalAId && d.candidate_b === canonicalBId,
     );
@@ -209,9 +214,9 @@ export function CandidateAffinityMatrixView({
           <CardTitle>Candidate Affinity Matrix</CardTitle>
           <CardDescription>
             Heatmap showing how often pairs of candidates appear together on the
-            same ballot. The <strong>co-occurrence fraction</strong> represents the 
-            percentage of ballots where both candidates were ranked together, 
-            regardless of their specific ranking positions.
+            same ballot. The <strong>co-occurrence fraction</strong> represents
+            the percentage of ballots where both candidates were ranked
+            together, regardless of their specific ranking positions.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -255,7 +260,9 @@ export function CandidateAffinityMatrixView({
             <div className="flex justify-between items-center">
               <Label htmlFor="threshold-slider">
                 Minimum Co-occurrence Fraction:{" "}
-                <span className="font-mono">{(minThreshold[0] * 100).toFixed(1)}%</span>
+                <span className="font-mono">
+                  {(minThreshold[0] * 100).toFixed(1)}%
+                </span>
               </Label>
               <span className="text-sm text-muted-foreground">
                 Max: {(stats.max_pair_frac * 100).toFixed(1)}%
@@ -285,7 +292,8 @@ export function CandidateAffinityMatrixView({
             <div className="space-y-3 max-w-lg">
               <div className="flex justify-between items-center">
                 <Label htmlFor="top-k-slider">
-                  Top <span className="font-mono">{topK[0]}</span> pairs by co-occurrence fraction
+                  Top <span className="font-mono">{topK[0]}</span> pairs by
+                  co-occurrence fraction
                 </Label>
                 <span className="text-sm text-muted-foreground">
                   Max: {Math.min(500, stats.unique_pairs)}
@@ -324,7 +332,8 @@ export function CandidateAffinityMatrixView({
                 legend: "",
                 legendOffset: 46,
                 truncateTickAt: 0,
-                format: (candidateId: string) => getLastName(parseInt(candidateId)),
+                format: (candidateId: string) =>
+                  getLastName(parseInt(candidateId, 10)),
               }}
               axisRight={null}
               axisBottom={{
@@ -335,7 +344,8 @@ export function CandidateAffinityMatrixView({
                 legendPosition: "middle",
                 legendOffset: 0,
                 truncateTickAt: 0,
-                format: (candidateId: string) => getLastName(parseInt(candidateId)),
+                format: (candidateId: string) =>
+                  getLastName(parseInt(candidateId, 10)),
               }}
               axisLeft={{
                 tickSize: 5,
@@ -345,7 +355,8 @@ export function CandidateAffinityMatrixView({
                 legendPosition: "middle",
                 legendOffset: 0,
                 truncateTickAt: 0,
-                format: (candidateId: string) => getLastName(parseInt(candidateId)),
+                format: (candidateId: string) =>
+                  getLastName(parseInt(candidateId, 10)),
               }}
               colors={{
                 type: "diverging",
@@ -369,12 +380,12 @@ export function CandidateAffinityMatrixView({
 
           {/* Pinned Tooltip */}
           {pinnedTooltip && (
-            <div 
+            <div
               className="absolute bg-background border rounded p-3 shadow-lg text-sm z-10 max-w-sm"
-              style={{ 
+              style={{
                 left: pinnedTooltip.x - 150, // Center approximately (wider)
                 top: pinnedTooltip.y + 10,
-                pointerEvents: 'auto'
+                pointerEvents: "auto",
               }}
             >
               <div className="flex justify-between items-start mb-2">
@@ -383,12 +394,13 @@ export function CandidateAffinityMatrixView({
                     getCandidateName(pinnedTooltip.candidateAId)
                   ) : (
                     <>
-                      {getCandidateName(pinnedTooltip.candidateAId)} ↔{' '}
+                      {getCandidateName(pinnedTooltip.candidateAId)} ↔{" "}
                       {getCandidateName(pinnedTooltip.candidateBId)}
                     </>
                   )}
                 </div>
                 <button
+                  type="button"
                   onClick={() => setPinnedTooltip(null)}
                   className="text-muted-foreground hover:text-foreground ml-2"
                   aria-label="Close tooltip"
@@ -396,20 +408,26 @@ export function CandidateAffinityMatrixView({
                   ×
                 </button>
               </div>
-              
+
               {pinnedTooltip.candidateAId !== pinnedTooltip.candidateBId && (
                 <>
                   <div className="mt-1">
                     {(() => {
-                      const canonicalAId = pinnedTooltip.candidateAId < pinnedTooltip.candidateBId 
-                        ? pinnedTooltip.candidateAId : pinnedTooltip.candidateBId;
-                      const canonicalBId = pinnedTooltip.candidateAId < pinnedTooltip.candidateBId 
-                        ? pinnedTooltip.candidateBId : pinnedTooltip.candidateAId;
-                      
+                      const canonicalAId =
+                        pinnedTooltip.candidateAId < pinnedTooltip.candidateBId
+                          ? pinnedTooltip.candidateAId
+                          : pinnedTooltip.candidateBId;
+                      const canonicalBId =
+                        pinnedTooltip.candidateAId < pinnedTooltip.candidateBId
+                          ? pinnedTooltip.candidateBId
+                          : pinnedTooltip.candidateAId;
+
                       const pair = affinityData.find(
-                        (d) => d.candidate_a === canonicalAId && d.candidate_b === canonicalBId,
+                        (d) =>
+                          d.candidate_a === canonicalAId &&
+                          d.candidate_b === canonicalBId,
                       );
-                      
+
                       return `${pair ? pair.cooccurrence_count.toLocaleString() : 0} ballots`;
                     })()}
                   </div>
@@ -418,7 +436,7 @@ export function CandidateAffinityMatrixView({
                   </div>
                 </>
               )}
-              
+
               <div className="text-xs text-muted-foreground mt-2">
                 Click square again to unpin
               </div>
