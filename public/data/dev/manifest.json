@@ -203,12 +203,12 @@
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/rounds.parquet",
-              "sha256": "7777e3d9c1fe4795fed28d0be00dc18e2a17bcd6226acd79467e500a1d36a91a",
+              "sha256": "ca0c0fbbbb482ec772b9e9465452f3b37a245cc31b7f5c0d13ce7a9d17ac0954",
               "rows": 1088
             },
             "meta": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/meta.parquet",
-              "sha256": "84e3068e2167ca8e41bce53ce4240396f099ca348f6269f0a37b104d310fb757",
+              "sha256": "18e6785c8e5fb0062b742d743cac47de5050b01ff53628b006e964d3c7e8875e",
               "rows": 32
             },
             "stats": {

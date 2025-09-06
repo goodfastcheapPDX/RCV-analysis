@@ -4,9 +4,7 @@ import { ContestIdSchema, DistrictIdSchema, ElectionIdSchema } from "./ids";
 // Artifact reference with URI and content hash for determinism
 export const ArtifactRef = z.object({
   uri: z.string().min(1), // relative to project root or absolute (e.g., blob URL)
-  sha256: z
-    .string()
-    .regex(/^[a-f0-9]{64}$/, "SHA256 hash must be 64 hex characters"),
+  sha256: z.hash("sha256"),
   rows: z.number().int().nonnegative().optional(),
   bytes: z.number().int().nonnegative().optional(),
 });
@@ -89,13 +87,10 @@ export const Manifest = z.object({
       cvr_files: z.array(
         z.object({
           path: z.string(),
-          sha256: z.string().regex(/^[a-f0-9]{64}$/),
+          sha256: z.hash("sha256"),
         }),
       ),
-      rules_hash: z
-        .string()
-        .regex(/^[a-f0-9]{64}$/)
-        .optional(),
+      rules_hash: z.hash("sha256").optional(),
     }),
   ),
 

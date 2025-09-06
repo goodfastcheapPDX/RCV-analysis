@@ -20,7 +20,7 @@ import {
 export interface ComputeParams {
   electionId: string;
   contestId: string;
-  env?: string;
+  env: string;
 }
 
 function getOutputPath(
@@ -46,7 +46,7 @@ function getInputPath(
 export async function computeRankDistributionByCandidate(
   params: ComputeParams,
 ): Promise<RankDistributionByCandidateOutput> {
-  const { electionId, contestId, env = "dev" } = params;
+  const { electionId, contestId, env } = params;
 
   console.log(
     `Processing rank distribution by candidate for ${electionId}/${contestId}`,
@@ -217,8 +217,8 @@ function deriveStatsFromRows(rows: Output[]): Stats {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const [electionId, contestId, env] = process.argv.slice(2);
 
-  if (!electionId || !contestId) {
-    console.error("Usage: npx tsx compute.ts <electionId> <contestId> [env]");
+  if (!electionId || !contestId || !env) {
+    console.error("Usage: npx tsx compute.ts <electionId> <contestId> <env>");
     process.exit(1);
   }
 

@@ -12,7 +12,7 @@ import {
 import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
-import { validateEnv } from "../src/lib/env";
+import { getDataEnv, validateEnv } from "../src/lib/env";
 
 // Load environment variables and validate
 dotenv();
@@ -123,6 +123,7 @@ async function main() {
     const rankDistResult = await computeRankDistributionByCandidate({
       electionId,
       contestId,
+      env: getDataEnv(),
     });
 
     console.log(`✅ Rank distribution by candidate completed:`);
