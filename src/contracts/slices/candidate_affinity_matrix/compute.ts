@@ -172,7 +172,12 @@ export async function computeCandidateAffinityMatrix(
   const computeMs = Date.now() - startTime;
 
   // Calculate stats from validated rows
-  const stats = deriveStatsFromRows(parsedRows, computeMs);
+  const actualBallotsConsidered = Number(dedupStats.ballots_with_ranks);
+  const stats = deriveStatsFromRows(
+    parsedRows,
+    computeMs,
+    actualBallotsConsidered,
+  );
   const data: Data = { rows: parsedRows.length };
 
   // Export to parquet
@@ -217,10 +222,14 @@ export async function computeCandidateAffinityMatrix(
   return { stats, data };
 }
 
-function deriveStatsFromRows(rows: Output[], computeMs: number): Stats {
+function deriveStatsFromRows(
+  rows: Output[],
+  computeMs: number,
+  actualBallotsConsidered: number,
+): Stats {
   if (rows.length === 0) {
     return {
-      total_ballots_considered: 0,
+      total_ballots_considered: actualBallotsConsidered,
       unique_pairs: 0,
       max_pair_frac: 0,
       compute_ms: computeMs,
@@ -230,12 +239,9 @@ function deriveStatsFromRows(rows: Output[], computeMs: number): Stats {
   const uniquePairs = rows.length;
   const maxPairFrac = Math.max(...rows.map((row) => row.cooccurrence_frac));
 
-  // Derive total ballots from first row: cooccurrence_frac = cooccurrence_count / total_ballots
-  const firstRow = rows[0];
-  const totalBallots =
-    firstRow.cooccurrence_frac > 0
-      ? Math.round(firstRow.cooccurrence_count / firstRow.cooccurrence_frac)
-      : 0;
+  // Use the actual ballot count from the dedup query rather than deriving from pairs
+  // This handles edge cases where derivation might be inaccurate due to rounding
+  const totalBallots = actualBallotsConsidered;
 
   return {
     total_ballots_considered: totalBallots,

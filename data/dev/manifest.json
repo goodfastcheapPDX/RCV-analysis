@@ -181,7 +181,7 @@
             },
             "ballots_long": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/ingest/ballots_long.parquet",
-              "sha256": "b145124042a7a0122892dbc0db22849d5388275c82fd05f9af7e9f473d264744",
+              "sha256": "29c525290dcdcafc83be931cc749d3587b6e11e1f9022192f593ed084237027f",
               "rows": 378275
             }
           },
@@ -203,12 +203,12 @@
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/rounds.parquet",
-              "sha256": "7777e3d9c1fe4795fed28d0be00dc18e2a17bcd6226acd79467e500a1d36a91a",
+              "sha256": "8dabe8e7a6f08483c78793c11f524d64d254502d2dd0e11e546c84a834163bac",
               "rows": 1088
             },
             "meta": {
               "uri": "data/dev/portland-20241105-gen/d3-3seat/stv/meta.parquet",
-              "sha256": "84e3068e2167ca8e41bce53ce4240396f099ca348f6269f0a37b104d310fb757",
+              "sha256": "6d8a7b1d16839fd3e941e0b7a0b63f85a1b64b1f96dc525e1c45fd53526a474f",
               "rows": 32
             },
             "stats": {
@@ -258,6 +258,11 @@
             "sha256": "0bd1dd82f22f31ff71643fdca1ac9947ad4edbf22e27d86dda558ed1a46d7a01",
             "rows": 204
           },
+          "candidate_affinity_matrix": {
+            "uri": "data/dev/portland-20241105-gen/d4-3seat/candidate_affinity_matrix/candidate_affinity_matrix.parquet",
+            "sha256": "2f4fd5a76d46abd1ef9405a5766102c2dd4cda8b3e05fb60e11e95c6deec4a05",
+            "rows": 561
+          },
           "stv": {
             "rounds": {
               "uri": "data/dev/portland-20241105-gen/d4-3seat/stv/rounds.parquet",
@@ -287,11 +292,6 @@
             "precision": 0.000001,
             "tie_break": "lexicographic",
             "seats": 3
-          },
-          "candidate_affinity_matrix": {
-            "uri": "data/dev/portland-20241105-gen/d4-3seat/candidate_affinity_matrix/candidate_affinity_matrix.parquet",
-            "sha256": "2f4fd5a76d46abd1ef9405a5766102c2dd4cda8b3e05fb60e11e95c6deec4a05",
-            "rows": 561
           }
         }
       ]

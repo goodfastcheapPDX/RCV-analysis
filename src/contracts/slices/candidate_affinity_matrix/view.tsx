@@ -193,6 +193,7 @@ export function CandidateAffinityMatrixView({
 
   // Memoize the tooltip formatter for better performance
   const formatTooltip = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap cell type
     (props: any) => {
       const { cell } = props;
       const candidateAId = parseInt(cell.serieId, 10);
