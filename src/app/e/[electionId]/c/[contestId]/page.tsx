@@ -70,6 +70,11 @@ export default async function ContestPage({ params }: ContestPageProps) {
               </Link>
             </Button>
             <Button variant="outline" asChild>
+              <Link href={`/e/${electionId}/c/${contestId}/coalitions`}>
+                Coalition Analysis
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
               <Link href={`/e/${electionId}`}>Back to Election</Link>
             </Button>
           </div>

@@ -116,6 +116,18 @@ export class ContestResolver {
   }
 
   /**
+   * Get candidate affinity matrix URI for contest
+   * Note: Candidate affinity matrix is not yet in manifest, so we construct the path
+   */
+  getCandidateAffinityMatrixUri(
+    electionId: string,
+    contestId: string,
+  ): string | null {
+    // Return HTTP URL since all data is now in public/data
+    return `/data/${this.manifest.env}/${electionId}/${contestId}/candidate_affinity_matrix/candidate_affinity_matrix.parquet`;
+  }
+
+  /**
    * Resolve artifact to HTTP URL (works for both DuckDB and browser)
    */
   resolveArtifactUrl(artifact: ArtifactRef): string {

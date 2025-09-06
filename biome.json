@@ -28,7 +28,13 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noUnusedImports": "off"
+        "noUnusedImports": "off",
+        "noUnusedFunctionParameters": {
+          "options": {
+            "ignoreRestSiblings": false
+          },
+          "level": "error"
+        }
       },
       "style": {
         "useImportType": "warn"
