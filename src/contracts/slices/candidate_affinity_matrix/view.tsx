@@ -1,7 +1,7 @@
 "use client";
 
 import { ResponsiveHeatMap, TooltipComponent } from "@nivo/heatmap";
-import { useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -51,90 +51,120 @@ export function CandidateAffinityMatrixView({
   } | null>(null);
 
   // Helper to get candidate name from candidate_id
-  const getCandidateName = (candidateId: number): string => {
-    if (!candidates) return candidateId.toString();
-    const candidate = candidates.find((c) => c.candidate_id === candidateId);
-    return candidate ? candidate.candidate_name : candidateId.toString();
-  };
-
-  // Helper to get last name only from candidate name
-  const getLastName = (candidateId: number): string => {
-    const fullName = getCandidateName(candidateId);
-    const nameParts = fullName.split(" ");
-    return nameParts.length > 1 ? nameParts[nameParts.length - 1] : fullName;
-  };
-
-  // Get all unique candidates and sort by first-choice vote totals (descending)
-  const allCandidates = Array.from(
-    new Set([
-      ...affinityData.map((d) => d.candidate_a),
-      ...affinityData.map((d) => d.candidate_b),
-    ]),
+  const getCandidateName = useCallback(
+    (candidateId: number): string => {
+      if (!candidates) return candidateId.toString();
+      const candidate = candidates.find((c) => c.candidate_id === candidateId);
+      return candidate ? candidate.candidate_name : candidateId.toString();
+    },
+    [candidates],
   );
 
-  // Sort candidates by first-choice totals if available, otherwise by ID
-  const sortedCandidates = allCandidates.sort((a, b) => {
-    if (candidates) {
-      const candidateA = candidates.find((c) => c.candidate_id === a);
-      const candidateB = candidates.find((c) => c.candidate_id === b);
-
-      // If both have candidate data, sort by name (stable and interpretable)
-      if (candidateA && candidateB) {
-        return candidateA.candidate_name.localeCompare(
-          candidateB.candidate_name,
-        );
-      }
-    }
-    return a - b; // Numeric sort for candidate IDs
-  });
-
-  // Apply filters
-  let filteredData = affinityData.filter(
-    (d) => d.cooccurrence_frac >= minThreshold[0],
+  // Memoize last name lookup for axis labels
+  const getLastName = useCallback(
+    (candidateId: number): string => {
+      const fullName = getCandidateName(candidateId);
+      const nameParts = fullName.split(" ");
+      return nameParts.length > 1 ? nameParts[nameParts.length - 1] : fullName;
+    },
+    [getCandidateName],
   );
 
-  if (showTopK) {
-    filteredData = filteredData
-      .sort((a, b) => b.cooccurrence_frac - a.cooccurrence_frac)
-      .slice(0, topK[0]);
-  }
+  // Memoize candidate sorting (stable across renders)
+  const sortedCandidates = useMemo(() => {
+    const allCandidates = Array.from(
+      new Set([
+        ...affinityData.map((d) => d.candidate_a),
+        ...affinityData.map((d) => d.candidate_b),
+      ]),
+    );
 
-  // Transform data into heatmap format
-  // Create symmetric matrix where M[a,b] = M[b,a]
-  const heatmapData: HeatmapData[] = [];
+    return allCandidates.sort((a, b) => {
+      if (candidates) {
+        const candidateA = candidates.find((c) => c.candidate_id === a);
+        const candidateB = candidates.find((c) => c.candidate_id === b);
 
-  // Initialize with all candidates
-  for (const candidateA of sortedCandidates) {
-    const rowData: Array<{ x: string; y: number }> = [];
-
-    for (const candidateB of sortedCandidates) {
-      if (candidateA === candidateB) {
-        // Self-pairs are excluded - show as 0
-        rowData.push({
-          x: candidateB.toString(),
-          y: 0,
-        });
-      } else {
-        // Find the canonical pair (a < b lexicographically)
-        const canonicalA = candidateA < candidateB ? candidateA : candidateB;
-        const canonicalB = candidateA < candidateB ? candidateB : candidateA;
-
-        const pair = filteredData.find(
-          (d) => d.candidate_a === canonicalA && d.candidate_b === canonicalB,
-        );
-
-        rowData.push({
-          x: candidateB.toString(),
-          y: pair ? pair.cooccurrence_frac : 0,
-        });
+        // If both have candidate data, sort by name (stable and interpretable)
+        if (candidateA && candidateB) {
+          return candidateA.candidate_name.localeCompare(
+            candidateB.candidate_name,
+          );
+        }
       }
-    }
-
-    heatmapData.push({
-      id: candidateA.toString(),
-      data: rowData,
+      return a - b; // Numeric sort for candidate IDs
     });
-  }
+  }, [affinityData, candidates]);
+
+  // Memoize filtered data
+  const filteredData = useMemo(() => {
+    let filtered = affinityData.filter(
+      (d) => d.cooccurrence_frac >= minThreshold[0],
+    );
+
+    if (showTopK) {
+      filtered = filtered
+        .sort((a, b) => b.cooccurrence_frac - a.cooccurrence_frac)
+        .slice(0, topK[0]);
+    }
+
+    return filtered;
+  }, [affinityData, minThreshold, showTopK, topK]);
+
+  // Memoize heatmap data transformation (most expensive operation)
+  const heatmapData = useMemo(() => {
+    // Create a lookup map for faster pair finding
+    const pairLookup = new Map<string, number>();
+    for (const item of filteredData) {
+      const key = `${item.candidate_a}-${item.candidate_b}`;
+      pairLookup.set(key, item.cooccurrence_frac);
+    }
+
+    const data: HeatmapData[] = [];
+
+    for (const candidateA of sortedCandidates) {
+      const rowData: Array<{ x: string; y: number }> = [];
+
+      for (const candidateB of sortedCandidates) {
+        if (candidateA === candidateB) {
+          // Self-pairs are excluded - show as 0
+          rowData.push({
+            x: candidateB.toString(),
+            y: 0,
+          });
+        } else {
+          // Find the canonical pair (a < b lexicographically)
+          const canonicalA = candidateA < candidateB ? candidateA : candidateB;
+          const canonicalB = candidateA < candidateB ? candidateB : candidateA;
+          const lookupKey = `${canonicalA}-${canonicalB}`;
+
+          rowData.push({
+            x: candidateB.toString(),
+            y: pairLookup.get(lookupKey) || 0,
+          });
+        }
+      }
+
+      data.push({
+        id: candidateA.toString(),
+        data: rowData,
+      });
+    }
+
+    return data;
+  }, [sortedCandidates, filteredData]);
+
+  // Memoize tooltip data lookup for better hover performance
+  const tooltipLookup = useMemo(() => {
+    const lookup = new Map<string, { count: number; frac: number }>();
+    for (const item of affinityData) {
+      const key = `${item.candidate_a}-${item.candidate_b}`;
+      lookup.set(key, {
+        count: item.cooccurrence_count,
+        frac: item.cooccurrence_frac,
+      });
+    }
+    return lookup;
+  }, [affinityData]);
 
   // Handle cell click to pin tooltip
   // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap cell type
@@ -161,50 +191,104 @@ export function CandidateAffinityMatrixView({
     }
   };
 
-  // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap props
-  const formatTooltip = (props: any) => {
-    const { cell } = props;
-    const candidateAId = parseInt(cell.serieId, 10); // Row candidate (y-axis)
-    const candidateBId = parseInt(cell.data.x, 10); // Column candidate (x-axis)
-    const value = cell.value;
+  // Memoize the tooltip formatter for better performance
+  const formatTooltip = useCallback(
+    // biome-ignore lint/suspicious/noExplicitAny: nivo heatmap cell type
+    (props: any) => {
+      const { cell } = props;
+      const candidateAId = parseInt(cell.serieId, 10);
+      const candidateBId = parseInt(cell.data.x, 10);
+      const value = cell.value;
 
-    // Direct lookup using candidate IDs
-    const candidateAName = getCandidateName(candidateAId);
-    const candidateBName = getCandidateName(candidateBId);
+      const candidateAName = getCandidateName(candidateAId);
+      const candidateBName = getCandidateName(candidateBId);
 
-    if (candidateAId === candidateBId) {
-      // Self-pairs - just show the candidate name
+      if (candidateAId === candidateBId) {
+        return (
+          <div className="bg-background border rounded p-3 shadow-lg text-sm min-w-48">
+            <strong>{candidateAName}</strong>
+          </div>
+        );
+      }
+
+      // Fast lookup using the memoized map
+      const canonicalAId =
+        candidateAId < candidateBId ? candidateAId : candidateBId;
+      const canonicalBId =
+        candidateAId < candidateBId ? candidateBId : candidateAId;
+      const lookupKey = `${canonicalAId}-${canonicalBId}`;
+      const pairData = tooltipLookup.get(lookupKey);
+
       return (
         <div className="bg-background border rounded p-3 shadow-lg text-sm min-w-48">
-          <strong>{candidateAName}</strong>
+          <div className="font-semibold">
+            {candidateAName} ↔ {candidateBName}
+          </div>
+          <div className="mt-1">
+            {pairData ? pairData.count.toLocaleString() : 0} ballots
+          </div>
+          <div className="text-muted-foreground">
+            {(value * 100).toFixed(1)}% of all ballots
+          </div>
         </div>
       );
-    }
+    },
+    [getCandidateName, tooltipLookup],
+  );
 
-    // Find the actual pair data for ballot count
-    const canonicalAId =
-      candidateAId < candidateBId ? candidateAId : candidateBId;
-    const canonicalBId =
-      candidateAId < candidateBId ? candidateBId : candidateAId;
+  // Memoize axis formatter to prevent recreation on every render
+  const axisFormatter = useCallback(
+    (candidateId: string) => getLastName(parseInt(candidateId, 10)),
+    [getLastName],
+  );
 
-    const pair = affinityData.find(
-      (d) => d.candidate_a === canonicalAId && d.candidate_b === canonicalBId,
-    );
+  // Memoize axis configurations
+  const axisConfigs = useMemo(
+    () => ({
+      axisTop: {
+        tickSize: 5,
+        tickPadding: 8,
+        tickRotation: -45,
+        legend: "",
+        legendOffset: 46,
+        truncateTickAt: 0,
+        format: axisFormatter,
+      },
+      axisBottom: {
+        tickSize: 5,
+        tickPadding: 8,
+        tickRotation: 45,
+        legend: "",
+        legendPosition: "middle" as const,
+        legendOffset: 0,
+        truncateTickAt: 0,
+        format: axisFormatter,
+      },
+      axisLeft: {
+        tickSize: 5,
+        tickPadding: 8,
+        tickRotation: 0,
+        legend: "",
+        legendPosition: "middle" as const,
+        legendOffset: 0,
+        truncateTickAt: 0,
+        format: axisFormatter,
+      },
+    }),
+    [axisFormatter],
+  );
 
-    return (
-      <div className="bg-background border rounded p-3 shadow-lg text-sm min-w-48">
-        <div className="font-semibold">
-          {candidateAName} ↔ {candidateBName}
-        </div>
-        <div className="mt-1">
-          {pair ? pair.cooccurrence_count.toLocaleString() : 0} ballots
-        </div>
-        <div className="text-muted-foreground">
-          {(value * 100).toFixed(1)}% of all ballots
-        </div>
-      </div>
-    );
-  };
+  // Memoize color configuration
+  const colorConfig = useMemo(
+    () => ({
+      type: "diverging" as const,
+      scheme: "blue_green" as const,
+      divergeAt: 0.5,
+      minValue: 0,
+      maxValue: stats.max_pair_frac,
+    }),
+    [stats.max_pair_frac],
+  );
 
   return (
     <div className="space-y-6">
@@ -325,56 +409,20 @@ export function CandidateAffinityMatrixView({
               data={heatmapData}
               margin={{ top: 80, right: 80, bottom: 60, left: 160 }}
               valueFormat=" >-.3%"
-              axisTop={{
-                tickSize: 5,
-                tickPadding: 8,
-                tickRotation: -45,
-                legend: "",
-                legendOffset: 46,
-                truncateTickAt: 0,
-                format: (candidateId: string) =>
-                  getLastName(parseInt(candidateId, 10)),
-              }}
+              axisTop={axisConfigs.axisTop}
               axisRight={null}
-              axisBottom={{
-                tickSize: 5,
-                tickPadding: 8,
-                tickRotation: 45,
-                legend: "",
-                legendPosition: "middle",
-                legendOffset: 0,
-                truncateTickAt: 0,
-                format: (candidateId: string) =>
-                  getLastName(parseInt(candidateId, 10)),
-              }}
-              axisLeft={{
-                tickSize: 5,
-                tickPadding: 8,
-                tickRotation: 0,
-                legend: "",
-                legendPosition: "middle",
-                legendOffset: 0,
-                truncateTickAt: 0,
-                format: (candidateId: string) =>
-                  getLastName(parseInt(candidateId, 10)),
-              }}
-              colors={{
-                type: "diverging",
-                scheme: "blue_green",
-                divergeAt: 0.5,
-                minValue: 0,
-                maxValue: stats.max_pair_frac,
-              }}
+              axisBottom={axisConfigs.axisBottom}
+              axisLeft={axisConfigs.axisLeft}
+              colors={colorConfig}
               emptyColor="#f8f9fa"
               enableLabels={sortedCandidates.length <= 12}
               labelTextColor={{
-                from: "color",
-                modifiers: [["darker", 1.8]],
+                from: "color" as const,
+                modifiers: [["darker", 1.8]] as const,
               }}
               tooltip={formatTooltip}
               onClick={handleCellClick}
-              animate={true}
-              motionConfig="gentle"
+              animate={false}
             />
           </div>
 

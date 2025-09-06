@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 
 import { existsSync } from "node:fs";
+import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import {
@@ -16,6 +17,46 @@ import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
 import { computeStvRounds } from "../src/contracts/slices/stv_rounds/compute";
 import { computeTransferMatrix } from "../src/contracts/slices/transfer_matrix/compute";
+import { getDataEnv, validateEnv } from "../src/lib/env";
+
+// Load environment variables based on NODE_ENV
+function loadEnvironmentConfig() {
+  const nodeEnv = process.env.NODE_ENV || "development";
+
+  // Load base .env file first
+  dotenv({ path: ".env" });
+
+  // Load environment-specific file if it exists
+  const envFile = `.env.${nodeEnv}`;
+  if (existsSync(envFile)) {
+    console.log(`🔧 Loading environment config from ${envFile}`);
+    dotenv({ path: envFile, override: true });
+  } else {
+    console.log(
+      `🔧 Environment file ${envFile} not found, using .env defaults`,
+    );
+  }
+
+  // Validate environment variables
+  validateEnv();
+
+  // Log relevant environment variables
+  console.log("📋 Environment Configuration:");
+  console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`   DATA_ENV: ${process.env.DATA_ENV}`);
+  console.log(`   DEBUG: ${process.env.DEBUG}`);
+  console.log(`   VERBOSE: ${process.env.VERBOSE}`);
+  if (process.env.SRC_CSV) {
+    console.log(`   SRC_CSV: ${process.env.SRC_CSV}`);
+  }
+  if (process.env.DATA_BASE_URL) {
+    console.log(`   DATA_BASE_URL: ${process.env.DATA_BASE_URL}`);
+  }
+  console.log("");
+}
+
+// Initialize environment configuration
+loadEnvironmentConfig();
 
 interface DistrictConfig {
   districtId: DistrictId;
@@ -57,6 +98,8 @@ async function processDistrict(district: DistrictConfig) {
     districtId: district.districtId,
     seatCount: district.seatCount,
   }) as ContestId;
+
+  const env = getDataEnv();
 
   console.log(`\n=== Processing ${district.districtId.toUpperCase()} ===`);
   console.log(`Contest: ${contestId}`);
@@ -103,6 +146,7 @@ async function processDistrict(district: DistrictConfig) {
     const rankDistResult = await computeRankDistributionByCandidate({
       electionId,
       contestId,
+      env,
     });
 
     console.log(
@@ -142,6 +186,7 @@ async function processDistrict(district: DistrictConfig) {
     const affinityResult = await computeCandidateAffinityMatrix({
       electionId,
       contestId,
+      env,
     });
 
     console.log(
@@ -163,6 +208,8 @@ interface BuildAllDistrictsArgs {
 async function main() {
   try {
     console.log("🚀 Building all Portland districts for 2024 General Election");
+
+    const env = getDataEnv();
 
     const args = yargs(hideBin(process.argv))
       .scriptName("build-all-districts")
@@ -197,7 +244,7 @@ async function main() {
     console.log(`\n🎉 Multi-district processing complete!`);
     console.log(`   ✅ Successful: ${successful} districts`);
     console.log(`   ❌ Failed: ${failed} districts`);
-    console.log(`   📂 Data structure: data/dev/portland-20241105-gen/*/`);
+    console.log(`   📂 Data structure: data/${env}/portland-20241105-gen/*/`);
 
     if (failed > 0 && !skipOnError) {
       process.exit(1);

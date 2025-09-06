@@ -325,7 +325,7 @@ describe("CandidateAffinityMatrixView", () => {
     ).toBeInTheDocument();
   });
 
-  test("should render tooltip content correctly for candidate pairs", () => {
+  test("should render tooltip content correctly for candidate pairs", async () => {
     const { container } = render(
       <CandidateAffinityMatrixView
         affinityData={mockAffinityData}
@@ -334,13 +334,23 @@ describe("CandidateAffinityMatrixView", () => {
       />,
     );
 
-    const tooltipContent = within(container).getByTestId("tooltip-content");
-    expect(tooltipContent).toBeInTheDocument();
+    // Simulate hovering over a cell to trigger the debounced tooltip
+    const cell = within(container).getByTestId("heatmap-cell-1-2");
+    fireEvent.mouseEnter(cell);
 
-    // Should show candidate names and statistics
-    expect(tooltipContent).toHaveTextContent("Alice Smith ↔ Bob Johnson");
-    expect(tooltipContent).toHaveTextContent("150 ballots");
-    expect(tooltipContent).toHaveTextContent("75.0% of all ballots");
+    // Wait for debounced tooltip to appear
+    await waitFor(
+      () => {
+        const tooltipContent = within(container).getByTestId("tooltip-content");
+        expect(tooltipContent).toBeInTheDocument();
+
+        // Should show candidate names and statistics
+        expect(tooltipContent).toHaveTextContent("Alice Smith ↔ Bob Johnson");
+        expect(tooltipContent).toHaveTextContent("150 ballots");
+        expect(tooltipContent).toHaveTextContent("75.0% of all ballots");
+      },
+      { timeout: 300 },
+    ); // Wait longer than the 150ms debounce
   });
 
   test("should handle tooltip for self-pairs", () => {
