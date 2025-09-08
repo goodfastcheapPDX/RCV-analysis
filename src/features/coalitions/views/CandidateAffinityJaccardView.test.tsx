@@ -23,8 +23,8 @@ const mockData = [
 const mockStats = {
   total_ballots_considered: 20,
   unique_pairs: 1,
-  max_pair_frac: 0.5,
   max_jaccard: 0.4,
+  zero_union_pairs: 0,
   compute_ms: 100,
 };
 
