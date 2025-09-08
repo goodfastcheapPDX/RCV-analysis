@@ -1,83 +1,152 @@
-# Task: Extract Generic Heatmap Base Component
+Title: Build slice <candidate_affinity_jaccard> end-to-end
 
-## Objective
-Factor out a tiny, generic heatmap "base" and keep two thin wrappers: one for Raw and one for Jaccard. This prevents tight-coupling of data contracts while sharing 90% of UI polish.
+Context (spec packet):
+	•	We already have a raw pairwise co-occurrence slice (candidate_affinity_matrix) that counts |A∧B|.
+	•	Jaccard normalizes pairwise affinity to discount “big candidate” popularity effects:
+J(A,B)=\frac{|A\wedge B|}{|A\cup B|}=\frac{|A\wedge B|}{|A|+|B|-|A\wedge B|}
+	•	Inputs: ballots_long.parquet with {ballot_id, candidate_id, rank}.
+	•	Output powers a heatmap + (later) clusterable network.
 
-## Problem
-Current view bakes in raw-specific field names (`cooccurrence_frac`, `cooccurrence_count`, `max_pair_frac`) and tooltip copy. Reusing wholesale would either force awkward prop shims or risk breaking raw when tweaking normalized behavior.
+⸻
 
-## Solution: Minimal Refactor (Safe & Surgical)
+Scope
 
-### 1. Extract Generic Base Component
-**File:** `src/features/coalitions/common/CoalitionHeatmapBase.tsx`
+1) Contract (index.contract.ts)
 
-**Props (pure-view; no domain names):**
-- `rows: string[]`, `cols: string[]`
-- `values: Record<string, number>` (pre-computed for performance)
-- `maxValue: number`
-- `formatTooltip: (rowId: string, colId: string, value: number) => ReactNode`
-- `controls: ReactNode` (slot for sliders/toggles)
-- `onCellClick?: (rowId: string, colId: string) => void` (for pinned tooltip pattern)
+// version: 0.1.0  (pre-1.0 while we harden definitions)
+export const Output = z.object({
+  candidate_a: z.number().int().positive(),       // canonical: a < b numerically
+  candidate_b: z.number().int().positive(),
+  pair_count: z.number().int().nonnegative(),     // |A∧B|
+  presence_a: z.number().int().nonnegative(),     // |A|
+  presence_b: z.number().int().nonnegative(),     // |B|
+  union_count: z.number().int().nonnegative(),    // |A| + |B| - |A∧B|
+  jaccard: z.number().min(0).max(1),              // pair_count / union_count (0 if union_count=0)
+})
+  .refine((data) => data.candidate_a !== data.candidate_b, {
+    message: "Self pairs are not allowed: candidate_a must not equal candidate_b",
+  })
+  .refine((data) => data.candidate_a < data.candidate_b, {
+    message: "Canonical ordering required: candidate_a must be less than candidate_b",
+  })
+  .refine((data) => data.pair_count <= data.union_count, {
+    message: "pair_count must not exceed union_count",
+  });
 
-**Contains:** Nivo ResponsiveHeatMap, axis formatters, pinned tooltip container, shell Cards
+export const Stats = z.object({
+  total_ballots_considered: z.number().int().positive(),
+  unique_pairs: z.number().int().nonnegative(),
+  max_jaccard: z.number().min(0).max(1),
+  zero_union_pairs: z.number().int().nonnegative(), // should be 0 in practice
+  compute_ms: z.number().int().nonnegative(),
+});
 
-### 2. Extract Shared Utilities
-**File:** `src/features/coalitions/common/utils.ts`
-- `useSortedCandidates(candidates?, fallbackIds: number[])` - last-name axis logic
-- `buildSymmetricGetter(pairMap, getKey)` - returns values Record that auto-mirrors and zeros diagonal
+2) Compute (compute.ts)
+	•	Read ballots_long and dedup (ballot_id, candidate_id); exclude rank_position IS NULL.
+	•	Compute per-candidate presence:
 
-### 3. Thin Wrapper Adapters
+pres AS (SELECT candidate_id, COUNT(DISTINCT ballot_id) AS presence FROM ranked GROUP BY 1)
 
-#### Raw (existing file, keep name/API)
-**File:** `src/features/coalitions/views/CandidateAffinityMatrixView.tsx`
-- Builds `pairMap` from `{candidate_a, candidate_b, cooccurrence_frac}`
-- Passes `maxValue = stats.max_pair_frac`
-- Formats tooltip with "co-occurrence" language + `cooccurrence_count`
 
-#### Jaccard (new)
-**File:** `src/features/coalitions/views/CandidateAffinityJaccardView.tsx`
-- Builds `pairMap` from `{candidate_a, candidate_b, jaccard}`
-- Passes `maxValue = stats.max_jaccard`
-- Tooltip shows Jaccard, `pair_count`, `union_count`, `presence_a/b`
-- Control copy "Minimum Jaccard" instead of "Minimum Co-occurrence"
+	•	Compute unique unordered pairs per ballot (canonical a.candidate_id < b.candidate_id), aggregate to pair_count.
+	•	Join pairs with pres twice to get presence_a, presence_b.
+	•	Compute union_count = presence_a + presence_b - pair_count.
+	•	Compute jaccard = CASE WHEN union_count>0 THEN pair_count*1.0/union_count ELSE 0 END.
+	•	Capture total_ballots_considered = COUNT(DISTINCT ballot_id) from ranked.
+	•	Validate with contract enforcer (assertTableColumns, parseAllRows), derive Stats from parsed rows, write Arrow artifact (content-hashed), update manifest.
 
-### 4. Shared Controls Component
-**File:** `src/features/coalitions/common/Controls.tsx`
-**Props:**
-- `minLabel`, `maxLabel`, `min=0`, `max=maxValue`, `default=0`, `step=0.001`
-- `topKEnabled`, `topKMax`
+DuckDB SQL sketch
 
-### 5. Routing Structure
-- Raw: `/coalitions/raw` → uses Raw adapter
-- Jaccard: `/coalitions/jaccard` → uses Jaccard adapter
-- Add toggle in page chrome to swap routes/datasets
+WITH ranked AS (
+  SELECT ballot_id, candidate_id
+  FROM ballots_long
+  WHERE rank_position IS NOT NULL
+  GROUP BY ballot_id, candidate_id
+),
+tot AS (
+  SELECT COUNT(DISTINCT ballot_id) AS total_ballots FROM ranked
+),
+pres AS (
+  SELECT candidate_id, COUNT(DISTINCT ballot_id) AS presence
+  FROM ranked GROUP BY 1
+),
+pairs AS (
+  SELECT a.candidate_id AS candidate_a,
+         b.candidate_id AS candidate_b,
+         COUNT(*) AS pair_count
+  FROM ranked a
+  JOIN ranked b
+    ON a.ballot_id = b.ballot_id
+   AND a.candidate_id < b.candidate_id
+  GROUP BY 1,2
+)
+SELECT
+  p.candidate_a,
+  p.candidate_b,
+  p.pair_count,
+  pa.presence AS presence_a,
+  pb.presence AS presence_b,
+  (pa.presence + pb.presence - p.pair_count) AS union_count,
+  CASE WHEN (pa.presence + pb.presence - p.pair_count) > 0
+       THEN GREATEST(0, LEAST(1, p.pair_count::DOUBLE / (pa.presence + pb.presence - p.pair_count)))
+       ELSE 0 END AS jaccard
+FROM pairs p
+JOIN pres pa ON pa.candidate_id = p.candidate_a
+JOIN pres pb ON pb.candidate_id = p.candidate_b;
 
-## Implementation Steps
+	•	Perf logging: log input rows, dedup rows, pair rows pre-agg, unique_pairs, and wall-clock compute_ms (persist in Stats).
 
-1. **Create CoalitionHeatmapBase.tsx** - Copy Nivo config, pinned tooltip frame, header/legend shell
-2. **Extract shared utilities** - `useSortedCandidates` + `buildSymmetricGetter` 
-3. **Rewrite Raw view** - Build `pairMap<number>` and pass props to Base
-4. **Implement Jaccard view** - Similar structure with Jaccard stats and tooltip text
-5. **Update routes** - Change to `/raw` and `/jaccard`, add route toggle
-6. **Add Storybook stories** - One per adapter plus base snapshot with mock props
+3) View (view.tsx)
+	•	New route: src/app/e/[electionId]/c/[contestId]/coalitions/jaccard.
+	•	Heatmap (value = jaccard). Diagonal grayed/disabled.
+	•	Controls:
+	•	Metric toggle (future-proof): Jaccard (active) | Raw (loads other slice; optional if you want now).
+	•	Threshold slider on jaccard (default 0).
+	•	Top-K pairs or min-degree filter for readability.
+	•	Tooltip: A ↔ B, jaccard (pct), pair_count, union_count, presence_a, presence_b.
 
-## Key Patterns to Preserve
-- Canonical pair key (a-b with a<b) and diagonal = 0 rule
-- Last name axis formatting 
-- Pinned tooltip pattern (container in base, content via formatTooltip)
-- Threshold slider binding (isolated in adapters)
+4) Storybook
+	•	Stories:
+	•	Default (no threshold).
+	•	Threshold = 0.05.
+	•	Top-K = 100.
+	•	Optional comparison story that shows Raw vs Jaccard side-by-side for the same contest (read both artifacts).
 
-## Success Criteria
-- [ ] Shared UX without entangling data contracts
-- [ ] Each slice remains testable
-- [ ] Future metrics (Lift, Cosine, etc.) require only thin adapters
-- [ ] All existing functionality preserved
-- [ ] Tests pass
+5) Tests
+	•	Contract conformance for all rows.
+	•	Canonical ordering invariant: candidate_a < candidate_b.
+	•	No self pairs present.
+	•	Bounds: 0 ≤ jaccard ≤ 1, pair_count ≤ union_count, union_count = presence_a + presence_b - pair_count.
+	•	Symmetry by reconstruction: build a mirrored matrix in test and assert J[a,b]==J[b,a] (within epsilon tolerance 1e-12).
+	•	Denominator sanity: presence_* ≤ total_ballots_considered; pair_count ≤ MIN(presence_a, presence_b).
+	•	Edge cases:
+	•	Single-candidate ballots → no output rows; Stats still report ballots.
+	•	“All-candidate” ballots (golden) → J[a,b]= pair/union matches hand calc.
+	•	Mixed depth ballots (1–6 ranks) → spot-check a few pairs vs hand calc.
 
-## Files to Create/Modify
-- **Create:** `src/features/coalitions/common/CoalitionHeatmapBase.tsx`
-- **Create:** `src/features/coalitions/common/utils.ts`  
-- **Create:** `src/features/coalitions/common/Controls.tsx`
-- **Create:** `src/features/coalitions/views/CandidateAffinityJaccardView.tsx`
-- **Modify:** `src/features/coalitions/views/CandidateAffinityMatrixView.tsx`
-- **Modify:** Route files for `/raw` and `/jaccard`
+⸻
+
+Guardrails
+	•	Do not modify the raw co-occurrence slice or its manifest entry.
+	•	No clustering/centrality here; that’s coalition_network later.
+	•	Compute budget: keep ≤ 60s per contest; if exceeded, stop and print diagnostic (ballot count, pair cardinality).
+	•	Arrow only; keep artifact under size budget. If needed, allow a percentile trim (manifest flag) but default to full matrix.
+
+⸻
+
+Done When
+	•	npm run build:data produces candidate_affinity_jaccard artifact + manifest stats.
+	•	Storybook Live vs Static compares cleanly.
+	•	Tests green (contracts + invariants + edge cases).
+
+⸻
+
+Output
+	•	PR with new slice folder, manifest additions, Storybook story, and a 5-line note on Jaccard assumptions (no rank conditioning; any-rank presence; canonical unordered pairs; no smoothing; no priors).
+
+⸻
+
+Notes on future extensibility
+	•	Rank-conditioned Jaccard is a natural follow-up: compute presence and pairs on a filtered universe (e.g., ballots where A is rank=1).
+	•	Lift and Cosine can be added in a sibling slice (candidate_affinity_normalized_alt) sharing the same singles/pairs compute pattern.
+	•	If you later want to reuse the raw pairs artifact, add an opt-in code path: read pairs from artifact, recompute only pres from ballots_long, join, and assert counts match within tolerance. Keep the default path as above for simplicity.
