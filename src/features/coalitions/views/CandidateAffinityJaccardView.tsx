@@ -2,37 +2,22 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type {
-  Output as CandidateAffinityMatrixOutput,
-  Stats as CandidateAffinityStats,
-} from "@/contracts/slices/candidate_affinity_matrix/index.contract";
+  Output as CandidateAffinityJaccardOutput,
+  Stats as CandidateAffinityJaccardStats,
+} from "@/contracts/slices/candidate_affinity_jaccard/index.contract";
 import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
 import { CoalitionHeatmapBase } from "../common/CoalitionHeatmapBase";
 import { Controls } from "../common/Controls";
 import {
-  buildSymmetricGetter,
   getCandidateName,
   getCanonicalPairKey,
   getLastName,
   useSortedCandidates,
 } from "../common/utils";
 
-// Placeholder interface - in real implementation this would come from a dedicated Jaccard slice
-interface JaccardData extends CandidateAffinityMatrixOutput {
-  jaccard: number; // Jaccard similarity coefficient
-  pair_count: number; // Same as cooccurrence_count
-  union_count: number; // Total ballots with either candidate
-  presence_a: number; // Ballots with candidate A
-  presence_b: number; // Ballots with candidate B
-}
-
-// Placeholder stats - in real implementation this would come from a dedicated Jaccard slice
-interface JaccardStats extends CandidateAffinityStats {
-  max_jaccard: number; // Maximum Jaccard coefficient
-}
-
 interface CandidateAffinityJaccardViewProps {
-  jaccardData: JaccardData[];
-  stats: JaccardStats;
+  jaccardData: CandidateAffinityJaccardOutput[];
+  stats: CandidateAffinityJaccardStats;
   candidates?: CandidatesOutput[];
   electionId?: string;
   contestId?: string;
@@ -85,18 +70,46 @@ export function CandidateAffinityJaccardView({
 
   // Build pair lookup map
   const pairLookup = useMemo(() => {
-    const lookup = new Map<string, { cooccurrence_frac: number }>();
+    const lookup = new Map<string, CandidateAffinityJaccardOutput>();
     for (const item of filteredData) {
       const key = `${item.candidate_a}-${item.candidate_b}`;
-      // Map Jaccard data to the expected interface
-      lookup.set(key, { cooccurrence_frac: item.jaccard });
+      lookup.set(key, item);
     }
     return lookup;
   }, [filteredData]);
 
-  // Build symmetric values using the shared utility
+  // Build symmetric values for Jaccard matrix
   const values = useMemo(() => {
-    return buildSymmetricGetter(pairLookup, getCanonicalPairKey);
+    const result: Record<string, number> = {};
+
+    // Get all unique candidate IDs from the pair map
+    const candidateIds = new Set<number>();
+    for (const key of pairLookup.keys()) {
+      const [aStr, bStr] = key.split("-");
+      candidateIds.add(parseInt(aStr, 10));
+      candidateIds.add(parseInt(bStr, 10));
+    }
+
+    // Build symmetric matrix with diagonal = 0
+    for (const candidateA of candidateIds) {
+      for (const candidateB of candidateIds) {
+        const matrixKey = `${candidateA}-${candidateB}`;
+
+        if (candidateA === candidateB) {
+          // Diagonal = 0
+          result[matrixKey] = 0;
+        } else {
+          // Look up canonical pair
+          const canonicalKey = getCanonicalPairKey(candidateA, candidateB);
+          const pairData = pairLookup.get(canonicalKey);
+
+          // Extract jaccard value instead of cooccurrence_frac
+          result[matrixKey] = pairData ? pairData.jaccard : 0;
+        }
+      }
+    }
+
+    return result;
   }, [pairLookup]);
 
   // Tooltip data lookup for performance
@@ -145,21 +158,34 @@ export function CandidateAffinityJaccardView({
       const pairData = tooltipLookup.get(lookupKey);
 
       return (
-        <div className="bg-background border rounded p-3 shadow-lg text-sm min-w-48">
+        <div className="bg-background border rounded p-3 shadow-lg text-sm min-w-60">
           <div className="font-semibold">
             {candidateAName} ↔ {candidateBName}
           </div>
-          <div className="mt-1">Jaccard: {(value * 100).toFixed(1)}%</div>
-          {pairData && (
-            <>
-              <div className="text-muted-foreground text-xs mt-1">
-                {pairData.pair_count.toLocaleString()} ballots with both
-              </div>
-              <div className="text-muted-foreground text-xs">
-                {pairData.union_count.toLocaleString()} ballots with either
-              </div>
-            </>
-          )}
+          <div className="mt-2 space-y-1">
+            <div>
+              <strong>Jaccard:</strong> {(value * 100).toFixed(1)}%
+            </div>
+            {pairData && (
+              <>
+                <div>
+                  <strong>Together:</strong>{" "}
+                  {pairData.pair_count.toLocaleString()} ballots
+                </div>
+                <div>
+                  <strong>Union:</strong>{" "}
+                  {pairData.union_count.toLocaleString()} ballots
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {candidateAName}: {pairData.presence_a.toLocaleString()}{" "}
+                  ballots
+                  <br />
+                  {candidateBName}: {pairData.presence_b.toLocaleString()}{" "}
+                  ballots
+                </div>
+              </>
+            )}
+          </div>
         </div>
       );
     },
@@ -169,7 +195,7 @@ export function CandidateAffinityJaccardView({
   // Header stats component
   const headerStats = useMemo(
     () => (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
         <div className="space-y-1">
           <div className="text-2xl font-bold text-blue-600">
             {stats.total_ballots_considered.toLocaleString()}
@@ -190,6 +216,12 @@ export function CandidateAffinityJaccardView({
           </div>
           <div className="text-sm text-muted-foreground">Max Jaccard</div>
         </div>
+        <div className="space-y-1">
+          <div className="text-2xl font-bold text-orange-600">
+            {stats.zero_union_pairs.toLocaleString()}
+          </div>
+          <div className="text-sm text-muted-foreground">Zero Union Pairs</div>
+        </div>
       </div>
     ),
     [stats],
@@ -201,7 +233,7 @@ export function CandidateAffinityJaccardView({
       <Controls
         minThreshold={minThreshold}
         setMinThreshold={setMinThreshold}
-        minLabel="Minimum Jaccard"
+        minLabel="Minimum Jaccard Index"
         maxLabel="Max"
         min={0}
         max={stats.max_jaccard}
@@ -212,7 +244,7 @@ export function CandidateAffinityJaccardView({
         setTopK={setTopK}
         topKEnabled={true}
         topKMax={stats.unique_pairs}
-        topKLabel="by Jaccard similarity"
+        topKLabel="by Jaccard index"
         filteredCount={filteredData.length}
         totalCount={stats.unique_pairs}
       />
@@ -237,11 +269,11 @@ export function CandidateAffinityJaccardView({
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-blue-200 rounded" />
-          <span>Low Jaccard similarity</span>
+          <span>Low similarity (Jaccard &lt; 0.3)</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-green-400 rounded" />
-          <span>High Jaccard similarity</span>
+          <span>High similarity (Jaccard &gt; 0.7)</span>
         </div>
       </>
     ),
@@ -251,12 +283,18 @@ export function CandidateAffinityJaccardView({
   // Interpretation component
   const interpretation = useMemo(
     () => (
-      <p>
-        <strong>Interpretation:</strong> Darker colors indicate higher Jaccard
-        similarity. The Jaccard coefficient measures how similar two candidate
-        voter bases are, normalized by the union of their supporters. Values
-        range from 0 (no shared voters) to 1 (identical voter base).
-      </p>
+      <div className="space-y-2">
+        <p>
+          <strong>Interpretation:</strong> The Jaccard index normalizes
+          co-occurrence to discount "big candidate" popularity effects. Each
+          cell shows J(A,B) = |A∩B| / |A∪B|, where A and B are sets of ballots
+          containing each candidate.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Assumptions:</strong> No rank conditioning; any-rank presence;
+          canonical unordered pairs; no smoothing; no priors.
+        </p>
+      </div>
     ),
     [],
   );
@@ -282,17 +320,30 @@ export function CandidateAffinityJaccardView({
           <div className="font-semibold">
             {candidateAName} ↔ {candidateBName}
           </div>
-          <div className="mt-1">Jaccard: {(value * 100).toFixed(1)}%</div>
-          {pairData && (
-            <>
-              <div className="text-muted-foreground text-xs mt-1">
-                {pairData.pair_count.toLocaleString()} ballots with both
-              </div>
-              <div className="text-muted-foreground text-xs">
-                {pairData.union_count.toLocaleString()} ballots with either
-              </div>
-            </>
-          )}
+          <div className="mt-2 space-y-1">
+            <div>
+              <strong>Jaccard:</strong> {(value * 100).toFixed(1)}%
+            </div>
+            {pairData && (
+              <>
+                <div>
+                  <strong>Together:</strong>{" "}
+                  {pairData.pair_count.toLocaleString()} ballots
+                </div>
+                <div>
+                  <strong>Union:</strong>{" "}
+                  {pairData.union_count.toLocaleString()} ballots
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {candidateAName}: {pairData.presence_a.toLocaleString()}{" "}
+                  ballots
+                  <br />
+                  {candidateBName}: {pairData.presence_b.toLocaleString()}{" "}
+                  ballots
+                </div>
+              </>
+            )}
+          </div>
         </>
       );
     },
@@ -314,10 +365,10 @@ export function CandidateAffinityJaccardView({
       formatTooltip={formatTooltip}
       formatPinnedContent={formatPinnedContent}
       controls={controls}
-      title="Candidate Affinity Matrix (Jaccard)"
-      description="Heatmap showing Jaccard similarity between candidates' voter bases. 
-        The Jaccard coefficient normalizes co-occurrence by the union of supporters, 
-        reducing bias toward popular candidates."
+      title="Candidate Affinity Jaccard Matrix"
+      description="Heatmap showing normalized similarity between candidates using the Jaccard index. 
+        This metric discounts popularity effects by measuring the overlap of candidate 
+        support relative to their combined presence across all ballots."
       headerStats={headerStats}
       legend={legend}
       interpretation={interpretation}

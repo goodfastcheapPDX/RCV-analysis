@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
 import { CandidateAffinityJaccardView } from "@/features/coalitions/views/CandidateAffinityJaccardView";
-import { loadCandidateAffinityMatrixForContest } from "@/lib/manifest/candidate-affinity-loader";
+import { loadCandidateAffinityJaccardForContest } from "@/lib/manifest/candidate-affinity-jaccard-loader";
 import { loadCandidatesForContest } from "@/lib/manifest/loaders";
 
 interface AffinityJaccardPageProps {
@@ -27,47 +27,32 @@ export default async function AffinityJaccardPage({
   const { electionId, contestId } = await params;
 
   try {
-    // Load all required data - for now using the same raw data
-    // In a real implementation, this would load Jaccard-specific data
-    const [{ data: rawData, contest }, candidatesResult] = await Promise.all([
-      loadCandidateAffinityMatrixForContest(electionId, contestId),
-      loadCandidatesForContest(electionId, contestId).catch(() => ({
-        data: undefined,
-      })),
-    ]);
+    // Load all required data using the actual Jaccard loader
+    const [{ data: jaccardData, contest }, candidatesResult] =
+      await Promise.all([
+        loadCandidateAffinityJaccardForContest(electionId, contestId),
+        loadCandidatesForContest(electionId, contestId).catch(() => ({
+          data: undefined,
+        })),
+      ]);
 
     const candidates = candidatesResult.data;
 
-    // PLACEHOLDER: Transform raw data to Jaccard format
-    // In real implementation, this would come from a dedicated Jaccard slice
-    const jaccardData = rawData.map((item) => ({
-      ...item,
-      // Mock Jaccard calculation (intersection / union)
-      jaccard: item.cooccurrence_frac * 0.7, // Simplified mock
-      pair_count: item.cooccurrence_count,
-      union_count: Math.round(item.cooccurrence_count * 1.4), // Mock
-      presence_a: Math.round(item.cooccurrence_count * 1.2), // Mock
-      presence_b: Math.round(item.cooccurrence_count * 1.3), // Mock
-    }));
-
-    // Calculate stats from data
+    // Calculate stats from actual data
     const stats = {
       total_ballots_considered:
-        rawData.length > 0
-          ? Math.round(
-              rawData[0].cooccurrence_count / rawData[0].cooccurrence_frac,
+        jaccardData.length > 0
+          ? Math.max(
+              ...jaccardData.map((d) => Math.max(d.presence_a, d.presence_b)),
             )
           : 0,
-      unique_pairs: rawData.length,
-      max_pair_frac:
-        rawData.length > 0
-          ? Math.max(...rawData.map((d) => d.cooccurrence_frac))
-          : 0,
+      unique_pairs: jaccardData.length,
       max_jaccard:
         jaccardData.length > 0
           ? Math.max(...jaccardData.map((d) => d.jaccard))
           : 0,
-      compute_ms: 0,
+      zero_union_pairs: jaccardData.filter((d) => d.union_count === 0).length,
+      compute_ms: 0, // Not available from artifact, only from live computation
     };
 
     return (
@@ -110,16 +95,6 @@ export default async function AffinityJaccardPage({
             </Badge>
           </div>
         </div>
-
-        {/* Placeholder Notice */}
-        <Alert>
-          <AlertDescription>
-            <strong>Note:</strong> This is a placeholder implementation using
-            mock Jaccard calculations. In a real implementation, this would use
-            data from a dedicated candidate_affinity_jaccard slice with proper
-            Jaccard coefficient computation.
-          </AlertDescription>
-        </Alert>
 
         <CandidateAffinityJaccardView
           jaccardData={jaccardData}

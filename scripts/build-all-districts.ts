@@ -11,6 +11,7 @@ import {
   type ElectionId,
   electionIdFrom,
 } from "@/contracts/ids";
+import { computeCandidateAffinityJaccard } from "../src/contracts/slices/candidate_affinity_jaccard/compute";
 import { computeCandidateAffinityMatrix } from "../src/contracts/slices/candidate_affinity_matrix/compute";
 import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
@@ -191,6 +192,19 @@ async function processDistrict(district: DistrictConfig) {
 
     console.log(
       `   ✅ Affinity: ${affinityResult.stats.unique_pairs} pairs from ${affinityResult.stats.total_ballots_considered} ballots (max: ${(affinityResult.stats.max_pair_frac * 100).toFixed(1)}%)`,
+    );
+
+    // Step 7: Candidate Affinity Jaccard Matrix
+    console.log(
+      `🔍 Computing candidate affinity jaccard for ${district.districtId}...`,
+    );
+    const jaccardResult = await computeCandidateAffinityJaccard({
+      electionId,
+      contestId,
+      env,
+    });
+    console.log(
+      `   ✅ Jaccard: ${jaccardResult.stats.unique_pairs} pairs (max: ${(jaccardResult.stats.max_jaccard * 100).toFixed(1)}%, zeros: ${jaccardResult.stats.zero_union_pairs})`,
     );
   } catch (error) {
     console.error(`   ❌ Failed to process ${district.districtId}:`);
