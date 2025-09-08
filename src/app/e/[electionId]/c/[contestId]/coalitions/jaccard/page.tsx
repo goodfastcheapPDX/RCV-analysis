@@ -14,6 +14,7 @@ import {
 import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
 import { CandidateAffinityJaccardView } from "@/features/coalitions/views/CandidateAffinityJaccardView";
 import { loadCandidateAffinityJaccardForContest } from "@/lib/manifest/candidate-affinity-jaccard-loader";
+import { loadCandidateAffinityMatrixForContest } from "@/lib/manifest/candidate-affinity-loader";
 import { loadCandidatesForContest } from "@/lib/manifest/loaders";
 
 interface AffinityJaccardPageProps {
@@ -27,25 +28,42 @@ export default async function AffinityJaccardPage({
   const { electionId, contestId } = await params;
 
   try {
-    // Load all required data using the actual Jaccard loader
-    const [{ data: jaccardData, contest }, candidatesResult] =
+    // Load all required data - Jaccard, Matrix (for stats), and Candidates
+    const [{ data: jaccardData, contest }, matrixResult, candidatesResult] =
       await Promise.all([
         loadCandidateAffinityJaccardForContest(electionId, contestId),
+        loadCandidateAffinityMatrixForContest(electionId, contestId).catch(
+          () => ({
+            data: undefined,
+          }),
+        ),
         loadCandidatesForContest(electionId, contestId).catch(() => ({
           data: undefined,
         })),
       ]);
 
     const candidates = candidatesResult.data;
+    const matrixData = matrixResult?.data;
 
     // Calculate stats from actual data
+    // For total_ballots_considered, use the matrix data when available since it has
+    // the fraction field that allows accurate calculation. Fall back to approximation.
+    let totalBallotsConsidered = 0;
+    if (matrixData && matrixData.length > 0) {
+      // Use matrix data to get accurate total: cooccurrence_count / cooccurrence_frac
+      const firstMatrixRow = matrixData[0];
+      totalBallotsConsidered = Math.round(
+        firstMatrixRow.cooccurrence_count / firstMatrixRow.cooccurrence_frac,
+      );
+    } else if (jaccardData.length > 0) {
+      // Fallback: approximate using max union_count (will be underestimated)
+      totalBallotsConsidered = Math.max(
+        ...jaccardData.map((d) => d.union_count),
+      );
+    }
+
     const stats = {
-      total_ballots_considered:
-        jaccardData.length > 0
-          ? Math.max(
-              ...jaccardData.map((d) => Math.max(d.presence_a, d.presence_b)),
-            )
-          : 0,
+      total_ballots_considered: totalBallotsConsidered,
       unique_pairs: jaccardData.length,
       max_jaccard:
         jaccardData.length > 0

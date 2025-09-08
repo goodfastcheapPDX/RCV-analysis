@@ -1,0 +1,40 @@
+{
+  "env": "test",
+  "version": 2,
+  "inputs": {},
+  "elections": [
+    {
+      "election_id": "portland-20241105-test",
+      "date": "2024-11-05",
+      "jurisdiction": "Portland",
+      "title": "Test Election",
+      "contests": [
+        {
+          "contest_id": "d1-2seat",
+          "district_id": "d1",
+          "seat_count": 2,
+          "title": "Test Contest",
+          "cvr": {
+            "candidates": {
+              "uri": "data/test/candidates.parquet",
+              "sha256": "test_hash"
+            },
+            "ballots_long": {
+              "uri": "data/test/portland-20241105-gen/d2-3seat/ingest/ballots_long.parquet",
+              "sha256": "c4e164ccf862489d9f6faa692e6019ed8d75f712f2af1abd5d6eb6b4e31d8fe9",
+              "rows": 31
+            }
+          },
+          "stv": {},
+          "rules": {
+            "method": "gregory",
+            "quota": "droop",
+            "precision": 0.000001,
+            "tie_break": "lexicographic",
+            "seats": 2
+          }
+        }
+      ]
+    }
+  ]
+}
