@@ -18,7 +18,7 @@
     "build:data:rankdist": "npx tsx scripts/build-rank-distribution.ts",
     "build:data:stv": "npx tsx src/contracts/slices/stv_rounds/compute.ts",
     "clean:data:dev": "rm -rf data/dev",
-    "clean:data:test": "rm -rf data/test", 
+    "clean:data:test": "rm -rf data/test",
     "clean:data:prod": "rm -rf data/prod",
     "clean:data:all": "rm -rf data/dev data/test data/prod",
     "sync:data": "rsync -av --delete data/dev/ public/data/dev/ && rsync -av --delete data/prod/ public/data/prod/ && rsync -av --delete data/test/ public/data/test/",
@@ -34,7 +34,8 @@
     "coverage:debug": "vitest run --coverage",
     "prepare": "husky",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "check": "npm run typecheck && npm run format && npm run lint"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.49.0",
