@@ -36,8 +36,10 @@ export const Contest = z.object({
   // Analysis artifacts
   first_choice: ArtifactRef.optional(), // first_choice.parquet
   rank_distribution: ArtifactRef.optional(), // rank_distribution.parquet
+  transfer_matrix: ArtifactRef.optional(), // transfer_matrix.parquet
   candidate_affinity_matrix: ArtifactRef.optional(), // candidate_affinity_matrix.parquet
   candidate_affinity_jaccard: ArtifactRef.optional(), // candidate_affinity_jaccard.parquet
+  candidate_affinity_proximity: ArtifactRef.optional(), // candidate_affinity_proximity.parquet
   stv: z.object({
     rounds: ArtifactRef.optional(), // stv_rounds.parquet
     meta: ArtifactRef.optional(), // stv_meta.parquet
@@ -184,4 +186,96 @@ export const createManifestFixture = (
   inputs: {},
   elections: [createElectionFixture()],
   ...overrides,
+});
+
+export const createManifestWithRankDistributionFixture = (
+  withRankDistribution = false,
+): Manifest => ({
+  env: "test",
+  version: 2,
+  inputs: {},
+  elections: [
+    createElectionFixture({
+      contests: [
+        createContestFixture({
+          ...(withRankDistribution && {
+            rank_distribution: createArtifactRefFixture({
+              uri: "test/rank_distribution.parquet",
+              sha256: "b".repeat(64),
+              rows: 15,
+            }),
+          }),
+        }),
+      ],
+    }),
+  ],
+});
+
+export const createManifestWithTransferMatrixFixture = (
+  withTransferMatrix = false,
+): Manifest => ({
+  env: "test",
+  version: 2,
+  inputs: {},
+  elections: [
+    createElectionFixture({
+      contests: [
+        createContestFixture({
+          ...(withTransferMatrix && {
+            transfer_matrix: createArtifactRefFixture({
+              uri: "test/transfer_matrix.parquet",
+              sha256: "c".repeat(64),
+              rows: 20,
+            }),
+          }),
+        }),
+      ],
+    }),
+  ],
+});
+
+export const createManifestWithCandidateAffinityJaccardFixture = (
+  withCandidateAffinityJaccard = false,
+): Manifest => ({
+  env: "test",
+  version: 2,
+  inputs: {},
+  elections: [
+    createElectionFixture({
+      contests: [
+        createContestFixture({
+          ...(withCandidateAffinityJaccard && {
+            candidate_affinity_jaccard: createArtifactRefFixture({
+              uri: "test/candidate_affinity_jaccard.parquet",
+              sha256: "d".repeat(64),
+              rows: 10,
+            }),
+          }),
+        }),
+      ],
+    }),
+  ],
+});
+
+export const createManifestWithCandidateAffinityProximityFixture = (
+  withCandidateAffinityProximity = false,
+): Manifest => ({
+  env: "test",
+  version: 2,
+  inputs: {},
+  elections: [
+    createElectionFixture({
+      contests: [
+        createContestFixture({
+          ...(withCandidateAffinityProximity && {
+            candidate_affinity_proximity: createArtifactRefFixture({
+              uri: "test/candidate_affinity_proximity.parquet",
+              sha256: "e".repeat(64),
+              rows: 12,
+            }),
+          }),
+        }),
+      ],
+    }),
+  ],
 });

@@ -11,3 +11,4 @@ https://vscode.dev/github/goodfastcheapPDX/RCV-analysis/blob/feat/rank-distribut
 - standardize test fixture generators
 - cleanup nonsensical test data/ folders like data/corrupt-test
 - cache all the data for the app in a big object at the top and useContext to get it in lower abstractions. don't be fetching data all over the componentry willy nilly
+- add a general contest stats dashboard with total ballot count, incomplete ballots, etc. sanity check style stuff you might want to remember while looking at any particular data viz.
