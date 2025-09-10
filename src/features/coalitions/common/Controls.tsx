@@ -13,6 +13,7 @@ interface ControlsProps {
   min: number;
   max: number;
   step: number;
+  formatAsPercentage?: boolean;
 
   // Top K controls
   showTopK: boolean;
@@ -36,6 +37,7 @@ export function Controls({
   min,
   max,
   step,
+  formatAsPercentage = true,
   showTopK,
   setShowTopK,
   topK,
@@ -53,11 +55,16 @@ export function Controls({
           <Label htmlFor="threshold-slider">
             {minLabel}:{" "}
             <span className="font-mono">
-              {(minThreshold[0] * 100).toFixed(1)}%
+              {formatAsPercentage
+                ? `${(minThreshold[0] * 100).toFixed(1)}%`
+                : minThreshold[0].toLocaleString()}
             </span>
           </Label>
           <span className="text-sm text-muted-foreground">
-            {maxLabel}: {(max * 100).toFixed(1)}%
+            {maxLabel}:{" "}
+            {formatAsPercentage
+              ? `${(max * 100).toFixed(1)}%`
+              : max.toLocaleString()}
           </span>
         </div>
         <Slider

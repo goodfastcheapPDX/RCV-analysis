@@ -72,32 +72,28 @@ export default async function CoalitionsPage({ params }: CoalitionsPageProps) {
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Candidate Affinity Matrix</CardTitle>
+            <CardTitle>Raw Co-occurrence</CardTitle>
             <CardDescription>
-              Analyze how often pairs of candidates appear together on the same
-              ballot. This heatmap reveals coalition patterns and voter
-              preferences across candidates.
+              Basic co-occurrence analysis showing how often pairs of candidates
+              appear together on ballots, regardless of rank position.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                <strong>What you'll see:</strong>
+                <strong>Shows:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Heatmap showing candidate co-occurrence rates</li>
-                  <li>Interactive filtering by threshold and top pairs</li>
-                  <li>Detailed tooltips with ballot counts and percentages</li>
-                  <li>Statistical summary of voting patterns</li>
+                  <li>Raw ballot counts and co-occurrence fractions</li>
+                  <li>Basic coalition patterns</li>
+                  <li>Foundation for other coalition metrics</li>
                 </ul>
               </div>
               <Button asChild className="w-full">
-                <Link
-                  href={`/e/${electionId}/c/${contestId}/coalitions/affinity`}
-                >
-                  View Affinity Matrix
+                <Link href={`/e/${electionId}/c/${contestId}/coalitions/raw`}>
+                  View Raw Co-occurrence
                 </Link>
               </Button>
             </div>
@@ -106,25 +102,57 @@ export default async function CoalitionsPage({ params }: CoalitionsPageProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>More Coalition Analyses</CardTitle>
+            <CardTitle>Normalized (Jaccard)</CardTitle>
             <CardDescription>
-              Additional coalition analysis tools will be available here as they
-              are developed.
+              Jaccard similarity analysis that normalizes for candidate
+              popularity, revealing true coalition strength.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                <strong>Coming soon:</strong>
+                <strong>Shows:</strong>
                 <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Transfer flow analysis between candidate groups</li>
-                  <li>Statistical clustering of similar candidates</li>
-                  <li>Coalition strength metrics and rankings</li>
-                  <li>Cross-round coalition stability analysis</li>
+                  <li>Popularity-adjusted similarity scores</li>
+                  <li>True coalition strength beyond raw counts</li>
+                  <li>Jaccard index (intersection/union)</li>
                 </ul>
               </div>
-              <Button disabled className="w-full" variant="secondary">
-                Coming Soon
+              <Button asChild className="w-full">
+                <Link
+                  href={`/e/${electionId}/c/${contestId}/coalitions/jaccard`}
+                >
+                  View Jaccard Matrix
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Proximity-weighted</CardTitle>
+            <CardDescription>
+              Proximity-weighted affinity that emphasizes candidates ranked
+              close together, with adjacent ranks contributing more weight.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                <strong>Shows:</strong>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Rank-distance weighted scores (α = 0.5)</li>
+                  <li>Adjacent ranks contribute full weight</li>
+                  <li>Distant ranks contribute exponentially less</li>
+                </ul>
+              </div>
+              <Button asChild className="w-full">
+                <Link
+                  href={`/e/${electionId}/c/${contestId}/coalitions/proximity`}
+                >
+                  View Proximity Matrix
+                </Link>
               </Button>
             </div>
           </CardContent>

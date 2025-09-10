@@ -55,6 +55,11 @@
             "sha256": "8cec5bdc0e5076cb28d8fc875ae28d59cc8d2861d89e87de342aeb4230a6680c",
             "rows": 10
           },
+          "candidate_affinity_proximity": {
+            "uri": "data/test/portland-20241105-gen/d2-3seat/candidate_affinity_proximity/candidate_affinity_proximity.parquet",
+            "sha256": "abd7fcc4c4311ac2089c84de657551f3d96fc559ad6fa1805162b9e2412da9a3",
+            "rows": 9
+          },
           "stv": {
             "rounds": {
               "uri": "data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet",

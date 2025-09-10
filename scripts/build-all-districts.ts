@@ -13,6 +13,7 @@ import {
 } from "@/contracts/ids";
 import { computeCandidateAffinityJaccard } from "../src/contracts/slices/candidate_affinity_jaccard/compute";
 import { computeCandidateAffinityMatrix } from "../src/contracts/slices/candidate_affinity_matrix/compute";
+import { computeCandidateAffinityProximity } from "../src/contracts/slices/candidate_affinity_proximity/compute";
 import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choice_breakdown/compute";
 import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
@@ -205,6 +206,19 @@ async function processDistrict(district: DistrictConfig) {
     });
     console.log(
       `   ✅ Jaccard: ${jaccardResult.stats.unique_pairs} pairs (max: ${(jaccardResult.stats.max_jaccard * 100).toFixed(1)}%, zeros: ${jaccardResult.stats.zero_union_pairs})`,
+    );
+
+    // Step 8: Candidate Affinity Proximity Matrix
+    console.log(
+      `📏 Computing candidate affinity proximity for ${district.districtId}...`,
+    );
+    const proximityResult = await computeCandidateAffinityProximity({
+      electionId,
+      contestId,
+      env,
+    });
+    console.log(
+      `   ✅ Proximity: ${proximityResult.stats.unique_pairs} pairs (max weight: ${proximityResult.stats.max_weight_sum.toFixed(2)}, α=${proximityResult.stats.alpha})`,
     );
   } catch (error) {
     console.error(`   ❌ Failed to process ${district.districtId}:`);

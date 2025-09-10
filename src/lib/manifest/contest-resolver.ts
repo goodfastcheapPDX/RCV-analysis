@@ -108,11 +108,10 @@ export class ContestResolver {
 
   /**
    * Get transfer matrix URI for contest
-   * Note: Transfer matrix is not yet in manifest, so we construct the path
    */
   getTransferMatrixUri(electionId: string, contestId: string): string | null {
-    // Return HTTP URL since all data is now in public/data
-    return `/data/${this.manifest.env}/${electionId}/${contestId}/transfer_matrix/transfer_matrix.parquet`;
+    const contest = this.getContest(electionId, contestId);
+    return contest.transfer_matrix?.uri ?? null;
   }
 
   /**
@@ -129,14 +128,24 @@ export class ContestResolver {
 
   /**
    * Get candidate affinity jaccard URI for contest
-   * Note: Candidate affinity jaccard is not yet in manifest, so we construct the path
    */
   getCandidateAffinityJaccardUri(
     electionId: string,
     contestId: string,
   ): string | null {
-    // Return HTTP URL since all data is now in public/data
-    return `/data/${this.manifest.env}/${electionId}/${contestId}/candidate_affinity_jaccard/candidate_affinity_jaccard.parquet`;
+    const contest = this.getContest(electionId, contestId);
+    return contest.candidate_affinity_jaccard?.uri ?? null;
+  }
+
+  /**
+   * Get candidate affinity proximity URI for contest
+   */
+  getCandidateAffinityProximityUri(
+    electionId: string,
+    contestId: string,
+  ): string | null {
+    const contest = this.getContest(electionId, contestId);
+    return contest.candidate_affinity_proximity?.uri ?? null;
   }
 
   /**
