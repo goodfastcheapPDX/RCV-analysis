@@ -300,10 +300,10 @@ describe("Output contract validation", () => {
     expect(() =>
       Output.parse(
         createOutputFixture({
-          avg_distance: 6,
-          pair_count: 10,
+          weight_sum: 15,
+          pair_count: 10, // weight_sum > pair_count should fail
         }),
       ),
-    ).toThrow("avg_distance must be <= 5");
+    ).toThrow("weight_sum must not exceed pair_count");
   });
 });

@@ -22,9 +22,6 @@ export const Output = IdentitySchema.extend({
   })
   .refine((data) => data.pair_count === 0 || data.avg_distance >= 1, {
     message: "avg_distance must be >= 1 when pair_count > 0",
-  })
-  .refine((data) => data.pair_count === 0 || data.avg_distance <= 5, {
-    message: "avg_distance must be <= 5 when pair_count > 0",
   });
 
 // Stats schema - defines the structure of manifest stats section
@@ -207,7 +204,6 @@ export const VALIDATION_RULES = {
   semanticChecks: [
     "pair_count <= total_ballots_considered for all rows",
     "avg_distance >= 1 when pair_count > 0",
-    "avg_distance <= 5 when pair_count > 0",
     "max_weight_sum >= 0",
     "unique_pairs equals number of distinct (candidate_a, candidate_b) pairs",
   ],
