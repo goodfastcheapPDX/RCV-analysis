@@ -13,7 +13,7 @@ import {
   getCandidateName,
   getCanonicalPairKey,
   getLastName,
-  useSortedCandidates,
+  useSortedCandidatesByFrequency,
 } from "../common/utils";
 
 interface CandidateAffinityMatrixViewProps {
@@ -43,8 +43,12 @@ export function CandidateAffinityMatrixView({
     );
   }, [affinityData]);
 
-  // Use the shared hook for sorting candidates
-  const sortedCandidateIds = useSortedCandidates(candidates, allCandidateIds);
+  // Use ballot frequency sorting for candidates
+  const sortedCandidateIds = useSortedCandidatesByFrequency(
+    affinityData,
+    candidates,
+    allCandidateIds,
+  );
 
   // Convert to string arrays for the base component
   const rows = useMemo(
