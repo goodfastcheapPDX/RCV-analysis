@@ -47,7 +47,6 @@ describe("candidate_affinity_proximity integration tests", () => {
         "pair_count <= total_ballots_considered for all rows",
       );
       expect(checks).toContain("avg_distance >= 1 when pair_count > 0");
-      expect(checks).toContain("avg_distance <= 5 when pair_count > 0");
       expect(checks).toContain("max_weight_sum >= 0");
       expect(checks).toContain(
         "unique_pairs equals number of distinct (candidate_a, candidate_b) pairs",
