@@ -40,26 +40,6 @@
             "sha256": "7aee55c75e72642151ab6e0aabc43efc5c4d1c40d8032ca6653cda17e598b97e",
             "rows": 5
           },
-          "rank_distribution": {
-            "uri": "data/test/portland-20241105-gen/d2-3seat/rank_distribution/rank_distribution.parquet",
-            "sha256": "4db8e6792262514274ed88d59379834a3ec8d79b88f4ea717e38a5e1eb4a0df0",
-            "rows": 15
-          },
-          "candidate_affinity_matrix": {
-            "uri": "data/test/portland-20241105-gen/d2-3seat/candidate_affinity_matrix/candidate_affinity_matrix.parquet",
-            "sha256": "866727f49c9c4f2a1271fb613dc813f93efc0b80bcd1809c17e105246a4ae995",
-            "rows": 10
-          },
-          "candidate_affinity_jaccard": {
-            "uri": "data/test/portland-20241105-gen/d2-3seat/candidate_affinity_jaccard/candidate_affinity_jaccard.parquet",
-            "sha256": "8cec5bdc0e5076cb28d8fc875ae28d59cc8d2861d89e87de342aeb4230a6680c",
-            "rows": 10
-          },
-          "candidate_affinity_proximity": {
-            "uri": "data/test/portland-20241105-gen/d2-3seat/candidate_affinity_proximity/candidate_affinity_proximity.parquet",
-            "sha256": "abd7fcc4c4311ac2089c84de657551f3d96fc559ad6fa1805162b9e2412da9a3",
-            "rows": 9
-          },
           "stv": {
             "rounds": {
               "uri": "data/test/portland-20241105-gen/d2-3seat/stv/rounds.parquet",
@@ -89,6 +69,11 @@
             "precision": 0.000001,
             "tie_break": "lexicographic",
             "seats": 3
+          },
+          "rank_distribution": {
+            "uri": "data/test/portland-20241105-gen/d2-3seat/rank_distribution/rank_distribution.parquet",
+            "sha256": "4db8e6792262514274ed88d59379834a3ec8d79b88f4ea717e38a5e1eb4a0df0",
+            "rows": 15
           }
         }
       ]

@@ -12,7 +12,7 @@ import {
   getCandidateName,
   getCanonicalPairKey,
   getLastName,
-  useSortedCandidates,
+  useSortedCandidatesByFrequency,
 } from "../common/utils";
 
 interface CandidateAffinityProximityViewProps {
@@ -42,8 +42,12 @@ export function CandidateAffinityProximityView({
     );
   }, [proximityData]);
 
-  // Use the shared hook for sorting candidates
-  const sortedCandidateIds = useSortedCandidates(candidates, allCandidateIds);
+  // Use ballot frequency sorting for candidates
+  const sortedCandidateIds = useSortedCandidatesByFrequency(
+    proximityData,
+    candidates,
+    allCandidateIds,
+  );
 
   // Convert to string arrays for the base component
   const rows = useMemo(
