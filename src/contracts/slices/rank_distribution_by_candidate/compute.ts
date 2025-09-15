@@ -8,6 +8,7 @@ import {
   parseAllRows,
   sha256,
 } from "@/lib/contract-enforcer";
+import { createTimer, logError, loggers } from "@/lib/logger";
 import {
   type Data,
   Output,
@@ -48,7 +49,11 @@ export async function computeRankDistributionByCandidate(
 ): Promise<RankDistributionByCandidateOutput> {
   const { electionId, contestId, env } = params;
 
-  console.log(
+  const timer = createTimer(
+    loggers.compute,
+    `rank distribution by candidate computation for ${electionId}/${contestId}`,
+  );
+  loggers.compute.info(
     `Processing rank distribution by candidate for ${electionId}/${contestId}`,
   );
 
@@ -56,7 +61,7 @@ export async function computeRankDistributionByCandidate(
   const inputPath = getInputPath(env, electionId, contestId);
   const outputPath = getOutputPath(env, electionId, contestId);
 
-  console.log(`Output path: ${outputPath}`);
+  loggers.compute.debug(`Output path: ${outputPath}`);
 
   // Load manifest to get contest metadata
   if (!existsSync(manifestPath)) {
@@ -91,17 +96,17 @@ export async function computeRankDistributionByCandidate(
   const db = await DuckDBInstance.create();
   const conn = await db.connect();
   // Create view from input parquet
-  console.log(
+  loggers.compute.info(
     `Creating ballots_long view from ${inputPath}/ballots_long.parquet...`,
   );
   await conn.run(SQL_QUERIES.createBallotsLongView(inputPath));
 
   // Export rank distribution data to temp table
-  console.log("Computing rank distribution by candidate...");
+  loggers.compute.info("Computing rank distribution by candidate...");
   await conn.run(SQL_QUERIES.exportRankDistribution);
 
   // Add identity columns
-  console.log("Adding identity columns...");
+  loggers.compute.info("Adding identity columns...");
   await conn.run(`
       CREATE OR REPLACE TABLE rank_distribution_with_identity AS
       SELECT
@@ -119,11 +124,11 @@ export async function computeRankDistributionByCandidate(
     `);
 
   // Enforce contract: validate table schema
-  console.log("Enforcing contract: validating table schema...");
+  loggers.compute.info("Enforcing contract: validating table schema...");
   await assertTableColumns(conn, "rank_distribution_with_identity", Output);
 
   // Enforce contract: validate all rows
-  console.log("Enforcing contract: validating all rows...");
+  loggers.compute.info("Enforcing contract: validating all rows...");
   const parsedRows = await parseAllRows(
     conn,
     "rank_distribution_with_identity",
@@ -136,21 +141,22 @@ export async function computeRankDistributionByCandidate(
 
   // Export to parquet
   const parquetPath = join(outputPath, "rank_distribution.parquet");
-  console.log(`Exporting to ${parquetPath}...`);
+  loggers.compute.info(`Exporting to ${parquetPath}...`);
   await conn.run(SQL_QUERIES.copyToParquet(outputPath));
 
   // Calculate deterministic hash
   const fileHash = sha256(parquetPath);
-  console.log(`Rank distribution by candidate completed:`);
-  console.log(`- Max rank: ${stats.max_rank}`);
-  console.log(`- Total ballots: ${stats.total_ballots}`);
-  console.log(`- Candidates: ${stats.candidate_count}`);
-  console.log(`- Zero-rank candidates: ${stats.zero_rank_candidates}`);
-  console.log(`- Output rows: ${data.rows}`);
-  console.log(`- File hash: ${fileHash.substring(0, 16)}...`);
+  loggers.compute.info(`Rank distribution by candidate completed:`, {
+    max_rank: stats.max_rank,
+    total_ballots: stats.total_ballots,
+    candidate_count: stats.candidate_count,
+    zero_rank_candidates: stats.zero_rank_candidates,
+    output_rows: data.rows,
+    file_hash: `${fileHash.substring(0, 16)}...`,
+  });
 
   // Update manifest - follow same pattern as first_choice
-  console.log("Updating manifest...");
+  loggers.compute.info("Updating manifest...");
   const manifestData2 = JSON.parse(readFileSync(manifestPath, "utf8"));
   const manifest = Manifest.parse(manifestData2);
   const existingContest = findContest(manifest, electionId, contestId);
@@ -169,7 +175,8 @@ export async function computeRankDistributionByCandidate(
 
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-  console.log("Build completed successfully!");
+  timer.end({ output_rows: data.rows, file_hash: fileHash.substring(0, 16) });
+  loggers.compute.info("Build completed successfully!");
 
   return { stats, data };
 }
@@ -218,16 +225,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const [electionId, contestId, env] = process.argv.slice(2);
 
   if (!electionId || !contestId || !env) {
-    console.error("Usage: npx tsx compute.ts <electionId> <contestId> <env>");
+    loggers.compute.error(
+      "Usage: npx tsx compute.ts <electionId> <contestId> <env>",
+    );
     process.exit(1);
   }
 
   computeRankDistributionByCandidate({ electionId, contestId, env })
     .then((result) => {
-      console.log("Success:", result);
+      loggers.compute.info("Success:", result);
     })
     .catch((error) => {
-      console.error("Error:", error);
+      logError(loggers.compute, error, { context: "CLI execution" });
       process.exit(1);
     });
 }

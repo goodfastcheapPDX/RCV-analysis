@@ -9,6 +9,7 @@ import {
   sha256,
 } from "@/lib/contract-enforcer";
 import { getDataEnv } from "@/lib/env";
+import { loggers } from "@/lib/logger";
 import {
   type Data,
   Output,
@@ -167,8 +168,8 @@ function updateManifest(
   // For now, we'll skip manifest updating since it has a complex structure
   // and we're focusing on getting the compute function working first.
   // The transfer matrix will be available as a parquet file for consumption.
-  console.log(
+  loggers.compute.info(
     `Transfer matrix stats: ${JSON.stringify(result.stats, null, 2)}`,
   );
-  console.log(`Transfer matrix written to: ${transferMatrixPath}`);
+  loggers.compute.info(`Transfer matrix written to: ${transferMatrixPath}`);
 }

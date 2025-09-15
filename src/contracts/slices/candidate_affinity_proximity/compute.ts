@@ -7,6 +7,7 @@ import {
   parseAllRows,
   sha256,
 } from "@/lib/contract-enforcer";
+import { createTimer, logError, loggers } from "@/lib/logger";
 import {
   type CandidateAffinityProximityOutput,
   type Data,
@@ -46,7 +47,11 @@ export async function computeCandidateAffinityProximity(
 ): Promise<CandidateAffinityProximityOutput> {
   const { electionId, contestId, env } = params;
 
-  console.log(
+  const timer = createTimer(
+    loggers.compute,
+    `candidate affinity proximity computation for ${electionId}/${contestId}`,
+  );
+  loggers.compute.info(
     `Processing candidate affinity proximity for ${electionId}/${contestId}`,
   );
 
@@ -55,7 +60,7 @@ export async function computeCandidateAffinityProximity(
   const inputPath = getInputPath(env, electionId, contestId);
   const outputPath = getOutputPath(env, electionId, contestId);
 
-  console.log(`Output path: ${outputPath}`);
+  loggers.compute.debug(`Output path: ${outputPath}`);
 
   // Load manifest to get contest metadata
   if (!existsSync(manifestPath)) {
@@ -91,13 +96,13 @@ export async function computeCandidateAffinityProximity(
   const conn = await db.connect();
 
   // Create view from input parquet
-  console.log(
+  loggers.compute.info(
     `Creating ballots_long view from ${inputPath}/ballots_long.parquet...`,
   );
   await conn.run(SQL_QUERIES.createBallotsLongView(inputPath));
 
   // Log input data info
-  console.log("Analyzing input data...");
+  loggers.compute.info("Analyzing input data...");
   const inputStatsResult = await conn.run(`
     SELECT 
       COUNT(*) as total_rows,
@@ -107,12 +112,12 @@ export async function computeCandidateAffinityProximity(
   `);
   const inputStatsRows = await inputStatsResult.getRowObjects();
   const inputStats = inputStatsRows[0];
-  console.log(
+  loggers.compute.info(
     `Input: ${inputStats.total_rows} rows, ${inputStats.unique_ballots} ballots, ${inputStats.ranked_rows} with ranks`,
   );
 
   // Export proximity matrix data to temp table
-  console.log("Computing candidate affinity proximity matrix...");
+  loggers.compute.info("Computing candidate affinity proximity matrix...");
   await conn.run(SQL_QUERIES.exportProximityMatrix);
 
   // Log dedup and pair generation info
@@ -130,7 +135,7 @@ export async function computeCandidateAffinityProximity(
   `);
   const dedupStatsRows = await dedupStatsResult.getRowObjects();
   const dedupStats = dedupStatsRows[0];
-  console.log(
+  loggers.compute.info(
     `After dedup: ${dedupStats.deduped_rows} rows from ${dedupStats.ballots_with_ranks} ballots`,
   );
 
@@ -164,12 +169,12 @@ export async function computeCandidateAffinityProximity(
   `);
   const pairStatsRows = await pairStatsResult.getRowObjects();
   const pairStats = pairStatsRows[0];
-  console.log(
+  loggers.compute.info(
     `Pairs: ${pairStats.total_pairs} total, ${pairStats.unique_pairs} unique, distance range [${pairStats.min_distance}-${pairStats.max_distance}], avg ${Number(pairStats.avg_distance).toFixed(2)}, total weight ${Number(pairStats.total_weight).toFixed(2)}`,
   );
 
   // Add identity columns
-  console.log("Adding identity columns...");
+  loggers.compute.info("Adding identity columns...");
   await conn.run(`
       CREATE OR REPLACE TABLE candidate_affinity_proximity_with_identity AS
       SELECT
@@ -186,7 +191,7 @@ export async function computeCandidateAffinityProximity(
     `);
 
   // Enforce contract: validate table schema
-  console.log("Enforcing contract: validating table schema...");
+  loggers.compute.info("Enforcing contract: validating table schema...");
   await assertTableColumns(
     conn,
     "candidate_affinity_proximity_with_identity",
@@ -194,7 +199,7 @@ export async function computeCandidateAffinityProximity(
   );
 
   // Enforce contract: validate all rows
-  console.log("Enforcing contract: validating all rows...");
+  loggers.compute.info("Enforcing contract: validating all rows...");
   const parsedRows = await parseAllRows(
     conn,
     "candidate_affinity_proximity_with_identity",
@@ -215,22 +220,23 @@ export async function computeCandidateAffinityProximity(
 
   // Export to parquet
   const parquetPath = join(outputPath, "candidate_affinity_proximity.parquet");
-  console.log(`Exporting to ${parquetPath}...`);
+  loggers.compute.info(`Exporting to ${parquetPath}...`);
   await conn.run(SQL_QUERIES.copyToParquet(outputPath));
 
   // Calculate deterministic hash
   const fileHash = sha256(parquetPath);
-  console.log(`Candidate affinity proximity completed:`);
-  console.log(`- Total ballots considered: ${stats.total_ballots_considered}`);
-  console.log(`- Unique pairs: ${stats.unique_pairs}`);
-  console.log(`- Alpha: ${stats.alpha}`);
-  console.log(`- Max weight sum: ${stats.max_weight_sum.toFixed(4)}`);
-  console.log(`- Compute time: ${stats.compute_ms}ms`);
-  console.log(`- Output rows: ${data.rows}`);
-  console.log(`- File hash: ${fileHash.substring(0, 16)}...`);
+  loggers.compute.info(`Candidate affinity proximity completed:`, {
+    total_ballots_considered: stats.total_ballots_considered,
+    unique_pairs: stats.unique_pairs,
+    alpha: stats.alpha,
+    max_weight_sum: stats.max_weight_sum.toFixed(4),
+    compute_ms: stats.compute_ms,
+    output_rows: data.rows,
+    file_hash: `${fileHash.substring(0, 16)}...`,
+  });
 
   // Update manifest
-  console.log("Updating manifest...");
+  loggers.compute.info("Updating manifest...");
   const manifestData2 = JSON.parse(readFileSync(manifestPath, "utf8"));
   const manifest = Manifest.parse(manifestData2);
   const existingContest = findContest(manifest, electionId, contestId);
@@ -249,7 +255,8 @@ export async function computeCandidateAffinityProximity(
 
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-  console.log("Build completed successfully!");
+  timer.end({ output_rows: data.rows, file_hash: fileHash.substring(0, 16) });
+  loggers.compute.info("Build completed successfully!");
 
   await conn.closeSync();
 
@@ -292,16 +299,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const [electionId, contestId, env] = process.argv.slice(2);
 
   if (!electionId || !contestId || !env) {
-    console.error("Usage: npx tsx compute.ts <electionId> <contestId> <env>");
+    loggers.compute.error(
+      "Usage: npx tsx compute.ts <electionId> <contestId> <env>",
+    );
     process.exit(1);
   }
 
   computeCandidateAffinityProximity({ electionId, contestId, env })
     .then((result) => {
-      console.log("Success:", result);
+      loggers.compute.info("Success:", result);
     })
     .catch((error) => {
-      console.error("Error:", error);
+      logError(loggers.compute, error, { context: "CLI execution" });
       process.exit(1);
     });
 }

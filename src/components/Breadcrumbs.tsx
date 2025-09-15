@@ -11,6 +11,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { logError, loggers } from "@/lib/logger";
+
 import type { Manifest } from "@/lib/manifest";
 
 interface BreadcrumbSegment {
@@ -32,7 +34,9 @@ export function Breadcrumbs() {
           setManifest(manifestData);
         }
       } catch (error) {
-        console.warn("Failed to load manifest for breadcrumbs:", error);
+        logError(loggers.ui, error, {
+          context: "Failed to load manifest for breadcrumbs",
+        });
       }
     }
     loadManifest();

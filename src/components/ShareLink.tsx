@@ -4,6 +4,7 @@ import { Check, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { logError, loggers } from "@/lib/logger";
 
 export function ShareLink() {
   const [copied, setCopied] = useState(false);
@@ -20,7 +21,7 @@ export function ShareLink() {
       // Reset the copied state after 2 seconds
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Failed to copy link:", error);
+      logError(loggers.ui, error, { context: "Failed to copy link" });
       toast.error("Failed to copy link");
     }
   };

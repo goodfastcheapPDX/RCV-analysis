@@ -7,6 +7,7 @@ import {
   parseAllRows,
   sha256,
 } from "@/lib/contract-enforcer";
+import { createTimer, logError, loggers } from "@/lib/logger";
 import {
   type CandidateAffinityJaccardOutput,
   type Data,
@@ -46,7 +47,11 @@ export async function computeCandidateAffinityJaccard(
 ): Promise<CandidateAffinityJaccardOutput> {
   const { electionId, contestId, env } = params;
 
-  console.log(
+  const timer = createTimer(
+    loggers.compute,
+    `candidate affinity jaccard computation for ${electionId}/${contestId}`,
+  );
+  loggers.compute.info(
     `Processing candidate affinity jaccard for ${electionId}/${contestId}`,
   );
 
@@ -55,7 +60,7 @@ export async function computeCandidateAffinityJaccard(
   const inputPath = getInputPath(env, electionId, contestId);
   const outputPath = getOutputPath(env, electionId, contestId);
 
-  console.log(`Output path: ${outputPath}`);
+  loggers.compute.debug(`Output path: ${outputPath}`);
 
   // Load manifest to get contest metadata
   if (!existsSync(manifestPath)) {
@@ -91,13 +96,13 @@ export async function computeCandidateAffinityJaccard(
   const conn = await db.connect();
 
   // Create view from input parquet
-  console.log(
+  loggers.compute.info(
     `Creating ballots_long view from ${inputPath}/ballots_long.parquet...`,
   );
   await conn.run(SQL_QUERIES.createBallotsLongView(inputPath));
 
   // Log input data info
-  console.log("Analyzing input data...");
+  loggers.compute.info("Analyzing input data...");
   const inputStatsResult = await conn.run(`
     SELECT 
       COUNT(*) as total_rows,
@@ -107,12 +112,12 @@ export async function computeCandidateAffinityJaccard(
   `);
   const inputStatsRows = await inputStatsResult.getRowObjects();
   const inputStats = inputStatsRows[0];
-  console.log(
+  loggers.compute.info(
     `Input: ${inputStats.total_rows} rows, ${inputStats.unique_ballots} ballots, ${inputStats.ranked_rows} with ranks`,
   );
 
   // Export jaccard matrix data to temp table
-  console.log("Computing candidate affinity jaccard matrix...");
+  loggers.compute.info("Computing candidate affinity jaccard matrix...");
   await conn.run(SQL_QUERIES.exportJaccardMatrix);
 
   // Log dedup and pair generation info
@@ -130,7 +135,7 @@ export async function computeCandidateAffinityJaccard(
   `);
   const dedupStatsRows = await dedupStatsResult.getRowObjects();
   const dedupStats = dedupStatsRows[0];
-  console.log(
+  loggers.compute.info(
     `After dedup: ${dedupStats.deduped_rows} rows from ${dedupStats.ballots_with_ranks} ballots`,
   );
 
@@ -140,10 +145,10 @@ export async function computeCandidateAffinityJaccard(
   `);
   const pairStatsRows = await pairStatsResult.getRowObjects();
   const pairStats = pairStatsRows[0];
-  console.log(`Generated ${pairStats.unique_pairs} unique pairs`);
+  loggers.compute.info(`Generated ${pairStats.unique_pairs} unique pairs`);
 
   // Add identity columns
-  console.log("Adding identity columns...");
+  loggers.compute.info("Adding identity columns...");
   await conn.run(`
       CREATE OR REPLACE TABLE candidate_affinity_jaccard_with_identity AS
       SELECT
@@ -162,7 +167,7 @@ export async function computeCandidateAffinityJaccard(
     `);
 
   // Enforce contract: validate table schema
-  console.log("Enforcing contract: validating table schema...");
+  loggers.compute.info("Enforcing contract: validating table schema...");
   await assertTableColumns(
     conn,
     "candidate_affinity_jaccard_with_identity",
@@ -170,7 +175,7 @@ export async function computeCandidateAffinityJaccard(
   );
 
   // Enforce contract: validate all rows
-  console.log("Enforcing contract: validating all rows...");
+  loggers.compute.info("Enforcing contract: validating all rows...");
   const parsedRows = await parseAllRows(
     conn,
     "candidate_affinity_jaccard_with_identity",
@@ -191,29 +196,31 @@ export async function computeCandidateAffinityJaccard(
 
   // Check compute budget (60s limit)
   if (computeMs > 60000) {
-    console.warn(`⚠️  Compute time ${computeMs}ms exceeds 60s budget!`);
-    console.warn(`   Ballot count: ${actualBallotsConsidered}`);
-    console.warn(`   Pair cardinality: ${parsedRows.length}`);
+    loggers.compute.warn(`⚠️  Compute time ${computeMs}ms exceeds 60s budget!`, {
+      ballot_count: actualBallotsConsidered,
+      pair_cardinality: parsedRows.length,
+    });
   }
 
   // Export to parquet
   const parquetPath = join(outputPath, "candidate_affinity_jaccard.parquet");
-  console.log(`Exporting to ${parquetPath}...`);
+  loggers.compute.info(`Exporting to ${parquetPath}...`);
   await conn.run(SQL_QUERIES.copyToParquet(outputPath));
 
   // Calculate deterministic hash
   const fileHash = sha256(parquetPath);
-  console.log(`Candidate affinity jaccard completed:`);
-  console.log(`- Total ballots considered: ${stats.total_ballots_considered}`);
-  console.log(`- Unique pairs: ${stats.unique_pairs}`);
-  console.log(`- Max jaccard: ${stats.max_jaccard.toFixed(4)}`);
-  console.log(`- Zero union pairs: ${stats.zero_union_pairs}`);
-  console.log(`- Compute time: ${stats.compute_ms}ms`);
-  console.log(`- Output rows: ${data.rows}`);
-  console.log(`- File hash: ${fileHash.substring(0, 16)}...`);
+  loggers.compute.info(`Candidate affinity jaccard completed:`, {
+    total_ballots_considered: stats.total_ballots_considered,
+    unique_pairs: stats.unique_pairs,
+    max_jaccard: stats.max_jaccard.toFixed(4),
+    zero_union_pairs: stats.zero_union_pairs,
+    compute_ms: stats.compute_ms,
+    output_rows: data.rows,
+    file_hash: `${fileHash.substring(0, 16)}...`,
+  });
 
   // Update manifest
-  console.log("Updating manifest...");
+  loggers.compute.info("Updating manifest...");
   const manifestData2 = JSON.parse(readFileSync(manifestPath, "utf8"));
   const manifest = Manifest.parse(manifestData2);
   const existingContest = findContest(manifest, electionId, contestId);
@@ -232,7 +239,8 @@ export async function computeCandidateAffinityJaccard(
 
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-  console.log("Build completed successfully!");
+  timer.end({ output_rows: data.rows, file_hash: fileHash.substring(0, 16) });
+  loggers.compute.info("Build completed successfully!");
 
   await conn.closeSync();
 
@@ -276,16 +284,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const [electionId, contestId, env] = process.argv.slice(2);
 
   if (!electionId || !contestId || !env) {
-    console.error("Usage: npx tsx compute.ts <electionId> <contestId> <env>");
+    loggers.compute.error(
+      "Usage: npx tsx compute.ts <electionId> <contestId> <env>",
+    );
     process.exit(1);
   }
 
   computeCandidateAffinityJaccard({ electionId, contestId, env })
     .then((result) => {
-      console.log("Success:", result);
+      loggers.compute.info("Success:", result);
     })
     .catch((error) => {
-      console.error("Error:", error);
+      logError(loggers.compute, error, { context: "CLI execution" });
       process.exit(1);
     });
 }

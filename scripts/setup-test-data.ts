@@ -2,6 +2,7 @@
 
 import { spawn } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
+import { logError, loggers } from "../src/lib/logger";
 
 async function runCommand(
   command: string,
@@ -43,15 +44,15 @@ async function runCommand(
 }
 
 async function cleanupTestData() {
-  console.log("🧹 Cleaning up existing test data...");
+  loggers.script.info("🧹 Cleaning up existing test data...");
 
   const testDataDir = "data/test";
   if (existsSync(testDataDir)) {
     try {
       rmSync(testDataDir, { recursive: true, force: true });
-      console.log("   ✅ Cleaned up data/test directory");
+      loggers.script.info("   ✅ Cleaned up data/test directory");
     } catch (error) {
-      console.warn(`   ⚠️  Could not clean data/test: ${error}`);
+      loggers.script.warn(`   ⚠️  Could not clean data/test: ${error}`);
     }
   }
 }
@@ -61,7 +62,7 @@ export async function setupTestData() {
   const originalSrcCsv = process.env.SRC_CSV;
 
   try {
-    console.log(
+    loggers.script.info(
       "🚀 Setting up global test data using build-all-districts script",
     );
 
@@ -74,7 +75,7 @@ export async function setupTestData() {
       SRC_CSV: "tests/golden/micro/cvr_small.csv",
     };
 
-    console.log(
+    loggers.script.info(
       `   Environment: DATA_ENV=${testEnv.DATA_ENV}, SRC_CSV=${testEnv.SRC_CSV}`,
     );
 
@@ -85,7 +86,7 @@ export async function setupTestData() {
 
     // Since build-all-districts expects multiple district CSVs but we have one golden file,
     // we'll run individual computations for the golden dataset
-    console.log("📊 Running test data pipeline with golden dataset...");
+    loggers.script.info("📊 Running test data pipeline with golden dataset...");
 
     await runCommand(
       "npm",
@@ -96,13 +97,14 @@ export async function setupTestData() {
     await runCommand("npm", ["run", "build:data:rankdist"], testEnv);
     await runCommand("npm", ["run", "build:data:stv"], testEnv);
 
-    console.log(`\n🎉 Global test data setup complete!`);
-    console.log(`   📂 Data available at: data/test/`);
+    loggers.script.info(`\n🎉 Global test data setup complete!`);
+    loggers.script.info(`   📂 Data available at: data/test/`);
 
     return { successful: 1, failed: 0 };
   } catch (error) {
-    console.error("💥 Global test data setup failed:");
-    console.error(error);
+    logError(loggers.script, error, {
+      context: "Global test data setup failed",
+    });
     throw error;
   } finally {
     // Restore original environment
@@ -123,11 +125,11 @@ export async function setupTestData() {
 if (import.meta.url === `file://${process.argv[1]}`) {
   setupTestData()
     .then(() => {
-      console.log("✅ Test data setup completed successfully");
+      loggers.script.info("✅ Test data setup completed successfully");
       process.exit(0);
     })
     .catch((error) => {
-      console.error("❌ Test data setup failed:", error);
+      logError(loggers.script, error, { context: "Test data setup failed" });
       process.exit(1);
     });
 }

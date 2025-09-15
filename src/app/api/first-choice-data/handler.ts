@@ -1,3 +1,4 @@
+import { logError, loggers } from "@/lib/logger";
 import { loadFirstChoiceForContest } from "@/lib/manifest/loaders";
 
 export interface FirstChoiceDataParams {
@@ -32,7 +33,7 @@ export async function handleFirstChoiceDataRequest(
       },
     };
   } catch (error) {
-    console.error("Error in first choice data handler:", error);
+    logError(loggers.api, error, { context: "first choice data handler" });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",

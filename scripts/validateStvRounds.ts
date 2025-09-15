@@ -7,6 +7,7 @@ import { config as dotenv } from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { validateEnv } from "../src/lib/env";
+import { logError, loggers } from "../src/lib/logger";
 
 // Load environment variables and validate
 dotenv();
@@ -84,7 +85,7 @@ function normalizeOfficialName(officialName: string): string {
 }
 
 async function validateStvRounds(config: ValidationConfig): Promise<boolean> {
-  console.log(
+  loggers.script.info(
     `Validating STV rounds for case: ${config.case || "default"}, env: ${config.env}`,
   );
 
@@ -116,7 +117,7 @@ async function validateStvRounds(config: ValidationConfig): Promise<boolean> {
     const meta =
       (await metaResult.getRowObjects()) as unknown as StvMetaRecord[];
 
-    console.log(
+    loggers.script.info(
       `Loaded ${rounds.length} round records and ${meta.length} meta records`,
     );
 
@@ -130,7 +131,7 @@ async function validateStvRounds(config: ValidationConfig): Promise<boolean> {
       await validateAgainstOfficial(config.case, rounds, meta);
     }
 
-    console.log("✅ All STV validations passed");
+    loggers.script.info("✅ All STV validations passed");
     return true;
   } finally {
     await conn.closeSync();
@@ -141,7 +142,7 @@ async function validateBasicStructure(
   rounds: StvRoundRecord[],
   meta: StvMetaRecord[],
 ): Promise<void> {
-  console.log("Validating basic structure...");
+  loggers.script.info("Validating basic structure...");
 
   // Check that each round has consistent candidate set
   const roundGroups = new Map<number, StvRoundRecord[]>();
@@ -164,7 +165,7 @@ async function validateBasicStructure(
       (r) => r.status === "eliminated",
     ).length;
 
-    console.log(
+    loggers.script.info(
       `Round ${roundNum}: ${standingCount} standing, ${electedCount} elected, ${eliminatedCount} eliminated`,
     );
   }
@@ -179,14 +180,14 @@ async function validateBasicStructure(
     );
   }
 
-  console.log("✅ Basic structure validation passed");
+  loggers.script.info("✅ Basic structure validation passed");
 }
 
 async function validateVoteConservation(
   rounds: StvRoundRecord[],
   meta: StvMetaRecord[],
 ): Promise<void> {
-  console.log("Validating vote conservation...");
+  loggers.script.info("Validating vote conservation...");
 
   // Group by round
   const roundGroups = new Map<
@@ -222,7 +223,7 @@ async function validateVoteConservation(
     );
     const totalWithExhausted = totalVotes.plus(metaRecord.exhausted);
 
-    console.log(
+    loggers.script.info(
       `Round ${roundNum}: ${totalVotes.toFixed(2)} active votes + ${metaRecord.exhausted.toFixed(2)} exhausted = ${totalWithExhausted.toFixed(2)} total`,
     );
 
@@ -238,14 +239,14 @@ async function validateVoteConservation(
     previousTotal = totalWithExhausted;
   }
 
-  console.log("✅ Vote conservation validation passed");
+  loggers.script.info("✅ Vote conservation validation passed");
 }
 
 async function validateWinnerConsistency(
   rounds: StvRoundRecord[],
   meta: StvMetaRecord[],
 ): Promise<void> {
-  console.log("Validating winner consistency...");
+  loggers.script.info("Validating winner consistency...");
 
   // Find all winners from rounds data
   const winnersFromRounds = new Set<string>();
@@ -278,10 +279,12 @@ async function validateWinnerConsistency(
     }
   }
 
-  console.log(
+  loggers.script.info(
     `✅ Winner consistency validated: ${winnersFromRounds.size} winners`,
   );
-  console.log(`Winners: ${Array.from(winnersFromRounds).sort().join(", ")}`);
+  loggers.script.info(
+    `Winners: ${Array.from(winnersFromRounds).sort().join(", ")}`,
+  );
 }
 
 async function validateAgainstOfficial(
@@ -292,13 +295,13 @@ async function validateAgainstOfficial(
   const officialPath = `tests/golden/${testCase}/official-results.json`;
 
   if (!existsSync(officialPath)) {
-    console.log(
+    loggers.script.warn(
       `⚠️  No official results found at ${officialPath}, skipping official validation`,
     );
     return;
   }
 
-  console.log("Validating against official results...");
+  loggers.script.info("Validating against official results...");
 
   const officialData = JSON.parse(
     readFileSync(officialPath, "utf-8"),
@@ -314,7 +317,7 @@ async function validateAgainstOfficial(
     );
   }
 
-  console.log(`✅ Quota matches: ${ourQuota}`);
+  loggers.script.info(`✅ Quota matches: ${ourQuota}`);
 
   // Compare round-by-round tallies
   for (const officialRound of officialData.results) {
@@ -322,11 +325,13 @@ async function validateAgainstOfficial(
     const ourRoundRecords = rounds.filter((r) => r.round === roundNum);
 
     if (ourRoundRecords.length === 0) {
-      console.log(`⚠️  No data for round ${roundNum}, skipping comparison`);
+      loggers.script.warn(
+        `⚠️  No data for round ${roundNum}, skipping comparison`,
+      );
       continue;
     }
 
-    console.log(`Comparing round ${roundNum}...`);
+    loggers.script.info(`Comparing round ${roundNum}...`);
 
     // Compare candidate tallies
     for (const [officialName, voteStr] of Object.entries(officialRound.tally)) {
@@ -337,7 +342,7 @@ async function validateAgainstOfficial(
         (r) => r.candidate_name === normalizedName,
       );
       if (!ourRecord) {
-        console.log(
+        loggers.script.warn(
           `⚠️  Candidate ${normalizedName} not found in our round ${roundNum} data`,
         );
         continue;
@@ -352,7 +357,7 @@ async function validateAgainstOfficial(
     }
   }
 
-  console.log("✅ Official results validation passed");
+  loggers.script.info("✅ Official results validation passed");
 }
 
 async function main() {
@@ -392,11 +397,13 @@ async function main() {
 
       for (const testCase of testCases) {
         try {
-          console.log(`\n=== Validating case: ${testCase} ===`);
+          loggers.script.info(`\n=== Validating case: ${testCase} ===`);
           const caseConfig = { ...config, case: testCase };
           await validateStvRounds(caseConfig);
         } catch (error) {
-          console.error(`❌ Validation failed for case ${testCase}:`, error);
+          logError(loggers.script, error, {
+            context: `Validation failed for case ${testCase}`,
+          });
           allPassed = false;
         }
       }
@@ -408,9 +415,9 @@ async function main() {
       await validateStvRounds(config);
     }
 
-    console.log("\n🎉 All validations completed successfully!");
+    loggers.script.info("\n🎉 All validations completed successfully!");
   } catch (error) {
-    console.error("❌ Validation failed:", error);
+    logError(loggers.script, error, { context: "Validation failed" });
     process.exit(1);
   }
 }

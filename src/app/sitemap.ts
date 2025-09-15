@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { logError, loggers } from "@/lib/logger";
 import { loadManifest } from "@/lib/manifest";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -57,7 +58,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...staticRoutes, ...dynamicRoutes];
   } catch (error) {
-    console.error("Failed to load manifest for sitemap:", error);
+    logError(loggers.app, error, {
+      context: "Failed to load manifest for sitemap",
+    });
     return staticRoutes;
   }
 }

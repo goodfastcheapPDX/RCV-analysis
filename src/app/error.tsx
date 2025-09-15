@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { logError, loggers } from "@/lib/logger";
 
 interface ErrorPageProps {
   error: Error & { digest?: string };
@@ -13,10 +14,12 @@ interface ErrorPageProps {
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   useEffect(() => {
-    // Log the error to the console in development
-    if (process.env.NODE_ENV === "development") {
-      console.error("Application error:", error);
-    }
+    // Log the error using structured logging
+    logError(loggers.ui, error, {
+      component: "ErrorPage",
+      digest: error.digest,
+      environment: process.env.NODE_ENV,
+    });
   }, [error]);
 
   return (

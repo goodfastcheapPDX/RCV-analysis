@@ -19,6 +19,7 @@ import {
   sha256,
 } from "@/lib/contract-enforcer";
 import { getDataEnv } from "@/lib/env";
+import { createTimer, logError, loggers } from "@/lib/logger";
 import {
   Data,
   type FirstChoiceBreakdownOutput,
@@ -64,10 +65,14 @@ export async function computeFirstChoiceBreakdown(
   // Create identity for this contest
   const identity = createIdentity(electionId, contestId, districtId, seatCount);
 
-  console.log(
+  const timer = createTimer(
+    loggers.compute,
+    `first choice breakdown for ${electionId}/${contestId}`,
+  );
+  loggers.compute.info(
     `Processing first choice breakdown for ${electionId}/${contestId}`,
   );
-  console.log(`Output path: ${outputPath}`);
+  loggers.compute.info(`Output path: ${outputPath}`);
 
   // Load manifest to find input files
   if (!existsSync(manifestPath)) {
@@ -109,15 +114,17 @@ export async function computeFirstChoiceBreakdown(
     await conn.run("BEGIN TRANSACTION");
 
     // Step 1: Create view from existing ballots_long parquet
-    console.log(`Creating ballots_long view from ${ballotsLongPath}...`);
+    loggers.compute.info(
+      `Creating ballots_long view from ${ballotsLongPath}...`,
+    );
     await conn.run(SQL_QUERIES.createFirstChoiceView(dirname(ballotsLongPath)));
 
     // Step 2: Create temporary table for validation
-    console.log("Computing first choice breakdown...");
+    loggers.compute.info("Computing first choice breakdown...");
     await conn.run(SQL_QUERIES.exportFirstChoice);
 
     // Step 3: Add identity columns to output
-    console.log("Adding identity columns...");
+    loggers.compute.info("Adding identity columns...");
     await conn.run(`
       CREATE OR REPLACE TABLE first_choice_breakdown_with_identity AS
       SELECT
@@ -132,7 +139,7 @@ export async function computeFirstChoiceBreakdown(
     `);
 
     // Step 4: ENFORCE CONTRACT - Validate schema before exporting
-    console.log("Enforcing contract: validating table schema...");
+    loggers.compute.info("Enforcing contract: validating table schema...");
     await assertTableColumns(
       conn,
       "first_choice_breakdown_with_identity",
@@ -140,7 +147,7 @@ export async function computeFirstChoiceBreakdown(
     );
 
     // Step 5: ENFORCE CONTRACT - Validate all data through Zod
-    console.log("Enforcing contract: validating all rows...");
+    loggers.compute.info("Enforcing contract: validating all rows...");
     const validatedRows = await parseAllRows(
       conn,
       "first_choice_breakdown_with_identity",
@@ -152,7 +159,7 @@ export async function computeFirstChoiceBreakdown(
     }
 
     // Step 6: Export to Parquet files
-    console.log(`Exporting to ${outputPath}/first_choice.parquet...`);
+    loggers.compute.info(`Exporting to ${outputPath}/first_choice.parquet...`);
     await conn.run(SQL_QUERIES.copyToParquet(outputPath));
 
     await conn.run("COMMIT");
@@ -207,14 +214,14 @@ export async function computeFirstChoiceBreakdown(
       data: validatedData,
     };
 
-    console.log(`First choice breakdown completed:`);
-    console.log(
-      `- Total valid ballots: ${parsedResult.stats.total_valid_ballots}`,
-    );
-    console.log(`- Candidates: ${parsedResult.stats.candidate_count}`);
-    console.log(`- Output rows: ${parsedResult.data.rows}`);
-    console.log(`- File hash: ${fileHash.substring(0, 16)}...`);
+    loggers.compute.info(`First choice breakdown completed:`, {
+      total_valid_ballots: parsedResult.stats.total_valid_ballots,
+      candidate_count: parsedResult.stats.candidate_count,
+      output_rows: parsedResult.data.rows,
+      file_hash: `${fileHash.substring(0, 16)}...`,
+    });
 
+    timer.end();
     return parsedResult;
   } catch (error) {
     try {
