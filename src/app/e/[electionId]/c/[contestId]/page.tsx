@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
 import { StvRoundsView } from "@/contracts/slices/stv_rounds/view";
+import { loggers } from "@/lib/logger";
 import {
   loadCandidatesForContest,
   loadStvForContest,
@@ -43,7 +44,7 @@ export default async function ContestPage({ params }: ContestPageProps) {
       candidates = candidatesResult.data;
     } catch (error) {
       // Candidates may not be available, continue without them
-      console.warn("Candidates data not available for links:", error);
+      loggers.ui.warn("Candidates data not available for links", { error });
     }
 
     return (

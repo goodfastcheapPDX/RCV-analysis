@@ -1,44 +1,45 @@
 import { spawn } from "node:child_process";
 import { config as dotenv } from "dotenv";
 import { validateEnv } from "../src/lib/env";
+import { logError, loggers } from "../src/lib/logger";
 import { setupTestData } from "./setup-test-data";
 
 // biome-ignore lint/suspicious/noExplicitAny: the spawn process returns god knows what
 let testServer: any;
 
 export async function setup() {
-  console.log("🔧 Running global test setup...");
+  loggers.test.info("🔧 Running global test setup...");
 
   // Load test environment variables
   dotenv({ path: ".env.test" });
 
   // Validate environment
   validateEnv();
-  console.log(process.env);
+  loggers.test.debug("Environment variables:", process.env);
 
   try {
     await setupTestData();
 
     // Start test server for HTTP-based data loading
-    console.log("🌐 Starting test data server...");
+    loggers.test.info("🌐 Starting test data server...");
     await startTestServer();
 
-    console.log("✅ Global test setup completed successfully");
+    loggers.test.info("✅ Global test setup completed successfully");
   } catch (error) {
-    console.error("❌ Global test setup failed:", error);
+    logError(loggers.test, error, { context: "❌ Global test setup failed" });
     throw error;
   }
 }
 
 export async function teardown() {
-  console.log("🧹 Running global test teardown...");
+  loggers.test.info("🧹 Running global test teardown...");
 
   if (testServer) {
-    console.log("🛑 Stopping test server...");
+    loggers.test.info("🛑 Stopping test server...");
     testServer.kill();
   }
 
-  console.log("✅ Global test teardown completed");
+  loggers.test.info("✅ Global test teardown completed");
 }
 
 async function startTestServer() {
@@ -68,7 +69,7 @@ async function startTestServer() {
         serverReady = true;
         // Set environment variable for tests to use
         process.env.DATA_BASE_URL = "http://localhost:8788";
-        console.log("✅ Test server ready at http://localhost:8788");
+        loggers.test.info("✅ Test server ready at http://localhost:8788");
         resolve();
       }
     };
@@ -86,7 +87,7 @@ async function startTestServer() {
         // Try to connect to see if server is actually running
         fetch("http://localhost:8788/data/test/manifest.json")
           .then(() => {
-            console.log(
+            loggers.test.info(
               "✅ Test server responding (detected via connectivity test)",
             );
             process.env.DATA_BASE_URL = "http://localhost:8788";

@@ -9,6 +9,7 @@ import {
   electionIdFrom,
 } from "../src/contracts/ids";
 import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choice_breakdown/compute";
+import { logError, loggers } from "../src/lib/logger";
 
 interface BuildFirstChoiceMultiArgs {
   election?: string;
@@ -17,7 +18,7 @@ interface BuildFirstChoiceMultiArgs {
 
 async function main() {
   try {
-    console.log("Starting multi-election first choice breakdown...");
+    loggers.script.info("Starting multi-election first choice breakdown...");
 
     const args = yargs(hideBin(process.argv))
       .scriptName("build-first-choice-multi")
@@ -49,8 +50,8 @@ async function main() {
         seatCount: 3,
       })) as ContestId;
 
-    console.log(`Election: ${electionId}`);
-    console.log(`Contest: ${contestId}`);
+    loggers.script.info(`Election: ${electionId}`);
+    loggers.script.info(`Contest: ${contestId}`);
 
     const result = await computeFirstChoiceBreakdown({
       electionId,
@@ -59,14 +60,15 @@ async function main() {
       seatCount: 3,
     });
 
-    console.log("✅ First choice breakdown completed successfully!");
-    console.log(`📊 Statistics:`);
-    console.log(`  - Total valid ballots: ${result.stats.total_valid_ballots}`);
-    console.log(`  - Candidates: ${result.stats.candidate_count}`);
-    console.log(`  - Output rows: ${result.data.rows}`);
+    loggers.script.info("✅ First choice breakdown completed successfully!", {
+      total_valid_ballots: result.stats.total_valid_ballots,
+      candidates: result.stats.candidate_count,
+      output_rows: result.data.rows,
+    });
   } catch (error) {
-    console.error("❌ First choice breakdown failed:");
-    console.error(error);
+    logError(loggers.script, error, {
+      context: "❌ First choice breakdown failed",
+    });
     process.exit(1);
   }
 }

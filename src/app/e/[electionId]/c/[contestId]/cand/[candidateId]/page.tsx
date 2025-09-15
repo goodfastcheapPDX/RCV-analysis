@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Output as RankDistributionOutput } from "@/contracts/slices/rank_distribution_by_candidate/index.contract";
 import type { Output as TransferMatrixOutput } from "@/contracts/slices/transfer_matrix/index.contract";
+import { loggers } from "@/lib/logger";
 import {
   loadCandidatesForContest,
   loadRankDistributionForContest,
@@ -71,7 +72,7 @@ export default async function CandidatePage({
         .sort((a, b) => a.rank_position - b.rank_position);
     } catch (error) {
       // Rank distribution data may not be available, continue without it
-      console.warn("Rank distribution data not available:", error);
+      loggers.ui.warn("Rank distribution data not available", { error });
     }
 
     // Load transfer matrix data
@@ -91,7 +92,7 @@ export default async function CandidatePage({
       );
     } catch (error) {
       // Transfer matrix data may not be available, continue without it
-      console.warn("Transfer matrix data not available:", error);
+      loggers.ui.warn("Transfer matrix data not available", { error });
     }
 
     // Load STV data for badge logic
@@ -116,7 +117,7 @@ export default async function CandidatePage({
       );
     } catch (error) {
       // STV data may not be available, continue without badges
-      console.warn("STV data not available for badge logic:", error);
+      loggers.ui.warn("STV data not available for badge logic", { error });
     }
 
     const defaultTab = "rank";

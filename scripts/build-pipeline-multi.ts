@@ -13,6 +13,7 @@ import { computeFirstChoiceBreakdown } from "../src/contracts/slices/first_choic
 import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
 import { getDataEnv, validateEnv } from "../src/lib/env";
+import { logError, loggers } from "../src/lib/logger";
 
 // Load environment variables and validate
 dotenv();
@@ -27,7 +28,7 @@ interface BuildPipelineArgs {
 
 async function main() {
   try {
-    console.log("Starting multi-election full pipeline...");
+    loggers.script.info("Starting multi-election full pipeline...");
 
     const args = yargs(hideBin(process.argv))
       .scriptName("build-pipeline-multi")
@@ -63,7 +64,7 @@ async function main() {
       process.env.DATA_ENV = args.dataEnv;
     }
 
-    console.log(`Data Environment: ${process.env.DATA_ENV}`);
+    loggers.script.info(`Data Environment: ${process.env.DATA_ENV}`);
 
     // Set defaults for District 2 (using type-safe environment variables)
     const srcCsv =
@@ -80,13 +81,13 @@ async function main() {
         seatCount: 3,
       })) as ContestId;
 
-    console.log(`Election: ${electionId}`);
-    console.log(`Contest: ${contestId}`);
-    console.log(`Source CSV: ${srcCsv}`);
-    console.log();
+    loggers.script.info(`Election: ${electionId}`);
+    loggers.script.info(`Contest: ${contestId}`);
+    loggers.script.info(`Source CSV: ${srcCsv}`);
+    loggers.script.info("");
 
     // Step 1: Ingest CVR
-    console.log("=== Step 1: CVR Ingestion ===");
+    loggers.script.info("=== Step 1: CVR Ingestion ===");
     const ingestResult = await ingestCvr({
       electionId,
       contestId,
@@ -95,14 +96,14 @@ async function main() {
       srcCsv,
     });
 
-    console.log(`✅ CVR ingestion completed:`);
-    console.log(`  - Candidates: ${ingestResult.candidates.rows}`);
-    console.log(`  - Ballots: ${ingestResult.ballots_long.ballots}`);
-    console.log(`  - Total vote records: ${ingestResult.ballots_long.rows}`);
-    console.log();
+    loggers.script.info(`✅ CVR ingestion completed:`, {
+      candidates: ingestResult.candidates.rows,
+      ballots: ingestResult.ballots_long.ballots,
+      total_vote_records: ingestResult.ballots_long.rows,
+    });
 
     // Step 2: First Choice Breakdown
-    console.log("=== Step 2: First Choice Breakdown ===");
+    loggers.script.info("=== Step 2: First Choice Breakdown ===");
     const firstChoiceResult = await computeFirstChoiceBreakdown({
       electionId,
       contestId,
@@ -110,39 +111,41 @@ async function main() {
       seatCount: 3,
     });
 
-    console.log(`✅ First choice breakdown completed:`);
-    console.log(
-      `  - Total valid ballots: ${firstChoiceResult.stats.total_valid_ballots}`,
-    );
-    console.log(`  - Candidates: ${firstChoiceResult.stats.candidate_count}`);
-    console.log(`  - Output rows: ${firstChoiceResult.data.rows}`);
-    console.log();
+    loggers.script.info(`✅ First choice breakdown completed:`);
+    loggers.script.info(`First choice breakdown details:`, {
+      total_valid_ballots: firstChoiceResult.stats.total_valid_ballots,
+      candidates: firstChoiceResult.stats.candidate_count,
+      output_rows: firstChoiceResult.data.rows,
+    });
 
     // Step 3: Rank Distribution by Candidate
-    console.log("=== Step 3: Rank Distribution by Candidate ===");
+    loggers.script.info("=== Step 3: Rank Distribution by Candidate ===");
     const rankDistResult = await computeRankDistributionByCandidate({
       electionId,
       contestId,
       env: getDataEnv(),
     });
 
-    console.log(`✅ Rank distribution by candidate completed:`);
-    console.log(`  - Max rank: ${rankDistResult.stats.max_rank}`);
-    console.log(`  - Total ballots: ${rankDistResult.stats.total_ballots}`);
-    console.log(`  - Candidates: ${rankDistResult.stats.candidate_count}`);
-    console.log(
+    loggers.script.info(`✅ Rank distribution by candidate completed:`);
+    loggers.script.info(`  - Max rank: ${rankDistResult.stats.max_rank}`);
+    loggers.script.info(
+      `  - Total ballots: ${rankDistResult.stats.total_ballots}`,
+    );
+    loggers.script.info(
+      `  - Candidates: ${rankDistResult.stats.candidate_count}`,
+    );
+    loggers.script.info(
       `  - Zero-rank candidates: ${rankDistResult.stats.zero_rank_candidates}`,
     );
-    console.log(`  - Output rows: ${rankDistResult.data.rows}`);
-    console.log();
+    loggers.script.info(`  - Output rows: ${rankDistResult.data.rows}`);
+    loggers.script.info("");
 
-    console.log("🎉 Full pipeline completed successfully!");
-    console.log(
+    loggers.script.info("🎉 Full pipeline completed successfully!");
+    loggers.script.info(
       `📂 Artifacts created under: data/dev/${electionId}/${contestId}/`,
     );
   } catch (error) {
-    console.error("❌ Pipeline failed:");
-    console.error(error);
+    logError(loggers.script, error, { context: "Pipeline failed" });
     process.exit(1);
   }
 }

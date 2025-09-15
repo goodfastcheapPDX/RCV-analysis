@@ -14,6 +14,7 @@ import {
   sha256,
 } from "@/lib/contract-enforcer";
 import { getDataEnv } from "@/lib/env";
+import { createTimer, logError, loggers } from "@/lib/logger";
 import { type BallotData, runSTV } from "./engine";
 import {
   RulesSchema,
@@ -61,8 +62,18 @@ export async function computeStvRounds(
   // Create identity for this contest
   const identity = createIdentity(electionId, contestId, districtId, seatCount);
 
-  console.log(`Processing STV for ${electionId}/${contestId}`);
-  console.log(`Output path: ${outputPath}`);
+  const timer = createTimer(
+    loggers.compute,
+    `STV computation for ${electionId}/${contestId}`,
+  );
+
+  loggers.compute.info("Starting STV computation", {
+    electionId,
+    contestId,
+    districtId,
+    seatCount,
+    outputPath,
+  });
 
   // Ensure directories exist
   mkdirSync(outputPath, { recursive: true });
@@ -96,7 +107,7 @@ export async function computeStvRounds(
   }
 
   const ballotsPath = contest.cvr.ballots_long.uri;
-  console.log(`Loading ballots from: ${ballotsPath}`);
+  loggers.compute.info(`Loading ballots from: ${ballotsPath}`);
 
   const db = await DuckDBInstance.create();
   const conn = await db.connect();
@@ -128,18 +139,20 @@ export async function computeStvRounds(
       precision: 0.000001,
       tie_break: "lexicographic" as const,
     };
-    console.log(`Using rules: ${JSON.stringify(rules, null, 2)}`);
+    loggers.compute.debug(`Using rules: ${JSON.stringify(rules, null, 2)}`);
 
     // Run STV algorithm
-    console.log(`Running STV with ${ballotsData.length} ballot records...`);
+    loggers.compute.info(
+      `Running STV with ${ballotsData.length} ballot records...`,
+    );
     const stvResult = runSTV(ballotsData, rules, identity);
 
-    console.log(
+    loggers.compute.info(
       `STV completed: ${stvResult.rounds.length} round records, ${stvResult.winners.length} winners`,
     );
 
     // Validate all rows against contract schemas
-    console.log("Validating output against contracts...");
+    loggers.compute.info("Validating output against contracts...");
     const validatedRounds = stvResult.rounds.map((row) =>
       StvRoundsOutput.parse(row),
     );
@@ -235,8 +248,8 @@ export async function computeStvRounds(
     await conn.run(`COPY tmp_stv_rounds TO '${roundsPath}' (FORMAT 'parquet')`);
     await conn.run(`COPY tmp_stv_meta TO '${metaPath}' (FORMAT 'parquet')`);
 
-    console.log(`Exported STV rounds to: ${roundsPath}`);
-    console.log(`Exported STV meta to: ${metaPath}`);
+    loggers.compute.info(`Exported STV rounds to: ${roundsPath}`);
+    loggers.compute.info(`Exported STV meta to: ${metaPath}`);
 
     // Calculate stats for manifest
     const stats: StvRoundsStats = {
@@ -257,7 +270,7 @@ export async function computeStvRounds(
     const metaHash = sha256(metaPath);
 
     // Update manifest with STV data
-    console.log("Updating manifest...");
+    loggers.compute.info("Updating manifest...");
 
     // Update the contest with STV results
     contest.stv = {
@@ -278,16 +291,27 @@ export async function computeStvRounds(
 
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-    console.log("✅ STV computation completed successfully!");
-    console.log(`📊 Statistics:`);
-    console.log(`  - Rounds: ${validatedStats.number_of_rounds}`);
-    console.log(`  - Winners: ${validatedStats.winners.join(", ")}`);
-    console.log(`  - Seats: ${validatedStats.seats}`);
-    console.log(
-      `  - First round quota: ${validatedStats.first_round_quota.toFixed(2)}`,
-    );
+    timer.end({
+      rounds: validatedStats.number_of_rounds,
+      winners: validatedStats.winners,
+      seats: validatedStats.seats,
+      firstRoundQuota: validatedStats.first_round_quota,
+    });
+
+    loggers.compute.info("✅ STV computation completed successfully!");
+    loggers.compute.info("📊 Statistics", {
+      rounds: validatedStats.number_of_rounds,
+      winners: validatedStats.winners.join(", "),
+      seats: validatedStats.seats,
+      firstRoundQuota: validatedStats.first_round_quota.toFixed(2),
+    });
     return validatedStats;
   } catch (error) {
+    logError(loggers.compute, error, {
+      operation: "STV computation",
+      electionId,
+      contestId,
+    });
     try {
       await conn.run("ROLLBACK");
     } catch {
@@ -313,12 +337,14 @@ function _loadRulesFromYaml(testCase?: string): RulesSchema {
   if (testCase) {
     const rulesPath = `tests/golden/${testCase}/rules.yaml`;
     if (existsSync(rulesPath)) {
-      console.log(`Loading rules from: ${rulesPath}`);
+      loggers.compute.info(`Loading rules from: ${rulesPath}`);
       const yamlContent = readFileSync(rulesPath, "utf-8");
       const yamlRules = yaml.load(yamlContent) as Partial<RulesSchema>;
       rules = { ...rules, ...yamlRules };
     } else {
-      console.log(`Rules file not found: ${rulesPath}, using defaults`);
+      loggers.compute.warn(
+        `Rules file not found: ${rulesPath}, using defaults`,
+      );
     }
   }
 
@@ -330,14 +356,16 @@ function _loadRulesFromYaml(testCase?: string): RulesSchema {
 if (import.meta.url === `file://${process.argv[1]}`) {
   computeStvRounds()
     .then((stats) => {
-      console.log("STV rounds computation completed successfully");
-      console.log(
+      loggers.compute.info("STV rounds computation completed successfully");
+      loggers.compute.info(
         `Results: ${stats.winners.length} winners in ${stats.number_of_rounds} rounds`,
       );
-      console.log(`Winners: ${stats.winners.join(", ")}`);
+      loggers.compute.info(`Winners: ${stats.winners.join(", ")}`);
     })
     .catch((error) => {
-      console.error("STV rounds computation failed:", error);
+      logError(loggers.compute, error, {
+        context: "STV rounds computation failed",
+      });
       process.exit(1);
     });
 }

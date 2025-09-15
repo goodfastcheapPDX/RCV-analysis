@@ -3,6 +3,7 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank_distribution_by_candidate/compute";
+import { logError, loggers } from "../src/lib/logger";
 
 interface BuildRankDistributionArgs {
   electionId: string;
@@ -12,7 +13,7 @@ interface BuildRankDistributionArgs {
 
 async function main() {
   try {
-    console.log("Building rank distribution by candidate...");
+    loggers.script.info("Building rank distribution by candidate...");
 
     const args = yargs(hideBin(process.argv))
       .scriptName("build-rank-distribution")
@@ -39,7 +40,7 @@ async function main() {
 
     const { electionId, contestId, env } = args;
 
-    console.log(`Processing: ${electionId}/${contestId} (env: ${env})`);
+    loggers.script.info(`Processing: ${electionId}/${contestId} (env: ${env})`);
 
     const result = await computeRankDistributionByCandidate({
       electionId,
@@ -47,20 +48,17 @@ async function main() {
       env,
     });
 
-    console.log("Build completed successfully!");
+    loggers.script.info("Build completed successfully!");
     return result;
   } catch (error) {
-    console.error(
-      "Build failed:",
-      error instanceof Error ? error.message : String(error),
-    );
+    logError(loggers.script, error, { context: "Build failed" });
     process.exit(1);
   }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
-    console.error("Script error:", error);
+    logError(loggers.script, error, { context: "Script error" });
     process.exit(1);
   });
 }

@@ -20,6 +20,7 @@ import { computeRankDistributionByCandidate } from "../src/contracts/slices/rank
 import { computeStvRounds } from "../src/contracts/slices/stv_rounds/compute";
 import { computeTransferMatrix } from "../src/contracts/slices/transfer_matrix/compute";
 import { getDataEnv, validateEnv } from "../src/lib/env";
+import { createTimer, logError, loggers } from "../src/lib/logger";
 
 // Load environment variables based on NODE_ENV
 function loadEnvironmentConfig() {
@@ -31,10 +32,10 @@ function loadEnvironmentConfig() {
   // Load environment-specific file if it exists
   const envFile = `.env.${nodeEnv}`;
   if (existsSync(envFile)) {
-    console.log(`🔧 Loading environment config from ${envFile}`);
+    loggers.script.info(`🔧 Loading environment config from ${envFile}`);
     dotenv({ path: envFile, override: true });
   } else {
-    console.log(
+    loggers.script.info(
       `🔧 Environment file ${envFile} not found, using .env defaults`,
     );
   }
@@ -43,18 +44,14 @@ function loadEnvironmentConfig() {
   validateEnv();
 
   // Log relevant environment variables
-  console.log("📋 Environment Configuration:");
-  console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
-  console.log(`   DATA_ENV: ${process.env.DATA_ENV}`);
-  console.log(`   DEBUG: ${process.env.DEBUG}`);
-  console.log(`   VERBOSE: ${process.env.VERBOSE}`);
-  if (process.env.SRC_CSV) {
-    console.log(`   SRC_CSV: ${process.env.SRC_CSV}`);
-  }
-  if (process.env.DATA_BASE_URL) {
-    console.log(`   DATA_BASE_URL: ${process.env.DATA_BASE_URL}`);
-  }
-  console.log("");
+  loggers.script.info("📋 Environment Configuration", {
+    NODE_ENV: process.env.NODE_ENV,
+    DATA_ENV: process.env.DATA_ENV,
+    DEBUG: process.env.DEBUG,
+    VERBOSE: process.env.VERBOSE,
+    SRC_CSV: process.env.SRC_CSV,
+    DATA_BASE_URL: process.env.DATA_BASE_URL,
+  });
 }
 
 // Initialize environment configuration
@@ -103,21 +100,36 @@ async function processDistrict(district: DistrictConfig) {
 
   const env = getDataEnv();
 
-  console.log(`\n=== Processing ${district.districtId.toUpperCase()} ===`);
-  console.log(`Contest: ${contestId}`);
-  console.log(`CSV: ${district.csvFile}`);
+  const timer = createTimer(
+    loggers.build,
+    `Processing ${district.districtId.toUpperCase()}`,
+  );
+
+  loggers.build.info(
+    `=== Processing ${district.districtId.toUpperCase()} ===`,
+    {
+      contest: contestId,
+      csvFile: district.csvFile,
+      districtId: district.districtId,
+      seatCount: district.seatCount,
+    },
+  );
 
   // Check if CSV file exists
   if (!existsSync(district.csvFile)) {
-    console.log(
-      `⚠️  Skipping ${district.districtId} - CSV file not found: ${district.csvFile}`,
+    loggers.build.warn(
+      `⚠️  Skipping ${district.districtId} - CSV file not found`,
+      {
+        districtId: district.districtId,
+        csvFile: district.csvFile,
+      },
     );
     return;
   }
 
   try {
     // Step 1: CVR Ingestion
-    console.log(`📥 Ingesting CVR for ${district.districtId}...`);
+    loggers.build.info(`📥 Ingesting CVR for ${district.districtId}...`);
     const ingestResult = await ingestCvr({
       electionId,
       contestId,
@@ -126,12 +138,16 @@ async function processDistrict(district: DistrictConfig) {
       srcCsv: district.csvFile,
     });
 
-    console.log(
-      `   ✅ CVR: ${ingestResult.ballots_long.ballots} ballots, ${ingestResult.candidates.rows} candidates`,
-    );
+    loggers.build.info(`   ✅ CVR ingestion completed`, {
+      districtId: district.districtId,
+      ballots: ingestResult.ballots_long.ballots,
+      candidates: ingestResult.candidates.rows,
+    });
 
     // Step 2: First Choice Breakdown
-    console.log(`📊 Computing first choice for ${district.districtId}...`);
+    loggers.build.info(
+      `📊 Computing first choice for ${district.districtId}...`,
+    );
     const firstChoiceResult = await computeFirstChoiceBreakdown({
       electionId,
       contestId,
@@ -139,24 +155,30 @@ async function processDistrict(district: DistrictConfig) {
       seatCount: district.seatCount,
     });
 
-    console.log(
-      `   ✅ First Choice: ${firstChoiceResult.stats.total_valid_ballots} ballots processed`,
-    );
+    loggers.build.info(`   ✅ First Choice completed`, {
+      districtId: district.districtId,
+      validBallots: firstChoiceResult.stats.total_valid_ballots,
+    });
 
     // Step 3: Rank Distribution by Candidate
-    console.log(`📈 Computing rank distribution for ${district.districtId}...`);
+    loggers.build.info(
+      `📈 Computing rank distribution for ${district.districtId}...`,
+    );
     const rankDistResult = await computeRankDistributionByCandidate({
       electionId,
       contestId,
       env,
     });
 
-    console.log(
-      `   ✅ Rank Distribution: ${rankDistResult.stats.candidate_count} candidates × ${rankDistResult.stats.max_rank} ranks (${rankDistResult.data.rows} rows)`,
-    );
+    loggers.build.info(`   ✅ Rank Distribution completed`, {
+      districtId: district.districtId,
+      candidateCount: rankDistResult.stats.candidate_count,
+      maxRank: rankDistResult.stats.max_rank,
+      rows: rankDistResult.data.rows,
+    });
 
     // Step 4: STV Rounds
-    console.log(`🗳️  Computing STV rounds for ${district.districtId}...`);
+    loggers.build.info(`🗳️  Computing STV rounds for ${district.districtId}...`);
     const stvResult = await computeStvRounds({
       electionId,
       contestId,
@@ -164,12 +186,17 @@ async function processDistrict(district: DistrictConfig) {
       seatCount: district.seatCount,
     });
 
-    console.log(
-      `   ✅ STV: ${stvResult.winners.length} winners elected from ${stvResult.seats} seats in ${stvResult.number_of_rounds} rounds`,
-    );
+    loggers.build.info(`   ✅ STV completed`, {
+      districtId: district.districtId,
+      winners: stvResult.winners.length,
+      seats: stvResult.seats,
+      rounds: stvResult.number_of_rounds,
+    });
 
     // Step 5: Transfer Matrix
-    console.log(`🔄 Computing transfer matrix for ${district.districtId}...`);
+    loggers.build.info(
+      `🔄 Computing transfer matrix for ${district.districtId}...`,
+    );
     const transferResult = await computeTransferMatrix({
       election_id: electionId,
       contest_id: contestId,
@@ -177,12 +204,15 @@ async function processDistrict(district: DistrictConfig) {
       seat_count: district.seatCount,
     });
 
-    console.log(
-      `   ✅ Transfers: ${transferResult.stats.total_transfers} transfers (${transferResult.stats.elimination_transfers} elimination, ${transferResult.stats.surplus_transfers} surplus)`,
-    );
+    loggers.build.info(`   ✅ Transfer Matrix completed`, {
+      districtId: district.districtId,
+      totalTransfers: transferResult.stats.total_transfers,
+      eliminationTransfers: transferResult.stats.elimination_transfers,
+      surplusTransfers: transferResult.stats.surplus_transfers,
+    });
 
     // Step 6: Candidate Affinity Matrix
-    console.log(
+    loggers.build.info(
       `🤝 Computing candidate affinity matrix for ${district.districtId}...`,
     );
     const affinityResult = await computeCandidateAffinityMatrix({
@@ -191,12 +221,15 @@ async function processDistrict(district: DistrictConfig) {
       env,
     });
 
-    console.log(
-      `   ✅ Affinity: ${affinityResult.stats.unique_pairs} pairs from ${affinityResult.stats.total_ballots_considered} ballots (max: ${(affinityResult.stats.max_pair_frac * 100).toFixed(1)}%)`,
-    );
+    loggers.build.info(`   ✅ Candidate Affinity completed`, {
+      districtId: district.districtId,
+      uniquePairs: affinityResult.stats.unique_pairs,
+      totalBallotsConsidered: affinityResult.stats.total_ballots_considered,
+      maxPairPercentage: (affinityResult.stats.max_pair_frac * 100).toFixed(1),
+    });
 
     // Step 7: Candidate Affinity Jaccard Matrix
-    console.log(
+    loggers.build.info(
       `🔍 Computing candidate affinity jaccard for ${district.districtId}...`,
     );
     const jaccardResult = await computeCandidateAffinityJaccard({
@@ -204,12 +237,15 @@ async function processDistrict(district: DistrictConfig) {
       contestId,
       env,
     });
-    console.log(
-      `   ✅ Jaccard: ${jaccardResult.stats.unique_pairs} pairs (max: ${(jaccardResult.stats.max_jaccard * 100).toFixed(1)}%, zeros: ${jaccardResult.stats.zero_union_pairs})`,
-    );
+    loggers.build.info(`   ✅ Jaccard completed`, {
+      districtId: district.districtId,
+      uniquePairs: jaccardResult.stats.unique_pairs,
+      maxJaccardPercentage: (jaccardResult.stats.max_jaccard * 100).toFixed(1),
+      zeroUnionPairs: jaccardResult.stats.zero_union_pairs,
+    });
 
     // Step 8: Candidate Affinity Proximity Matrix
-    console.log(
+    loggers.build.info(
       `📏 Computing candidate affinity proximity for ${district.districtId}...`,
     );
     const proximityResult = await computeCandidateAffinityProximity({
@@ -217,14 +253,23 @@ async function processDistrict(district: DistrictConfig) {
       contestId,
       env,
     });
-    console.log(
-      `   ✅ Proximity: ${proximityResult.stats.unique_pairs} pairs (max weight: ${proximityResult.stats.max_weight_sum.toFixed(2)}, α=${proximityResult.stats.alpha})`,
-    );
+    loggers.build.info(`   ✅ Proximity completed`, {
+      districtId: district.districtId,
+      uniquePairs: proximityResult.stats.unique_pairs,
+      maxWeightSum: proximityResult.stats.max_weight_sum.toFixed(2),
+      alpha: proximityResult.stats.alpha,
+    });
+
+    timer.end({
+      districtId: district.districtId,
+      totalSteps: 8,
+    });
   } catch (error) {
-    console.error(`   ❌ Failed to process ${district.districtId}:`);
-    console.error(
-      `     ${error instanceof Error ? error.message : String(error)}`,
-    );
+    logError(loggers.build, error, {
+      operation: `district processing`,
+      districtId: district.districtId,
+      csvFile: district.csvFile,
+    });
     throw error;
   }
 }
@@ -234,8 +279,15 @@ interface BuildAllDistrictsArgs {
 }
 
 async function main() {
+  const mainTimer = createTimer(
+    loggers.script,
+    "Building all Portland districts",
+  );
+
   try {
-    console.log("🚀 Building all Portland districts for 2024 General Election");
+    loggers.script.info(
+      "🚀 Building all Portland districts for 2024 General Election",
+    );
 
     const env = getDataEnv();
 
@@ -265,21 +317,29 @@ async function main() {
         if (!skipOnError) {
           throw error;
         }
-        console.log(`   ⏭️  Continuing with next district...`);
+        loggers.script.info(`   ⏭️  Continuing with next district...`);
       }
     }
 
-    console.log(`\n🎉 Multi-district processing complete!`);
-    console.log(`   ✅ Successful: ${successful} districts`);
-    console.log(`   ❌ Failed: ${failed} districts`);
-    console.log(`   📂 Data structure: data/${env}/portland-20241105-gen/*/`);
+    loggers.script.info(`\n🎉 Multi-district processing complete!`);
+    loggers.script.info(`   ✅ Successful: ${successful} districts`);
+    loggers.script.info(`   ❌ Failed: ${failed} districts`);
+    loggers.script.info(
+      `   📂 Data structure: data/${env}/portland-20241105-gen/*/`,
+    );
+
+    mainTimer.end({
+      successful_districts: successful,
+      failed_districts: failed,
+    });
 
     if (failed > 0 && !skipOnError) {
       process.exit(1);
     }
   } catch (error) {
-    console.error("💥 Multi-district processing failed:");
-    console.error(error);
+    logError(loggers.script, error, {
+      context: "💥 Multi-district processing failed",
+    });
     process.exit(1);
   }
 }

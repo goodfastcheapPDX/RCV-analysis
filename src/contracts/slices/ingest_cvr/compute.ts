@@ -17,6 +17,7 @@ import {
   sha256,
 } from "@/lib/contract-enforcer";
 import { type DataEnv, getDataEnv } from "@/lib/env";
+import { createTimer, logError, loggers } from "@/lib/logger";
 import {
   BallotsLongOutput,
   CandidatesOutput,
@@ -71,9 +72,13 @@ export async function ingestCvr(
   // Create identity for this contest
   const identity = createIdentity(electionId, contestId, districtId, seatCount);
 
-  console.log(`Processing CVR for ${electionId}/${contestId}`);
-  console.log(`Source CSV: ${srcCsv}`);
-  console.log(`Output path: ${outputPath}`);
+  const timer = createTimer(
+    loggers.compute,
+    `CVR ingestion for ${electionId}/${contestId}`,
+  );
+  loggers.compute.info(`Processing CVR for ${electionId}/${contestId}`);
+  loggers.compute.info(`Source CSV: ${srcCsv}`);
+  loggers.compute.info(`Output path: ${outputPath}`);
 
   // Ensure directories exist
   mkdirSync(outputPath, { recursive: true });
@@ -87,19 +92,19 @@ export async function ingestCvr(
     await conn.run("BEGIN TRANSACTION");
 
     // Step 1: Load raw CSV data
-    console.log("Loading raw CSV data...");
+    loggers.compute.info("Loading raw CSV data...");
     await conn.run(SQL_QUERIES.createRawTable(srcCsv));
 
     // Step 2: Create candidates table
-    console.log("Creating candidates table...");
+    loggers.compute.info("Creating candidates table...");
     await conn.run(SQL_QUERIES.createCandidatesTable);
 
     // Step 3: Create candidate columns mapping table
-    console.log("Creating candidate columns mapping...");
+    loggers.compute.info("Creating candidate columns mapping...");
     await conn.run(SQL_QUERIES.createCandidateColumnsTable);
 
     // Step 4: Generate UNION ALL query for ballots_long
-    console.log("Generating ballots_long normalization query...");
+    loggers.compute.info("Generating ballots_long normalization query...");
     const candidateColumnsResult = await conn.run(
       "SELECT column_name FROM candidate_columns",
     );
@@ -123,11 +128,11 @@ export async function ingestCvr(
     );
 
     // Step 5: Create ballots_long table
-    console.log("Creating ballots_long table...");
+    loggers.compute.info("Creating ballots_long table...");
     await conn.run(finalBallotsLongQuery);
 
     // Step 6: Add identity columns to output tables
-    console.log("Adding identity columns...");
+    loggers.compute.info("Adding identity columns...");
 
     // Create candidates with identity
     await conn.run(`
@@ -161,7 +166,7 @@ export async function ingestCvr(
     `);
 
     // Step 7: Validate schemas before export
-    console.log("Validating schemas...");
+    loggers.compute.info("Validating schemas...");
     await assertTableColumns(
       conn,
       "candidates_with_identity",
@@ -174,7 +179,7 @@ export async function ingestCvr(
     );
 
     // For large datasets, validate a sample and calculate stats via SQL
-    console.log("Validating sample data...");
+    loggers.compute.info("Validating sample data...");
     const sampleSize = 1000;
 
     // Validate a sample of candidates data
@@ -210,10 +215,12 @@ export async function ingestCvr(
     });
 
     // Step 8: Export to Parquet files
-    console.log(`Exporting candidates to ${outputPath}/candidates.parquet...`);
+    loggers.compute.info(
+      `Exporting candidates to ${outputPath}/candidates.parquet...`,
+    );
     await conn.run(SQL_QUERIES.exportCandidates(outputPath));
 
-    console.log(
+    loggers.compute.info(
       `Exporting ballots_long to ${outputPath}/ballots_long.parquet...`,
     );
     await conn.run(SQL_QUERIES.exportBallotsLong(outputPath));
@@ -221,7 +228,7 @@ export async function ingestCvr(
     await conn.run("COMMIT");
 
     // Step 9: Calculate stats via SQL (efficient for large datasets)
-    console.log("Calculating stats via SQL...");
+    loggers.compute.info("Calculating stats via SQL...");
     const statsQuery = `
       WITH ballots_stats AS (
         SELECT
@@ -264,7 +271,7 @@ export async function ingestCvr(
     };
 
     // Step 10: Update manifest
-    console.log("Updating manifest...");
+    loggers.compute.info("Updating manifest...");
 
     const candidatesPath = `${outputPath}/candidates.parquet`;
     const ballotsLongPath = `${outputPath}/ballots_long.parquet`;
@@ -280,9 +287,9 @@ export async function ingestCvr(
         const manifestData = JSON.parse(readFileSync(manifestPath, "utf8"));
         manifest = manifestData as Manifest; // TODO: Add validation
       } catch (error) {
-        console.warn(
-          "Could not parse existing manifest, creating new one:",
-          error,
+        loggers.compute.warn(
+          "Could not parse existing manifest, creating new one",
+          { error },
         );
         manifest = {
           env: env as DataEnv,
@@ -369,15 +376,14 @@ export async function ingestCvr(
 
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-    console.log("✅ CVR ingestion completed successfully!");
-    console.log(`📊 Statistics:`);
-    console.log(`  - Candidates: ${stats.candidates.rows}`);
-    console.log(`  - Ballots: ${stats.ballots_long.ballots}`);
-    console.log(`  - Total vote records: ${stats.ballots_long.rows}`);
-    console.log(
-      `  - Rank range: ${stats.ballots_long.min_rank}-${stats.ballots_long.max_rank}`,
-    );
+    loggers.compute.info("✅ CVR ingestion completed successfully!", {
+      candidates: stats.candidates.rows,
+      ballots: stats.ballots_long.ballots,
+      total_vote_records: stats.ballots_long.rows,
+      rank_range: `${stats.ballots_long.min_rank}-${stats.ballots_long.max_rank}`,
+    });
 
+    timer.end();
     return IngestCvrOutputSchema.parse(stats);
   } catch (error) {
     try {

@@ -11,6 +11,7 @@ import {
 } from "../src/contracts/ids";
 import { ingestCvr } from "../src/contracts/slices/ingest_cvr/compute";
 import { validateEnv } from "../src/lib/env";
+import { createTimer, logError, loggers } from "../src/lib/logger";
 
 // Load environment variables and validate
 dotenv();
@@ -24,8 +25,10 @@ interface BuildDataArgs {
 }
 
 async function main() {
+  const timer = createTimer(loggers.build, "CVR data ingestion");
+
   try {
-    console.log("Starting multi-election CVR data ingestion...");
+    loggers.build.info("Starting multi-election CVR data ingestion...");
 
     const args = yargs(hideBin(process.argv))
       .scriptName("build-data")
@@ -61,7 +64,9 @@ async function main() {
       process.env.DATA_ENV = args.dataEnv;
     }
 
-    console.log(`Data Environment: ${process.env.DATA_ENV}`);
+    loggers.build.info("Configuration", {
+      dataEnvironment: process.env.DATA_ENV,
+    });
 
     // Set defaults for District 2 (using type-safe environment variables)
     const srcCsv =
@@ -80,9 +85,11 @@ async function main() {
         seatCount: 3,
       })) as ContestId;
 
-    console.log(`Election: ${electionId}`);
-    console.log(`Contest: ${contestId}`);
-    console.log(`Source CSV: ${srcCsv}`);
+    loggers.build.info("Input parameters", {
+      election: electionId,
+      contest: contestId,
+      sourceCSV: srcCsv,
+    });
 
     const result = await ingestCvr({
       electionId,
@@ -92,17 +99,21 @@ async function main() {
       srcCsv,
     });
 
-    console.log("✅ Data ingestion completed successfully!");
-    console.log(`📊 Statistics:`);
-    console.log(`  - Candidates: ${result.candidates.rows}`);
-    console.log(`  - Ballots: ${result.ballots_long.ballots}`);
-    console.log(`  - Total vote records: ${result.ballots_long.rows}`);
-    console.log(
-      `  - Rank range: ${result.ballots_long.min_rank}-${result.ballots_long.max_rank}`,
-    );
+    timer.end({
+      candidates: result.candidates.rows,
+      ballots: result.ballots_long.ballots,
+      totalRecords: result.ballots_long.rows,
+    });
+
+    loggers.build.info("✅ Data ingestion completed successfully!");
+    loggers.build.info("📊 Statistics", {
+      candidates: result.candidates.rows,
+      ballots: result.ballots_long.ballots,
+      totalVoteRecords: result.ballots_long.rows,
+      rankRange: `${result.ballots_long.min_rank}-${result.ballots_long.max_rank}`,
+    });
   } catch (error) {
-    console.error("❌ Data ingestion failed:");
-    console.error(error);
+    logError(loggers.build, error, { operation: "data ingestion" });
     process.exit(1);
   }
 }

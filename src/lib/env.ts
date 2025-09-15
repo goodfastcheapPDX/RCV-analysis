@@ -42,6 +42,7 @@ export function validateEnv(): void {
     EnvSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Use console.error to avoid circular dependency issues in env validation
       console.error("❌ Environment variable validation failed:");
       for (const issue of error.issues) {
         console.error(`  - ${issue.path.join(".")}: ${issue.message}`);

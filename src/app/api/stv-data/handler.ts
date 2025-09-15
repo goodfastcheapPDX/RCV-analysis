@@ -1,3 +1,4 @@
+import { logError, loggers } from "@/lib/logger";
 import { loadStvForContest } from "@/lib/manifest/loaders";
 
 export interface StvDataParams {
@@ -33,7 +34,7 @@ export async function handleStvDataRequest(params: StvDataParams = {}) {
       },
     };
   } catch (error) {
-    console.error("Error in STV data handler:", error);
+    logError(loggers.api, error, { context: "STV data handler" });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",

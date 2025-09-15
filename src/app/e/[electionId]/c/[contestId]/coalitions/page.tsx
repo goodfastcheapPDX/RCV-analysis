@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import type { Contest } from "@/contracts/manifest";
 import type { CandidatesOutput } from "@/contracts/slices/ingest_cvr/index.contract";
+import { loggers } from "@/lib/logger";
 import { loadCandidatesForContest } from "@/lib/manifest/loaders";
 
 interface CoalitionsPageProps {
@@ -33,7 +34,7 @@ export default async function CoalitionsPage({ params }: CoalitionsPageProps) {
     candidates = candidatesResult.data;
     contest = candidatesResult.contest;
   } catch (error) {
-    console.warn("Candidates data not available:", error);
+    loggers.ui.warn("Candidates data not available", { error });
   }
 
   return (

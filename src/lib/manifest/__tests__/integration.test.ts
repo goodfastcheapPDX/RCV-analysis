@@ -6,17 +6,6 @@ import {
 } from "@/lib/manifest/contest-resolver";
 
 describe("Manifest Integration Tests", () => {
-  console.log(`
-    
-    
-    
-    
-    
-    process.env.DATA_BASE_URL=${process.env.DATA_BASE_URL}
-    
-    
-    
-    `);
   describe("Real filesystem integration", () => {
     it("should load production manifest and resolve contest artifacts", async () => {
       // Test loading the manifest from test environment
